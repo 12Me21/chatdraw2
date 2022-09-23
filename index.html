@@ -34,21 +34,25 @@
 		margin-left: 1px;
 		flex: none;
 		padding: 0;
-		border: none;
+		/*border: none;*/
 		/*margin: 0;
 		padding: 0;
 		border: none;*/
-		appearance: none;
+		/*appearance: none;*/
 		width: calc(var(--scale) * 20px);
 		height: calc(var(--scale) * 20px);
+	}
+	button.icon {
+		font-size: calc(var(--scale) * 16px);
+		/*line-height: calc(var(--scale) * 20px);*/
 	}
 </style>
 
 <chat-draw id=$chatdraw>
 	<form autocomplete=off method=dialog>
 		<button name=clear type=button>reset</button>
-		<button name=undo type=button>undo</button>
-		<button name=redo type=button>redo</button>
+		<button name=undo type=button class=icon>↶</button>
+		<button name=redo type=button class=icon>↷</button>
 		<button name=black type=button>black</button>
 		<button name=white type=button>white</button>
 		<button name=red type=button>red</button>
@@ -60,7 +64,7 @@
 </chat-draw>
 
 <script>
-	let chatdraw = new ChatDraw(200, 100)
+	let chatdraw = new Drawer(200, 100)
 	
 	let od = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
 	let patterns = []
@@ -105,7 +109,9 @@
 	
 	$chatdraw.prepend(chatdraw.canvas)
 	
-	$chatdraw.lastElementChild.onchange = ev=>{
+	let form = $chatdraw.lastElementChild
+	
+	form.onchange = ev=>{
 		let n = ev.target.name
 		if (n=='color')
 			chatdraw.set_color(ev.target.value)
@@ -115,7 +121,7 @@
 			chatdraw.set_brush(brushes2[+ev.target.value-1])
 	}
 	
-	$chatdraw.lastElementChild.onclick = ev=>{
+	form.onclick = ev=>{
 		let n = ev.target.name
 		if (n=='clear')
 			chatdraw.clear()
@@ -132,6 +138,12 @@
 		if (n=='redo')
 			chatdraw.history_do(true)
 	}
+	
+	chatdraw.history_onchange = ()=>{
+		form.undo.disabled = !chatdraw.history[0].length
+		form.redo.disabled = !chatdraw.history[1].length
+	}
+	chatdraw.history_onchange()
 	
 	let brushes = [
 		new Path2D('M-100,0 m-1-1 h-1 v3 h1 v1 h3 v-1 h1 v-3 h-1 v-1 h-3 z'),
