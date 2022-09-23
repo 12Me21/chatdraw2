@@ -20,6 +20,9 @@ class Point extends DOMPointReadOnly {
 	floor() {
 		return new Point(Math.floor(this.x), Math.floor(this.y))
 	}
+	round() {
+		return new Point(Math.round(this.x), Math.round(this.y))
+	}
 	static FromRect({width, height}) {
 		return new this(width, height)
 	}
@@ -32,7 +35,6 @@ class ChatDraw {
 		this.canvas.height = height
 		this.canvas.style.setProperty('--width', width)
 		this.canvas.style.setProperty('--height', height)
-		this.canvas.style.setProperty('--scale', 3)
 		this.canvas.style.imageRendering = '-moz-crisp-edges'
 		this.canvas.style.imageRendering = 'pixelated'
 		this.canvas.style.touchAction = 'none'
@@ -42,10 +44,16 @@ class ChatDraw {
 		this.c2d.globalCompositeOperation = 'copy'
 		this.c2d.shadowOffsetX = 1000
 		this.c2d.shadowOffsetY = 0
-		this.clear()
 		this.c2d.translate(-1000, 0)
 		
-		this.set_brush(new Path2D('M-100,0 m-1-1 h2 v2 h-2 z'))
+		this.clear()
+		
+		this.set_brush({
+			origin: new Point(1, 1),
+			fills: [
+				[0, 0, 2, 2],
+			],
+		})//new Path2D('M-100,0 m-1-1 h2 v2 h-2 z'))
 		this.set_pattern('white')
 		this.set_color('black')
 		
@@ -83,7 +91,9 @@ class ChatDraw {
 	
 	clear() {
 		this.c2d.save()
+		this.c2d.resetTransform()
 		this.c2d.fillStyle = 'white'
+		this.c2d.shadowColor = null
 		this.c2d.fillRect(0, 0, this.canvas.width, this.canvas.height)
 		this.c2d.restore()
 	}
@@ -116,13 +126,16 @@ class ChatDraw {
 	}
 	
 	draw(pos) {
-		pos = pos.floor()//.add({x:-1000,y:0})
+		console.log(pos)
+		let {origin, fills} = this.brush
+		pos = pos.subtract(origin).round()//.add({x:-1000,y:0})
 //		console.log(pos, this.color, this.pattern, this.brush)
 /*		this.c2d.shadowOffsetX = pos.x
 		this.c2d.shadowOffsetY = pos.y
 		if (this.pattern.setTransform)
-			this.pattern.setTransform(new DOMMatrixReadOnly([1,0,0,1,-pos.x,-pos.y]))*/
-		this.c2d.fillRect(pos.x, pos.y, 10, 10)
+		this.pattern.setTransform(new DOMMatrixReadOnly([1,0,0,1,-pos.x,-pos.y]))*/
+		fills.forEach(([x,y,w,h])=>this.c2d.fillRect(pos.x+x,pos.y+y,w,h))
+		//this.c2d.fillRect(pos.x, pos.y, 10, 10)
 		//this.c2d.fill(this.brush)
 	}
 	

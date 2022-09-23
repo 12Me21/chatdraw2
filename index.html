@@ -1,69 +1,63 @@
 <!doctype html><html lang=en-QS><meta charset=utf-8><meta name=viewport content="width=device-width, height=device-height, initial-scale=1" id=$meta_viewport>
 <title>CHATDRAW 2!!!</title>
+
 <script src=brush.js></script>
 
 <style>
-	#preview {
-		width: 48px;
-	}
-	#canvas {
-		/*width: 900px;*/
-		cursor: crosshair;
-	}
 	body, html {
 		background: aliceblue;
-		overflow: hidden;
 	}
-	label {
-		display: contents;
-	}
-	form {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-	form {
-		flex-flow: wrap;
-	}
-</style>
-
-<form autocomplete=off method=dialog id=$form style=max-width:100vw>
-	<label>Brush:<input type=range min=0 max=1 value=0 name=brush style=width:50px></label>
-	<label>Color:<input type=color name=color value="#AA3388"></label>
-	<label>Pattern:<input type=range min=0 max=15 value=5 name=pattern style=width:300px><div style=flex:none;width:50px></div></label>
-</form>
-<hr>
-
-<style>
+	
 	chat-draw {
 		display: inline-grid;
 		grid-template:
 			"canvas" max-content
+		"gap" 1px
 		"controls" auto
-		/ max-content;
+		/ min-content;
 		background: gray;
 		padding: 1px;
+		--scale: 2;
 	}
 	chat-draw > canvas {
 		grid-area: canvas;
-		width: calc(var(--width) * var(--scale));
+		width: calc(var(--width) * 1px * var(--scale, 1));
+		cursor: crosshair;
 	}
 	chat-draw > form {
+		margin-left: -1px;
 		grid-area: controls;
+		display: flex;
+		flex-flow: row wrap;
+	}
+	chat-draw button {
+		margin-left: 1px;
+		flex: none;
+		padding: 0;
+		border: none;
+		/*margin: 0;
+		padding: 0;
+		border: none;*/
+		appearance: none;
+		width: calc(var(--scale) * 20px);
+		height: calc(var(--scale) * 20px);
 	}
 </style>
 
 <chat-draw id=$chatdraw>
 	<form autocomplete=off method=dialog>
-		
-		
+		<button name=clear type=button>reset</button>
+		<button name=black type=button>black</button>
+		<button name=white type=button>white</button>
+		<button name=red type=button>red</button>
+		<button name=blue type=button>blue</button>
+		<input name=color type=color>
+		<input type=range min=0 max=15 value=5 name=pattern>
 	</form>
 </chat-draw>
 
 <script>
 	let chatdraw = new ChatDraw(200, 100)
-	let chatdraw2 = new ChatDraw(200, 100)
-	$chatdraw.prepend(chatdraw.canvas, chatdraw2.canvas)
 	
 	let od = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
 	let patterns = []
@@ -83,6 +77,31 @@
 		p2d.putImageData(data, 0, 0)
 		let pattern = chatdraw.c2d.createPattern(pcanvas, 'repeat')
 		patterns.push(pattern)
+	}
+	
+	
+	$chatdraw.prepend(chatdraw.canvas)
+	
+	$chatdraw.lastElementChild.onchange = ev=>{
+		let n = ev.target.name
+		if (n=='color')
+			chatdraw.set_color(ev.target.value)
+		if (n=='pattern')
+			chatdraw.set_pattern(patterns[+ev.target.value])
+	}
+	
+	$chatdraw.lastElementChild.onclick = ev=>{
+		let n = ev.target.name
+		if (n=='clear')
+			chatdraw.clear()
+		if (n=='red')
+			chatdraw.set_color('red')
+		if (n=='black')
+			chatdraw.set_color('black')
+		if (n=='blue')
+			chatdraw.set_color('blue')
+		if (n=='white')
+			chatdraw.set_color('white')
 	}
 	
 	let brushes = [
@@ -114,19 +133,6 @@
 		draw(pc, 0, 0, aa, 'silver')
 		draw(pc, 7, 7)
 	}
-	
-	$form.color.oninput = ev=>{
-		chatdraw.set_color($form.color.value)
-	}
-	$form.color.oninput()
-	$form.pattern.oninput = ev=>{
-		chatdraw.set_pattern(patterns[+$form.pattern.value])
-	}
-	$form.pattern.oninput()
-	$form.brush.oninput = ev=>{
-		chatdraw.set_brush(brushes[+$form.brush.value])
-	}
-	$form.brush.oninput()
 	
 	let make_cursor=(size=1)=>{
 		let r = size/2+1 //  3->
