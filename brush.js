@@ -46,6 +46,9 @@ class ChatDraw {
 		this.c2d.shadowOffsetY = 0
 		this.c2d.translate(-1000, 0)
 		
+		this.history_max = 20
+		this.history_reset()
+		
 		this.clear()
 		
 		this.set_brush({
@@ -64,6 +67,7 @@ class ChatDraw {
 			let posP = this.event_pos(ev)
 			this.pointers.set(ev.pointerId, posP)
 			
+			this.history_add()
 			this.draw(posP)
 		}
 		
@@ -78,18 +82,39 @@ class ChatDraw {
 			let posP = this.event_pos(ev)
 			this.pointers.set(ev.pointerId, posP)
 			
-			let diffP = posP.subtract(oldP)
-			let dist = diffP.magnitude()
-			let stepP = diffP.divide({x:dist, y:dist})
-			for (let i=0; i<dist; i++) {
-				this.draw(posP)
-				posP = posP.subtract(stepP)
-			}
+			this.draw_line(oldP, posP)
 		}
 		
 	}
 	
+	history_get() {
+		return this.c2d.getImageData(0, 0, this.canvas.width, this.canvas.height)
+	}
+	history_set(data) {
+		this.c2d.putImageData(data, 0, 0)
+	}
+	
+	history_reset() {
+		this.history = [[], []]
+	}
+	history_add() {
+		let undo = this.history[0]
+		undo.push(this.history_get())
+		this.history[1] = []
+		while (undo.length > this.history_max)
+			undo.shift()
+	}
+	history_do(redo=false) {
+		let data = this.history[redo?1:0].pop()
+		if (data===undefined)
+			return false
+		this.history[redo?0:1].push(this.history_get())
+		this.history_set(data)
+		return true
+	}
+	
 	clear() {
+		this.history_add()
 		this.c2d.save()
 		this.c2d.resetTransform()
 		this.c2d.fillStyle = 'white'
@@ -125,18 +150,19 @@ class ChatDraw {
 		this.brush = brush
 	}
 	
-	draw(pos) {
-		console.log(pos)
+	draw(posP) {
 		let {origin, fills} = this.brush
-		pos = pos.subtract(origin).round()//.add({x:-1000,y:0})
-//		console.log(pos, this.color, this.pattern, this.brush)
-/*		this.c2d.shadowOffsetX = pos.x
-		this.c2d.shadowOffsetY = pos.y
-		if (this.pattern.setTransform)
-		this.pattern.setTransform(new DOMMatrixReadOnly([1,0,0,1,-pos.x,-pos.y]))*/
-		fills.forEach(([x,y,w,h])=>this.c2d.fillRect(pos.x+x,pos.y+y,w,h))
-		//this.c2d.fillRect(pos.x, pos.y, 10, 10)
-		//this.c2d.fill(this.brush)
+		let {x,y} = posP.subtract(origin).round()
+		fills.forEach(([s,t,w,h])=>this.c2d.fillRect(x+s,y+t,w,h))
 	}
 	
+	draw_line(start, end) {
+		let diffP = end.subtract(start)
+		let dist = diffP.magnitude()
+		let stepP = diffP.divide({x:dist, y:dist})
+		for (let i=0; i<dist; i++) {
+			this.draw(end)
+			end = end.subtract(stepP)
+		}
+	}
 }

@@ -47,12 +47,15 @@
 <chat-draw id=$chatdraw>
 	<form autocomplete=off method=dialog>
 		<button name=clear type=button>reset</button>
+		<button name=undo type=button>undo</button>
+		<button name=redo type=button>redo</button>
 		<button name=black type=button>black</button>
 		<button name=white type=button>white</button>
 		<button name=red type=button>red</button>
 		<button name=blue type=button>blue</button>
 		<input name=color type=color>
 		<input type=range min=0 max=15 value=5 name=pattern>
+		<input type=range min=1 max=7 value=2 name=brush>
 	</form>
 </chat-draw>
 
@@ -79,6 +82,26 @@
 		patterns.push(pattern)
 	}
 	
+	let brushes2 = []
+	for (let i=1; i<=7; i++) {
+		let r = i/2
+		let origin = new Point(r, r)
+		let rs = r*r
+		r += 0.5
+		let fills = []
+		for (let y=-r; y<=r; y++) {
+			for (let x=-r; x<=r; x++) {
+				if (x*x+y*y <= rs) {
+					fills.push([
+						Math.floor(r-1+x), Math.floor(r-1+y),
+						Math.floor(-x*2)+1, 1
+					])
+					break
+				}
+			}
+		}
+		brushes2.push({origin, fills})
+	}
 	
 	$chatdraw.prepend(chatdraw.canvas)
 	
@@ -88,6 +111,8 @@
 			chatdraw.set_color(ev.target.value)
 		if (n=='pattern')
 			chatdraw.set_pattern(patterns[+ev.target.value])
+		if (n=='brush')
+			chatdraw.set_brush(brushes2[+ev.target.value-1])
 	}
 	
 	$chatdraw.lastElementChild.onclick = ev=>{
@@ -102,6 +127,10 @@
 			chatdraw.set_color('blue')
 		if (n=='white')
 			chatdraw.set_color('white')
+		if (n=='undo')
+			chatdraw.history_do()
+		if (n=='redo')
+			chatdraw.history_do(true)
 	}
 	
 	let brushes = [
@@ -110,23 +139,6 @@
 	]
 	let aa = new Path2D()
 	aa.rect(-100, -100, 16, 16)
-	
-	let brushes2 = []
-	for (let i=1; i<=7; i++) {
-		let r = i/2
-		let rs = r*r
-		r += 0.5
-		let p = new Path2D()
-		for (let y=-r; y<=r; y++) {
-			for (let x=-r; x<=r; x++) {
-				if (x*x+y*y <= rs) {
-					p.rect(Math.floor(r-1+x), Math.floor(r-1+y), Math.floor(-x*2)+1, 1)
-					break
-				}
-			}
-		}
-		brushes2.push(p)
-	}
 	
 	let pdraw=()=>{
 		pc.clearRect(0, 0, 16, 16)
