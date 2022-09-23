@@ -1,22 +1,16 @@
 <!doctype html><html lang=en-QS><meta charset=utf-8><meta name=viewport content="width=device-width, height=device-height, initial-scale=1" id=$meta_viewport>
 <title>CHATDRAW 2!!!</title>
-
+<script src=brush.js></script>
 <style>
-	canvas {
-		image-rendering: -moz-crisp-edges;
-		image-rendering: pixelated;
-		background: white;
-	}
 	#preview {
 		width: 48px;
 	}
 	#canvas {
-		width: 900px;
+		/*width: 900px;*/
 		cursor: crosshair;
-		touch-action: none;
 	}
 	body, html {
-		background: aliceblue;
+		background: skyblue;
 		overflow: hidden;
 	}
 	label {
@@ -39,14 +33,9 @@
 	<label>Pattern:<input type=range min=0 max=15 value=5 name=pattern style=width:300px><div style=flex:none;width:50px></div></label>
 </form>
 <hr>
-<canvas id=canvas width=300 height=300></canvas>
-<img id=dither src=data:image/webp;base64,UklGRiIAAABXRUJQVlA4TBYAAAAvA8AAEDUgaNs2/FFv+0nEEf3PJiL5>
 
-
-<script type=module>
-	let ctx = canvas.getContext('2d')
-	ctx.imageSmoothingEnabled = false    
-	ctx.globalCompositeOperation = 'copy'
+<script>
+	let chatdraw = new ChatDraw(300, 300)
 	
 	let od = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
 	let patterns = []
@@ -64,57 +53,35 @@
 				data.data[x<<2|3] = 0xFF
 		
 		p2d.putImageData(data, 0, 0)
-		let pattern = ctx.createPattern(pcanvas, 'repeat')
+		let pattern = chatdraw.c2d.createPattern(pcanvas, 'repeat')
 		patterns.push(pattern)
 	}
 	
 	let pc = preview.getContext('2d')
 	
 	let brushes = [
-		new Path2D('M-100-100 m-1-1 h-1 v3 h1 v1 h3 v-1 h1 v-3 h-1 v-1 h-3 z'),
-		new Path2D('M-100-100 m-5-5 v1 h-1 v2 h-1 v5 h1 v2 h1 v1 h1 v1 h2 v1 h5 v-1 h2 v-1 h1 v-1 h1 v-2 h1 v-5 h-1 v-2 h-1 v-1 h-1 v-1 h-2 v-1 h-5 v1 h-2 v1 z'),
+		new Path2D('M-100,0 m-1-1 h-1 v3 h1 v1 h3 v-1 h1 v-3 h-1 v-1 h-3 z'),
+		new Path2D('M-100,0 m-5-5 v1 h-1 v2 h-1 v5 h1 v2 h1 v1 h1 v1 h2 v1 h5 v-1 h2 v-1 h1 v-1 h1 v-2 h1 v-5 h-1 v-2 h-1 v-1 h-1 v-1 h-2 v-1 h-5 v1 h-2 v1 z'),
 	]
-	
-	await dither.decode()
-	let pattern = ctx.createPattern(dither, "repeat")
-	
-		
-	let COLOR = '#AA3388'
-	let PATTERN = pattern
-	let BRUSH = brushes[0]
-	
 	let aa = new Path2D()
 	aa.rect(-100, -100, 16, 16)
 	
-	let draw=(ctx, x, y, brush=BRUSH, color=COLOR, pattern=PATTERN)=>{
-		ctx.save()
-		ctx.shadowColor = COLOR
-		ctx.fillStyle = PATTERN
-		x = ctx.shadowOffsetX = Math.floor(x)+100 
-		y = ctx.shadowOffsetY = Math.floor(y)+100
-		if (pattern.setTransform)
-			pattern.setTransform(new DOMMatrix([1,0,0,1,-x,-y]))
-		ctx.fill(brush)
-		ctx.restore()
-	}
-	
 	let brushes2 = []
-for (let i=1; i<=7; i++) {
-	let r = i/2
-	let rs = r*r
-	r += 0.5
-	let p = new Path2D()
-	for (let y=-r; y<=r; y++) {
-		for (let x=-r; x<=r; x++) {
-			if (x*x+y*y <= rs) {
-				p.rect(Math.floor(r-1+x), Math.floor(r-1+y), Math.floor(-x*2)+1, 1)
-				break
+	for (let i=1; i<=7; i++) {
+		let r = i/2
+		let rs = r*r
+		r += 0.5
+		let p = new Path2D()
+		for (let y=-r; y<=r; y++) {
+			for (let x=-r; x<=r; x++) {
+				if (x*x+y*y <= rs) {
+					p.rect(Math.floor(r-1+x), Math.floor(r-1+y), Math.floor(-x*2)+1, 1)
+					break
+				}
 			}
 		}
+		brushes2.push(p)
 	}
-	brushes2.push(p)
-	}
-	
 	
 	let pdraw=()=>{
 		pc.clearRect(0, 0, 16, 16)
@@ -123,93 +90,37 @@ for (let i=1; i<=7; i++) {
 	}
 	
 	$form.color.oninput = ev=>{
-		COLOR = $form.color.value
-		pdraw()
+		chatdraw.set_color($form.color.value)
 	}
 	$form.color.oninput()
 	$form.pattern.oninput = ev=>{
-		PATTERN = patterns[+$form.pattern.value]
-		pdraw()
+		chatdraw.set_pattern(patterns[+$form.pattern.value])
 	}
 	$form.pattern.oninput()
 	$form.brush.oninput = ev=>{
-		BRUSH = brushes[+$form.brush.value]
-		pdraw()
+		chatdraw.set_brush(brushes[+$form.brush.value])
 	}
 	$form.brush.oninput()
 	
-	let event_pos=(ev)=>{
-		let rect = ev.target.getBoundingClientRect()
-		let sx = rect.width / ev.target.width
-		let sy = rect.height / ev.target.height
-		return {
-			x: (ev.offsetX + 0.5/(sx*window.devicePixelRatio)) / sx,
-			y: (ev.offsetY + 0.5/(sy*window.devicePixelRatio)) / sy,
-		}
+	let make_cursor=(size=1)=>{
+		let r = size/2+1 //  3->
+		let svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="${r*2}" height="${r*2}">
+<rect x="${r-0.5}" y="${r-0.5}" width="1" height="1"/>
+<rect x="${0.5}" y="${0.5}" width="${r*2-1}" height="${r*2-1}" fill="none" stroke="red" stroke-width="1"/>
+</svg>
+		`
+		let ox = r-0.5
+		let oy = r-0.5
+		let url = "data:image/svg+xml;base64,"+btoa(svg)
+		
+		chatdraw.canvas.style.cursor = `url("${url}") ${ox} ${oy}, crosshair`
 	}
 	
-	let pointers = {}
+	make_cursor(3)
 	
-	canvas.onpointerdown = ev=>{
-		let p = event_pos(ev)
-		draw(ctx, p.x, p.y)
-		pointers[ev.pointerId] = p
-		ev.target.setPointerCapture(ev.pointerId)
-	}
-	
-	canvas.onlostpointercapture = ev=>{
-		delete pointers[ev.pointerId]
-	}
-	
-	canvas.onpointermove = ev=>{
-		let p = pointers[ev.pointerId]
-		if (!p)
-			return
-		let {x, y} = event_pos(ev)
-		let dx = x-p.x
-		let dy = y-p.y
-		let dist = Math.hypot(dx,dy)
-		p.x = x
-		p.y = y
-		for (let i=0;i<dist;i++) {
-			draw(ctx, x, y)
-			x -= dx/dist
-			y -= dy/dist
-		}
-	}
-	
+	document.body.append(chatdraw.canvas)
+	chatdraw.clear()
 	// aw why are we using ctx instead of c2d anymore..
-	function draw_circle(ctx, cx, cy, radius1, radius2=radius1) {
-		let rs1 = radius1 * radius1
-		let rs2 = radius2 * radius2
-		let rss = rs1 * rs2
-		radius2 += 0.5
-		radius1 += 0.5
-		// todo: make this work better for non-integer locations?
-		for (let y=-radius2; y<=radius2; y++) {
-			for (let x=-radius1; x<=radius1; x++) {
-				if (x*x*rs2+y*y*rs1 <= rss) {
-					ctx.fillRect(Math.floor(cx+x), Math.floor(cy+y), Math.floor(-x*2)+1, 1)
-					break
-				}
-			}
-		}
-	}
-	BRUSH = brushes2[5]
-	COLOR = 'orange'
-/*	document.body.onclick = ev=>{
-		let p
-		p = performance.now()
-		for (let i=0; i<1000;i++) {
-			draw_circle(ctx, i, i+20, 3, 3)
-		}
-		console.log(performance.now()-p)
-		ctx.shadowColor = COLOR
-		ctx.fillStyle = PATTERN
-		p = performance.now()
-		for (let i=0; i<1000;i++) {
-			draw(ctx, i, i)
-		}
-		console.log(performance.now()-p)
-	}*/
+	
 </script>
