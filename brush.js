@@ -36,22 +36,21 @@ class ChatDraw {
 		
 		this.c2d = this.canvas.getContext('2d', {alpha: false})
 		this.c2d.imageSmoothingEnabled = false
-//		this.c2d.globalCompositeOperation = 'copy'
-//		this.c2d.globalAlpha = false
+		this.c2d.globalCompositeOperation = 'copy'
 		this.clear()
 		
-		this.brush = null
-		this.pattern = null
-		this.color = null
+		this.set_brush(new Path2D('M-100,0 m-1-1 h2 v2 h-2 z'))
+		this.set_pattern('white')
+		this.set_color('black')
 		
 		this.pointers = new Map()
 		
 		this.canvas.onpointerdown = ev=>{
 			ev.target.setPointerCapture(ev.pointerId)
-			let pos = this.event_pos(ev)
-			this.pointers.set(ev.pointerId, pos)
+			let posP = this.event_pos(ev)
+			this.pointers.set(ev.pointerId, posP)
 			
-			this.draw(pos)
+			this.draw(posP)
 		}
 		
 		this.canvas.onlostpointercapture = ev=>{
@@ -59,18 +58,18 @@ class ChatDraw {
 		}
 		
 		this.canvas.onpointermove = ev=>{
-			let old = this.pointers.get(ev.pointerId)
-			if (!old)
+			let oldP = this.pointers.get(ev.pointerId)
+			if (!oldP)
 				return
-			let pos = this.event_pos(ev)
-			this.pointers.set(ev.pointerId, pos)
+			let posP = this.event_pos(ev)
+			this.pointers.set(ev.pointerId, posP)
 			
-			let diff = pos.subtract(old)
-			let dist = diff.magnitude()
-			let step = diff.divide({x:dist, y:dist})
+			let diffP = posP.subtract(oldP)
+			let dist = diffP.magnitude()
+			let stepP = diffP.divide({x:dist, y:dist})
 			for (let i=0; i<dist; i++) {
-				this.draw(pos)
-				pos = pos.subtract(step)
+				this.draw(posP)
+				posP = posP.subtract(stepP)
 			}
 		}
 		
@@ -84,18 +83,18 @@ class ChatDraw {
 	}
 	
 	canvas_scale() {
-		let csize = Point.FromRect(this.canvas.getBoundingClientRect())
-		let cdim = Point.FromRect(this.canvas)
-		return csize.divide(cdim)
+		let csizeP = Point.FromRect(this.canvas.getBoundingClientRect())
+		let cdimP = Point.FromRect(this.canvas)
+		return csizeP.divide(cdimP)
 	}
 	
 	event_pos(ev) {
-		let scale = this.canvas_scale()
+		let scaleP = this.canvas_scale()
 		
 		let ps = 1/window.devicePixelRatio/2
-		let adjust = new Point(ps, ps).divide(scale)
+		let adjustP = new Point(ps, ps).divide(scaleP)
 		
-		return new Point(ev.offsetX, ev.offsetY).add(adjust).divide(scale)
+		return new Point(ev.offsetX, ev.offsetY).add(adjustP).divide(scaleP)
 	}
 	
 	set_color(color) {
@@ -117,6 +116,7 @@ class ChatDraw {
 		this.c2d.shadowOffsetY = pos.y
 		if (this.pattern.setTransform)
 			this.pattern.setTransform(new DOMMatrixReadOnly([1,0,0,1,-pos.x,-pos.y]))
+		//this.c2d.fillRect(-100, 0, 10, 10)
 		this.c2d.fill(this.brush)
 	}
 	
