@@ -30,6 +30,9 @@ class ChatDraw {
 		this.canvas = document.createElement('canvas')
 		this.canvas.width = width
 		this.canvas.height = height
+		this.canvas.style.setProperty('--width', width)
+		this.canvas.style.setProperty('--height', height)
+		this.canvas.style.setProperty('--scale', 3)
 		this.canvas.style.imageRendering = '-moz-crisp-edges'
 		this.canvas.style.imageRendering = 'pixelated'
 		this.canvas.style.touchAction = 'none'
@@ -37,7 +40,10 @@ class ChatDraw {
 		this.c2d = this.canvas.getContext('2d', {alpha: false})
 		this.c2d.imageSmoothingEnabled = false
 		this.c2d.globalCompositeOperation = 'copy'
+		this.c2d.shadowOffsetX = 1000
+		this.c2d.shadowOffsetY = 0
 		this.clear()
+		this.c2d.translate(-1000, 0)
 		
 		this.set_brush(new Path2D('M-100,0 m-1-1 h2 v2 h-2 z'))
 		this.set_pattern('white')
@@ -110,14 +116,14 @@ class ChatDraw {
 	}
 	
 	draw(pos) {
-		pos = pos.floor().add({x:100,y:0})
+		pos = pos.floor()//.add({x:-1000,y:0})
 //		console.log(pos, this.color, this.pattern, this.brush)
-		this.c2d.shadowOffsetX = pos.x
+/*		this.c2d.shadowOffsetX = pos.x
 		this.c2d.shadowOffsetY = pos.y
 		if (this.pattern.setTransform)
-			this.pattern.setTransform(new DOMMatrixReadOnly([1,0,0,1,-pos.x,-pos.y]))
-		//this.c2d.fillRect(-100, 0, 10, 10)
-		this.c2d.fill(this.brush)
+			this.pattern.setTransform(new DOMMatrixReadOnly([1,0,0,1,-pos.x,-pos.y]))*/
+		this.c2d.fillRect(pos.x, pos.y, 10, 10)
+		//this.c2d.fill(this.brush)
 	}
 	
 }
