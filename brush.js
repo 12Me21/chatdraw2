@@ -1,22 +1,5 @@
 //let 𖹭 = Object.assign
 
-
-class Tool {
-}
-
-class Freehand extends Tool {
-	start(d, pos) {
-		d.draw(pos)
-	}
-	drag(d, pos, old) {
-		d.draw_line(old, pos)
-		console
-	}
-	end(d, pos) {
-		d.draw(pos)
-	}
-}
-
 class Point extends DOMPointReadOnly {
 	distance(p) {
 		return Math.hypot(this.x-p.x, this.y-p.y)
@@ -40,11 +23,45 @@ class Point extends DOMPointReadOnly {
 	round() {
 		return new Point(Math.round(this.x), Math.round(this.y))
 	}
+	cursor_adjust(size) {
+		let x = size.x%2 ? Math.floor(this.x)+0.5 : Math.floor(this.x+0.5)
+		let y = size.y%2 ? Math.floor(this.y)+0.5 : Math.floor(this.y+0.5)
+		return new Point(x, y)
+	}
+	signs() {
+		return new Point(Math.sign(this.x), Math.sign(this.y))
+	}
+	max_distance(p) { //todo: what was this actually called?
+		return Math.max(this.x-p.x, this.y-p.y)
+	}
+	
 	static FromRect({width, height}) {
 		return new this(width, height)
 	}
 }
+
+class Tool {
+}
 
+class Freehand extends Tool {
+	start(d, pos) {
+		d.draw(pos)
+	}
+	drag(d, pos, old) {
+		d.draw_line2(old, pos, new Point(3,3), pos=>{
+			d.draw(pos)
+		})
+		//d.draw_line(old, pos)
+		//console
+	}
+	end(d, pos) {
+		d.draw(pos)
+	}
+}
+
+//class Brush
+
+
 class Drawer {
 	constructor(width, height) {
 		this.canvas = document.createElement('canvas')
@@ -188,5 +205,35 @@ class Drawer {
 			this.draw(end)
 			end = end.subtract(stepP)
 		}
+	}
+	// todo: instead of csize we should use the cursor origin (whether it's at .0 or .5)
+	draw_line2(start, end, csize, callback) {
+		// distance
+		let diff = end.subtract(start)
+		// steps
+		let sign = diff.signs()
+		let hstep = new Point(sign.x, 0)
+		let vstep = new Point(0, sign.y)
+		//
+		let pos = start.cursor_adjust(csize)
+		let stop = end.cursor_adjust(csize)
+		let i
+		for (i=0;i<500;i++) {
+			callback(pos)
+			if (Math.abs(pos.x-end.x)<=0.5 && Math.abs(pos.y-end.y)<=0.5)
+				break
+			// move in the direction that takes us closest to the ideal line
+			// ugh doing this as vector ops is just really gross.
+			let cdiff = pos.subtract(start)
+			let c = diff.x*cdiff.y - diff.y*cdiff.x
+			let horiz = Math.abs(c-hstep.x*diff.y)
+			let vert = Math.abs(c+vstep.y*diff.x)
+			
+			pos = pos.add(hstep.x && horiz<=vert ? hstep : vstep)
+		}
+		if (i>400)
+			console.log('failed', start,end,pos,stop)
+		//console.log(pos, stop)
+		callback(stop)
 	}
 }
