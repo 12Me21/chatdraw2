@@ -4,11 +4,13 @@ function draw_button(arg) {
 		let name = arg[type]
 		Object.assign(input, {type, name, value:arg.value})
 		let span = document.createElement('b')
-		span.append(arg.text)
+		let s = document.createElement('span')
+		s.append(arg.text)
+		span.append(s)
 		if (arg.text[0] > '~' || arg.icon)
 			span.classList.add('icon')
 		if (name=='color') {
-			span.append(document.createElement('span'))
+			/*span.append(document.createElement('span'))*/
 			span.classList.add('color')
 			span.style.color = arg.value
 		}
@@ -93,7 +95,7 @@ class ChatDraw extends HTMLElement {
 			fs.style.gridTemplateColumns = `repeat(${cols}, 1fr)`
 			fs.style.gridTemplateRows = `repeat(${Math.ceil(8/size)}, 1fr)`
 			if (size)
-				fs.style.setProperty('--bscale', `calc(${size/2} * var(--scale))`)
+				fs.style.setProperty('font-size', `calc(${size/2}px * var(--scale))`)
 			if (flow)
 				fs.style.gridAutoFlow = flow
 		}
@@ -188,71 +190,74 @@ b {
 	contain: none;
 	
 	box-sizing: border-box;
-	width: calc(var(--bscale) * 20px);
-	height: calc(var(--bscale) * 15px);
+	width: 20em;
+	height: 14em;
 	
-	border: solid calc(var(--bscale) * 1px);
+	border: solid 1em;
 	border-color: #FFD #887 #666 #DDB;
-	box-shadow: 1px 1px 3px black;
+	box-shadow: calc(1em/3) calc(1em/3) 1em black;
 	
 	display: grid;
 	align-content: center;
 	justify-content: center;
 	text-align: center;
 	/*line-height: 1;*/
-	font-size: calc(var(--bscale) * 6px);
 	font-variant-caps: small-caps;
 	background: #AA9;
 	color: #221;
 	overflow: hidden;
-	border-radius: calc(var(--bscale) * 1px);
-	margin: calc(var(--bscale) * 2px);
+	border-radius: 1em;
+	margin: 2em;
 	margin-top: 0;
 	margin-left: 0;
-	text-shadow: 1px 1px 0 #BBA, -1px -1px 0 #776;
+	text-shadow: calc(1em/3) calc(1em/3) 0 #BBA, calc(-1em/3) calc(-1em/3) 0 #776;
 	/*transition: color 2s cubic-bezier(.19,1,.22,1), text-shadow 4s cubic-bezier(.19,1,.22,1);*/
 }
 input[type="radio"] + b {
-	border-radius: calc(var(--bscale) * 8px);
+	border-radius: 8em;
+}
+b span {
+	font-size: 6em;
 }
 
 b:hover {
 	background: #CCC;
-	box-shadow: 1px 1px 1px black;
+	box-shadow: calc(1em/3) calc(1em/3) calc(1em/3) black;
 }
 
 :checked + b, input[type="button"]:not(:disabled) + b:active {
 	color: #FFF078;
-	text-shadow: 0 0 1px red;
+	text-shadow: 0 0 calc(1em/3) red;
 	transition: none;
 }
 :checked + b, :active + b {
 	border-color: #776 #444 #444 #776;
-	box-shadow: 0 0 10px 0px inset black, 0 0 10px 0px inset white, 0 0 1px 0px #FF8;
+	box-shadow: 0 0 calc(10em/3) 0 inset black, 0 0 calc(10em/3) 0 inset white, 0 0 calc(1em/3) 0 #FF8;
 	background: #887;
 }
 b.color > span {
 	display: block;
 	background: currentColor;
-	width: calc(var(--bscale) * 14px);
-	height: calc(var(--bscale) * 9px);
-	border-radius: calc(var(--bscale) * 4.5px);
-	box-shadow: 0 0 10px 0px inset black, 0 0 10px 0px inset white;
+	font-size: unset;
+	width: 14em;
+	height: 9em;
+	border-radius: 4.5em;
+	box-shadow: 0 0 calc(10em/3) 0 inset black, 0 0 calc(10em/3) 0 inset white;
 }
 :checked + b.color > span {
-	box-shadow: 0 0 10px 0px inset #0008, 0 0 10px 0px inset white, 0 0 8px -2px currentColor;
+	box-shadow: 0 0 calc(10em/3) 0 inset #0008, 0 0 calc(10em/3) 0 inset white, 0 0 calc(8em/3) calc(-2em/3) currentColor;
 }
 
 :disabled + b {
 	border-color: #D0D0B0 #777 #777 #D0D0B0;
 	color: #666;
 	background: #998;
-	box-shadow: 0 0 1px gray;
+	box-shadow: 0 0 calc(1em/3) gray;
 	text-shadow: none;
 }
-b.icon {
+b.icon span {
 	font-weight: normal;
-	font-size: calc(var(--bscale) * 10px);
+	font-size: 10em;
 }
 div {
 	contain: none;
@@ -260,10 +265,13 @@ div {
 	align-content: start;
 	grid-auto-flow: row;
 }
-b > canvas {
-	width: calc(var(--bscale) * 7px * 2);
-	border-radius: calc(var(--bscale) * 4.5px);	
+b canvas {
+	width: calc(16em / 6);
+	border-radius: 4.5em;	
 	/*background: none;*/
+}
+b > span {
+	display: contents;
 }
 `
 

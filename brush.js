@@ -388,10 +388,10 @@ class Drawer {
 		// hack: we want a larger canvas to use as a button label
 		c2d.putImageData(data, 0, 0)
 		let pattern = this.c2d.createPattern(canvas, 'repeat')
-		canvas.width = 7
+		canvas.width = 8
 		canvas.height = 5
-		for (let y=0;y<12;y+=4)
-			for (let x=0;x<12;x+=4)
+		for (let y=0;y<5;y+=4)
+			for (let x=-3;x<8;x+=4)
 				c2d.putImageData(data, x, y)
 		return [pattern, canvas]
 	}
