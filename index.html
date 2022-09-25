@@ -19,7 +19,7 @@
 	for (let d=1; d<=8; d++)
 		brushes.push(new CircleBrush(d))
 	let tools = {
-		freehand: new Freehand(),
+		pen: new Freehand(),
 		slow: new Slow(),
 		line: new LineTool(),
 		spray: new Spray(),
@@ -37,10 +37,9 @@
 			{button:'redo', text:"↷"},
 			{button:'fill', text:"!fill"},
 			{button:'bg', text:"!color ➙bg"},
-			{radio:'tool', text:"pen", value:'freehand'},
-			{radio:'tool', text:"slow", value:'slow'},
-			{radio:'tool', text:"line", value:'line'},
-			{radio:'tool', text:"spray", value:'spray'},
+			...Object.keys(tools).map(k=>{
+				return {radio:'tool', text:k, value:k}
+			}),
 		]},
 		{items:[
 			{radio:'comp', text:"all", value:'source-over'},
@@ -128,7 +127,7 @@
 	
 	 // hack
 	form.brush.value = 1
-	form.tool.value = "freehand"
+	form.tool.value = "pen"
 	form.comp.value = "source-over"
 	form.color.value = "#000000"
 	form.pattern.value = 15
