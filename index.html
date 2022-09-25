@@ -12,48 +12,18 @@
 	"use strict"
 	let chatdraw = new Drawer(200, 100)
 
-	let od = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
 	let patterns = []
-	let pl = []
-	// temporary canvas
-	//
-	for (let i=0; i<16; i++) {
-		let pcanvas = document.createElement('canvas')
-		pcanvas.width = 4
-		pcanvas.height = 4
-		let p2d = pcanvas.getContext('2d')
-		let data = new ImageData(4, 4)
-		for (let x=0; x<16; x++)
-			if (od[x] <= i)
-				// just set the alpha to 255, leave R,G,B as 0 (black) since the color doesn't matter
-				data.data[x<<2|3] = 0xFF
-		
-		p2d.putImageData(data, 0, 0)
-		let pattern = chatdraw.c2d.createPattern(pcanvas, 'repeat')
-		patterns.push(pattern)
-		pcanvas.style.width = "8px"
-		pl.push(pcanvas)
-	}
-
+	for (let i=0; i<16; i++)
+		patterns[i] = chatdraw.dither_pattern(i)
 	let brushes = []
-	for (let d=1; d<=8; d++) {
-		let r = d/2, sr = r-0.5
-		let fills = []
-		for (let y=-sr; y<=sr; y++) {
-			let x = Math.ceil(Math.sqrt(r*r - y*y)+sr)
-			fills.push([x, y+sr, (r-x)*2, 1])
-		}
-		brushes.push(new Brush(new Point(r, r), fills))
-	}
-
+	for (let d=1; d<=8; d++)
+		brushes.push(new CircleBrush(d))
 	let tools = {
 		freehand: new Freehand(),
 		slow: new Slow(),
 		line: new LineTool(),
 		spray: new Spray(),
 	}
-
-	$chatdraw.prepend(chatdraw.canvas)
 	
 	let form = $chatdraw.lastElementChild
 	
@@ -87,7 +57,7 @@
 			return {radio:'brush', text:""+(i+1), value:i, icon:true}
 		}),size:1},
 		{items:patterns.map((b,i)=>{
-			return {radio:'pattern', text:pl[i], value:i}
+			return {radio:'pattern', text:b[1], value:i}
 		}),size:1,flow:'column'},
 	]
 	for (let {items,size=2,flow} of buttons) {
@@ -111,7 +81,7 @@
 		if (n=='comp')
 			chatdraw.set_composite(ev.target.value)
 		if (n=='pattern')
-			chatdraw.set_pattern(patterns[+ev.target.value])
+			chatdraw.set_pattern(patterns[+ev.target.value][0])
 		if (n=='brush')
 			chatdraw.set_brush(brushes[+ev.target.value])
 		if (n=='tool')
@@ -162,5 +132,7 @@
 	form.comp.value = "source-over"
 	form.color.value = "#000000"
 	form.pattern.value = 15
+	
+	$chatdraw.prepend(chatdraw.canvas)
 </script>
 <pre id=$log></pre>

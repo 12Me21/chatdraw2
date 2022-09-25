@@ -103,3 +103,6 @@ fieldset {
 	align-content: start;
 	grid-auto-flow: row;
 }
+b > canvas {
+	width: calc(var(--scale) * 8px);
+}

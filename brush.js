@@ -141,12 +141,21 @@ class Slow extends Tool {
 class Brush extends Path2D {
 	constructor(origin, fills) {
 		super()
-		//this.moveTo(origin.x, origin.y)
 		for (let f of fills)
 			this.rect(...f)
 		this.origin = origin
-		//this.origin = origin
-		//this.fills = fills
+	}
+}
+
+class CircleBrush extends Brush {
+	constructor(d) {
+		let r = d/2, sr = r-0.5
+		let fills = []
+		for (let y=-sr; y<=sr; y++) {
+			let x = Math.ceil(Math.sqrt(r*r - y*y)+sr)
+			fills.push([x, y+sr, (r-x)*2, 1])
+		}
+		super(new Point(r, r), fills)
 	}
 }
 
@@ -381,5 +390,20 @@ class Drawer {
 		}
 		this.c2d.putImageData(data, 0, 0)
 		this.c2d.restore()
+	}
+	
+	dither_pattern(level) {
+		const od = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
+		let canvas = document.createElement('canvas')
+		canvas.width = 4
+		canvas.height = 4
+		let c2d = canvas.getContext('2d')
+		let data = c2d.createImageData(4, 4)
+		for (let x=0; x<16; x++)
+			if (od[x] <= level)
+				data.data[x<<2|3] = 0xFF
+		c2d.putImageData(data, 0, 0)
+		let pattern = this.c2d.createPattern(canvas, 'repeat')
+		return [pattern, canvas]
 	}
 }
