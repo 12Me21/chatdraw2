@@ -437,8 +437,8 @@ class ChatDraw extends HTMLElement {
 				{button:'clear', text:"reset"},
 				{button:'undo', text:"↶"},
 				{button:'redo', text:"↷"},
-				{button:'fill', text:"!fill"},
-				{button:'bg', text:"!color ➙bg"},
+				{button:'fill', text:"fill"},
+				{button:'bg', text:"color ➙bg"},
 				...Object.keys(tools).map(k=>{
 					return {radio:'tool', text:k, value:k}
 				}),
@@ -484,7 +484,7 @@ class ChatDraw extends HTMLElement {
 			
 			clear: ()=>d.clear(true),
 			fill: ()=>d.clear(false),
-			bg: ()=>d.erase_color(this.form.color.value),
+			bg: ()=>d.erase_color(form.color.value),
 			undo: ()=>d.history_do(false),
 			redo: ()=>d.history_do(true),
 		}
@@ -562,7 +562,7 @@ b {
 	
 	border: solid calc(var(--bscale) * 2px);
 	border-color: #FFF #888 #666 #DDD;
-	border-radius: calc(var(--bscale) * 8px);
+	
 
 	display: grid;
 	align-content: center;
@@ -574,6 +574,10 @@ b {
 	background: #BBB;
 	color: #444;
 }
+input[type="radio"] + b {
+	border-radius: calc(var(--bscale) * 8px);
+}
+
 b:hover {
 	background: #DDD;
 }
