@@ -65,7 +65,7 @@ class ChatDraw extends HTMLElement {
 			], cols:3},
 			{items:[
 				{radio:'comp', text:"all", value:'source-over'},
-				{radio:'comp', text:"below", value:'destination-over'},
+				{radio:'comp', text:"under", value:'destination-over'},
 				{radio:'comp', text:"in", value:'source-atop'},
 				{radio:'comp', text:"erase", value:'destination-out'},
 			]},
@@ -112,9 +112,7 @@ class ChatDraw extends HTMLElement {
 			bg: ()=>d.erase_color(form.color.value),
 			undo: ()=>d.history_do(false),
 			redo: ()=>d.history_do(true),
-			add: ()=>d.history_do(true),
-			replace: ()=>d.history_do(true),
-			remove: ()=>d.history_do(true),
+			pick: ()=>d.history_do(true),
 		}
 		
 		form.onchange = ev=>{
@@ -140,6 +138,7 @@ class ChatDraw extends HTMLElement {
 		form.comp.value = "source-over"
 		form.color.value = "#000000"
 		form.pattern.value = 15
+		form.pick.disabled = true
 		
 		super.shadowRoot.append(document.importNode(ChatDraw.style, true), d.canvas, form)
 	}
@@ -202,7 +201,8 @@ b {
 	justify-content: center;
 	text-align: center;
 	/*line-height: 1;*/
-	font-variant-caps: small-caps;
+text-transform: uppercase;
+	/*font-variant-caps: small-caps;*/
 	background: #AA9;
 	color: #221;
 	overflow: hidden;
@@ -217,7 +217,7 @@ input[type="radio"] + b {
 	border-radius: 8em;
 }
 b span {
-	font-size: 6em;
+	font-size: 5em;
 }
 
 b:hover {
@@ -266,7 +266,7 @@ div {
 	grid-auto-flow: row;
 }
 b canvas {
-	width: calc(16em / 6);
+	width: calc(16em / 5);
 	border-radius: 4.5em;	
 	/*background: none;*/
 }
