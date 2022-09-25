@@ -4,40 +4,40 @@ class Point extends DOMPointReadOnly {
 	distance(p) {
 		return Math.hypot(this.x-p.x, this.y-p.y)
 	}
-	
 	magnitude() {
 		return Math.hypot(this.x, this.y)
 	}
-	divide(p) {
+	max_distance(p) { //todo: what was this actually called?
+		return Math.max(this.x-p.x, this.y-p.y)
+	}
+	
+	Divide(p) {
 		return new Point(this.x/p.x, this.y/p.y)
 	}
-	add(p) {
+	Add(p) {
 		return new Point(this.x+p.x, this.y+p.y)
 	}
-	subtract(p) {
+	Subtract(p) {
 		return new Point(this.x-p.x, this.y-p.y)
 	}
-	lerp(p, t) {
+	Lerp(p, t) {
 		return new Point(this.x*(1-t)+p.x*t, this.y*(1-t)+p.y*t)
 	}
-	floor() {
+	Floor() {
 		return new Point(Math.floor(this.x), Math.floor(this.y))
 	}
-	round() {
+	Round() {
 		return new Point(Math.round(this.x), Math.round(this.y))
 	}
-	cursor_adjust(brush) {
-		return this.subtract(brush.origin).round().add(brush.origin)
+	Cursor_adjust(brush) {
+		return this.Subtract(brush.origin).Round().Add(brush.origin)
 		
 		//let x = size.x%2 ? Math.floor(this.x)+0.5 : Math.floor(this.x+0.5)
 		//let y = size.y%2 ? Math.floor(this.y)+0.5 : Math.floor(this.y+0.5)
 		//return new Point(x, y)
 	}
-	signs() {
+	Signs() {
 		return new Point(Math.sign(this.x), Math.sign(this.y))
-	}
-	max_distance(p) { //todo: what was this actually called?
-		return Math.max(this.x-p.x, this.y-p.y)
 	}
 	
 	static FromRect({width, height}) {
@@ -53,9 +53,7 @@ class Freehand extends Tool {
 		d.draw(pos)
 	}
 	drag(d, pos, old) {
-		d.draw_line2(old, pos, new Point(3,3), pos=>{
-			d.draw(pos)
-		})
+		d.draw_line(old, pos)
 	}
 	end(d, pos) {
 		d.draw(pos)
@@ -72,10 +70,8 @@ class Slow extends Tool {
 		this.avg = pos
 	}
 	drag(d, pos, old) {
-		pos = this.avg.lerp(pos, this.speed)
-		d.draw_line2(this.avg, pos, new Point(3,3), pos=>{
-			d.draw(pos)
-		})
+		pos = this.avg.Lerp(pos, this.speed)
+		d.draw_line(this.avg, pos)
 		this.avg = pos
 	}
 	end(d, pos) {
@@ -122,7 +118,6 @@ class Drawer {
 		this.set_pattern('white')
 		this.set_color('black')
 		
-		
 		// stroke handling:
 		this.pointers = new Map()
 		this.canvas.onpointerdown = ev=>{
@@ -157,16 +152,16 @@ class Drawer {
 	canvas_scale() {
 		let csizeP = Point.FromRect(this.canvas.getBoundingClientRect())
 		let cdimP = Point.FromRect(this.canvas)
-		return csizeP.divide(cdimP)
+		return csizeP.Divide(cdimP)
 	}
 	
 	event_pos(ev) {
 		let scaleP = this.canvas_scale()
 		
 		let ps = 1/window.devicePixelRatio/2
-		let adjustP = new Point(ps, ps).divide(scaleP)
+		let adjustP = new Point(ps, ps).Divide(scaleP)
 		
-		return new Point(ev.offsetX, ev.offsetY).add(adjustP).divide(scaleP)
+		return new Point(ev.offsetX, ev.offsetY).Add(adjustP).Divide(scaleP)
 	}
 	
 	// undo/redo
@@ -221,29 +216,19 @@ class Drawer {
 	}
 	draw(pos) {
 		let {origin, fills} = this.brush
-		let {x,y} = pos.subtract(origin).round()
+		let {x,y} = pos.Subtract(origin).Round()
 		fills.forEach(([s,t,w,h])=>this.c2d.fillRect(x+s-1000,y+t,w,h))
 	}
-	draw_line(start, end) {
-		let diffP = end.subtract(start)
-		let dist = diffP.magnitude()
-		let stepP = diffP.divide({x:dist, y:dist})
-		for (let i=0; i<dist; i++) {
-			this.draw(end)
-			end = end.subtract(stepP)
-		}
-	}
-	// todo: instead of csize we should use the cursor origin (whether it's at .0 or .5)
-	draw_line2(start, end, csize, callback) {
+	draw_line(start, end, callback=pos=>this.draw(pos)) {
 		// distance
-		let diff = end.subtract(start)
+		let diff = end.Subtract(start)
 		// steps
-		let sign = diff.signs()
+		let sign = diff.Signs()
 		let hstep = new Point(sign.x, 0)
 		let vstep = new Point(0, sign.y)
 		//
-		let pos = start.cursor_adjust(this.brush)
-		let stop = end.cursor_adjust(this.brush)
+		let pos = start.Cursor_adjust(this.brush)
+		let stop = end.Cursor_adjust(this.brush)
 		let i
 		for (i=0;i<500;i++) {
 			callback(pos)
@@ -251,12 +236,12 @@ class Drawer {
 				break
 			// move in the direction that takes us closest to the ideal line
 			// ugh doing this as vector ops is just really gross.
-			let cdiff = pos.subtract(start)
+			let cdiff = pos.Subtract(start)
 			let c = diff.x*cdiff.y - diff.y*cdiff.x
 			let horiz = Math.abs(c-hstep.x*diff.y)
 			let vert = Math.abs(c+vstep.y*diff.x)
 			
-			pos = pos.add(hstep.x && horiz<=vert ? hstep : vstep)
+			pos = pos.Add(hstep.x && horiz<=vert ? hstep : vstep)
 		}
 		if (i>400)
 			console.log('failed', start,end,pos,stop)
