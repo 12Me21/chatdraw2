@@ -84,6 +84,21 @@ class Freehand extends Tool {
 	}
 }
 
+class LineTool extends Tool {
+	constructor() {
+		super()
+		this.old = new Point()
+	}
+	start(d, pos) {
+		this.old = pos
+	}
+	drag(d, pos, old) {
+	}
+	end(d, pos) {
+		d.draw_line(this.old, pos)
+	}
+}
+
 class Slow extends Tool {
 	constructor() {
 		super()
@@ -154,6 +169,13 @@ class Drawer {
 			
 			this.history_add()
 			this.tool.start(this, pos)
+		}
+		this.canvas.onpointerup = ev=>{
+			let old = this.pointers.get(ev.pointerId)
+			if (!old)
+				return
+			let pos = this.event_pos(ev)
+			this.tool.end(this, pos, old)
 		}
 		this.canvas.onlostpointercapture = ev=>{
 			this.pointers.delete(ev.pointerId)

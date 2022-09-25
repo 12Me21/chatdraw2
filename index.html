@@ -16,7 +16,7 @@
 		"controls" auto
 		/ min-content;
 		padding: 1px;
-		--scale: 3;
+		--scale: 2;
 		background: silver;
 	}
 	chat-draw canvas {
@@ -41,8 +41,8 @@
 		box-sizing: border-box;
 		flex: none;
 		--cells: 1;
-		width: calc(var(--scale) * 20px * var(--cells));
-		height: calc(var(--scale) * 20px);
+		width: calc(var(--scale) * 25px * var(--cells));
+		height: calc(var(--scale) * 25px);
 		
 		appearance: none;
 		margin: 0;
@@ -90,7 +90,7 @@
 </chat-draw>
 
 <script>
-	let chatdraw = new Drawer(200, 100)
+	let chatdraw = new Drawer(300, 150)
 	
 	let od = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
 	let patterns = []
@@ -133,18 +133,25 @@
 		brushes2.push(new Brush(origin, fills))
 	}
 	
+	let tools = {
+		freehand: new Freehand(),
+		slow: new Slow(),
+		line: new LineTool(),
+	}
+	
 	$chatdraw.prepend(chatdraw.canvas)
 	
 	let form = $chatdraw.lastElementChild
 	
-	
+	// todo: group fields into sections
+	// also todo: define the labels, actions, etc. of buttons in one place
+	// and then their positions/insert them separately.
 	let buttons = [
-		{button:'clear', text:"reset"},
 		{button:'clear', text:"reset"},
 		{button:'undo', text:"↶"},
 		{button:'redo', text:"↷"},
 		
-		{radio:'comp', text:"replace", value:'source-over'},
+		{radio:'comp', text:"over", value:'source-over'},
 		{radio:'comp', text:"behind", value:'destination-over'},
 		{radio:'comp', text:"in", value:'source-atop'},
 		{radio:'comp', text:"erase", value:'destination-out'},
@@ -155,9 +162,16 @@
 		{radio:'color', text:"blue", value:'#0000FF'},
 		
 		{color:'pick', text:"■"},
+		
+		{radio:'tool', text:"pen", value:'freehand'},
+		{radio:'tool', text:"slow", value:'slow'},
+		{radio:'tool', text:"line", value:'line'},
 	]
 	brushes2.forEach((b,i)=>{
 		buttons.push({radio:'brush', text:"b"+i, value:i})
+	})
+	patterns.forEach((b,i)=>{
+		buttons.push({radio:'pattern', text:"p"+i, value:i})
 	})
 	for (let b of buttons) {
 		form.append(draw_button(b))
@@ -173,6 +187,8 @@
 			chatdraw.set_pattern(patterns[+ev.target.value])
 		if (n=='brush')
 			chatdraw.set_brush(brushes2[+ev.target.value])
+		if (n=='tool')
+			chatdraw.set_tool(tools[ev.target.value])
 	}
 	
 	form.onclick = ev=>{
@@ -191,19 +207,6 @@
 		form.redo.disabled = !chatdraw.history[1].length
 	}
 	chatdraw.history_onchange()
-	
-	let brushes = [
-		new Path2D('M-100,0 m-1-1 h-1 v3 h1 v1 h3 v-1 h1 v-3 h-1 v-1 h-3 z'),
-		new Path2D('M-100,0 m-5-5 v1 h-1 v2 h-1 v5 h1 v2 h1 v1 h1 v1 h2 v1 h5 v-1 h2 v-1 h1 v-1 h1 v-2 h1 v-5 h-1 v-2 h-1 v-1 h-1 v-1 h-2 v-1 h-5 v1 h-2 v1 z'),
-	]
-	let aa = new Path2D()
-	aa.rect(-100, -100, 16, 16)
-	
-	let pdraw=()=>{
-		pc.clearRect(0, 0, 16, 16)
-		draw(pc, 0, 0, aa, 'silver')
-		draw(pc, 7, 7)
-	}
 	
 	let make_cursor=(size=1)=>{
 		let r = size/2+1 //  3->
