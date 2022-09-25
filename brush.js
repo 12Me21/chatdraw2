@@ -10,12 +10,22 @@ class Point extends DOMPointReadOnly {
 	max_distance(p) { //todo: what was this actually called?
 		return Math.max(this.x-p.x, this.y-p.y)
 	}
-	axis_diff(p) {
+	axis_diff() {
 		return Math.abs(this.x - this.y)
+	}
+	// not a real measurement, only useful for comparing points' distances from the same line
+	ldist(start, end) {
+		return end.Subtract(start).RMultiply(start.Subtract(this)).axis_diff()
 	}
 	
 	Divide(p) {
 		return new Point(this.x/p.x, this.y/p.y)
+	}
+	RMultiply(p) { // name?
+		return new Point(this.x*p.y, this.y*p.x)
+	}
+	SwapAxes() {
+		return new Point(this.y, this.x)
 	}
 	Add(p) {
 		return new Point(this.x+p.x, this.y+p.y)
@@ -103,7 +113,7 @@ class Drawer {
 		
 		this.c2d = this.canvas.getContext('2d', {alpha: false})
 		this.c2d.imageSmoothingEnabled = false
-		this.c2d.globalCompositeOperation = 'copy'
+		//this.c2d.globalCompositeOperation = 'copy'
 		this.c2d.shadowOffsetX = 1000
 		this.c2d.shadowOffsetY = 0
 		
@@ -222,29 +232,28 @@ class Drawer {
 		fills.forEach(([s,t,w,h])=>this.c2d.fillRect(x+s-1000,y+t,w,h))
 	}
 	draw_line(start, end, callback=pos=>this.draw(pos)) {
-		// distance
-		let diff = end.Subtract(start)
 		// steps
-		let step_h = new Point(Math.sign(diff.x), 0)
-		let step_v = new Point(0, Math.sign(diff.y))
-		let rdiff = new Point(diff.y, diff.x)
+		let step_h = new Point(Math.sign(end.x-start.x), 0)
+		let step_v = new Point(0, Math.sign(end.y-start.y))
 		//
 		let pos = start.Cursor_adjust(this.brush)
 		let stop = end.Cursor_adjust(this.brush)
 		let i
 		for (i=0; i<500; i++) {
 			callback(pos)
-			if (Math.abs(pos.x-end.x)<=0.5 && Math.abs(pos.y-end.y)<=0.5)
-				break
-			// move in the direction that takes us closest to the ideal line
-			// ugh doing this as vector ops is just really gross.
-			let c_diff = pos.Subtract(start)
-			let horiz = c_diff.Add(step_h).Multiply(rdiff).axis_diff()
-			let vert = c_diff.Add(step_v).Multiply(rdiff).axis_diff()
-			// (c + sh) * r
-			// (c + sv) * r
 			
-			pos = pos.Add(step_h.x && horiz<=vert ? step_h : step_v)
+			let rem = pos.Subtract(end)
+			if (Math.abs(rem.x)<=0.5 && Math.abs(rem.y)<=0.5)
+				break
+			
+			// move in the direction that takes us closest to the ideal line
+			let horiz = pos.Add(step_h)
+			let vert = pos.Add(step_v)
+			
+			if (step_h.x && horiz.ldist(start, end)<=vert.ldist(start, end))
+				pos = horiz
+			else
+				pos = vert
 		}
 		if (i>400)
 			console.log('failed', start,end,pos,stop)
