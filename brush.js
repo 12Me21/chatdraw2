@@ -350,7 +350,7 @@ class Drawer {
 		pos = pos.Add(r).Subtract(this.brush.origin)
 		this.c2d.fillRect(pos.x, pos.y, 1, 1)
 	}
-	erase_color(color) {
+	replace_color(color, rep=null) {
 		this.history_add()
 		this.c2d.save()
 		this.c2d.resetTransform()
@@ -364,12 +364,18 @@ class Drawer {
 			parseInt(color.substr(5,2), 16),
 			255,
 		]
+		let nc = rep ? [
+			parseInt(rep.substr(1,2), 16),
+			parseInt(rep.substr(3,2), 16),
+			parseInt(rep.substr(5,2), 16),
+			255,
+		] : [0,0,0,0]
 		p: for (let i=0; i<d.length; i+=4) {
 			for (let j=0; j<4; j++) {
 				if (d[i+j] != c[j])
 					continue p
 			}
-			d.fill(0, i, i+4)
+			d.set(nc, i)
 		}
 		this.c2d.putImageData(data, 0, 0)
 		this.c2d.restore()

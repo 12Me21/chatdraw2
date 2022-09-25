@@ -55,7 +55,7 @@ class ChatDraw extends HTMLElement {
 		
 		let buttons = [
 			{items:[
-				{button:'clear', text:"reset"},
+				{button:'clear', text:"reset!"},
 				{button:'undo', text:"↶"},
 				{button:'redo', text:"↷"},
 				{button:'fill', text:"fill"},
@@ -70,7 +70,7 @@ class ChatDraw extends HTMLElement {
 				{radio:'comp', text:"erase", value:'destination-out'},
 			]},
 			{items:[
-				{button:'pick', text:"new"},
+				{color:'pick', text:"edit"},
 				{button:'bg', text:" ➙bg"},
 				...['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'].map(x=>({
 					radio:'color', text:"", value:x,
@@ -101,23 +101,36 @@ class ChatDraw extends HTMLElement {
 		}
 		
 		let actions = {
-			color: v=>d.set_color(v),
+			color: v=>{
+				form.pick.value = v
+				d.set_color(v)
+			},
 			comp: v=>d.set_composite(v),
 			pattern: v=>d.set_pattern(patterns[+v][0]),
 			brush: v=>d.set_brush(brushes[+v]),
 			tool: v=>d.set_tool(tools[v]),
 			
+			pick: v=>{
+				let sel = form.querySelector('input[name="color"]:checked')
+				let old = sel.value
+				sel.nextSibling.style.color = v
+				sel.value = v
+				d.set_color(v)
+				d.replace_color(old, v)
+			},
+			
 			clear: ()=>d.clear(true),
 			fill: ()=>d.clear(false),
-			bg: ()=>d.erase_color(form.color.value),
+			bg: ()=>d.replace_color(form.color.value),
 			undo: ()=>d.history_do(false),
 			redo: ()=>d.history_do(true),
-			pick: ()=>d.history_do(true),
 		}
+		
+		this.form = form
 		
 		form.onchange = ev=>{
 			let e = ev.target
-			if (e.type=='radio')
+			if (e.type=='radio' || e.type=='color')
 				actions[e.name](e.value)
 		}
 		
@@ -138,7 +151,7 @@ class ChatDraw extends HTMLElement {
 		form.comp.value = "source-over"
 		form.color.value = "#000000"
 		form.pattern.value = 15
-		form.pick.disabled = true
+		//form.pick.disabled = true
 		
 		super.shadowRoot.append(document.importNode(ChatDraw.style, true), d.canvas, form)
 	}
@@ -189,7 +202,7 @@ b {
 	contain: none;
 	
 	box-sizing: border-box;
-	width: 20em;
+	width: 22em;
 	height: 14em;
 	
 	border: solid 1em;
@@ -239,8 +252,8 @@ b.color > span {
 	display: block;
 	background: currentColor;
 	font-size: unset;
-	width: 14em;
-	height: 9em;
+	width: 16em;
+	height: 10em;
 	border-radius: 4.5em;
 	box-shadow: 0 0 calc(10em/3) 0 inset black, 0 0 calc(10em/3) 0 inset white;
 }
@@ -267,7 +280,8 @@ div {
 }
 b canvas {
 	width: calc(16em / 5);
-	border-radius: 4.5em;	
+	border-radius: 3em;
+	/*box-shadow: 0 0 calc(1em/3) inset white;*/
 	/*background: none;*/
 }
 b > span {
