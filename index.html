@@ -47,7 +47,7 @@
 		appearance: none;
 		margin: 0;
 		padding: 0;
-		border: 2px solid gray;
+		border: 5px solid gray;
 		border-color: #FFF #888 #666 #DDD;
 		
 		display: flex;
@@ -57,7 +57,8 @@
 	
 	chat-draw b {
 		background: #BBB;
-		color: #222;
+		color: #444;
+		font-family: monospace;
 	}
 	chat-draw :disabled + b {
 		border-color: #999;
@@ -69,9 +70,11 @@
 	}
 	chat-draw :checked + b {
 		border-color: #777 #555 #555 #777;
-		box-shadow: 0 0 5px 0px inset black;
-		color: #E9E9E6;
+		box-shadow: 0 0 10px 0px inset black;
+		color: #FFFF00A0;
+		text-shadow: 0 0 1px red;
 		background: #888;
+		border-width: 0;
 	}
 	
 	chat-draw input[type="range"] {
@@ -153,6 +156,9 @@
 		
 		{color:'pick', text:"■"},
 	]
+	brushes2.forEach((b,i)=>{
+		buttons.push({radio:'brush', text:"b"+i, value:i})
+	})
 	for (let b of buttons) {
 		form.append(draw_button(b))
 	}
@@ -166,7 +172,7 @@
 		if (n=='pattern')
 			chatdraw.set_pattern(patterns[+ev.target.value])
 		if (n=='brush')
-			chatdraw.set_brush(brushes2[+ev.target.value-1])
+			chatdraw.set_brush(brushes2[+ev.target.value])
 	}
 	
 	form.onclick = ev=>{
