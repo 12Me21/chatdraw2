@@ -30,6 +30,9 @@ chat-draw label {
 chat-draw input {
 	display: none;
 }
+input[type="radio"] + b {
+	border-radius: 50px;
+}
 chat-draw b {
 	display: block;
 	box-sizing: border-box;
