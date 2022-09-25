@@ -470,7 +470,7 @@ class ChatDraw extends HTMLElement {
 			fs.style.gridTemplateColumns = `repeat(${Math.ceil(items.length/(8/size))}, 1fr)`
 			fs.style.gridTemplateRows = `repeat(${Math.ceil(8/size)}, 1fr)`
 			if (size)
-				fs.style.setProperty('--scale', size)
+				fs.style.setProperty('--bscale', `calc(${size/2} * var(--scale))`)
 			if (flow)
 				fs.style.gridAutoFlow = flow
 		}
@@ -515,6 +515,9 @@ class ChatDraw extends HTMLElement {
 		
 		super.shadowRoot.append(document.importNode(ChatDraw.style, true), d.canvas, form)
 	}
+	set_scale(n) {
+		this.style.setProperty('--scale', n)
+	}
 }
 ChatDraw.style = document.createElement('style')
 ChatDraw.style.textContent = `
@@ -554,19 +557,19 @@ input {
 }
 b {
 	box-sizing: border-box;
-	width: calc(var(--scale) * 25px);
-	height: calc(var(--scale) * 15px);
+	width: calc(var(--bscale) * 25px);
+	height: calc(var(--bscale) * 15px);
 	
-	border: solid calc(var(--scale) * 2px);
+	border: solid calc(var(--bscale) * 2px);
 	border-color: #FFF #888 #666 #DDD;
-	border-radius: calc(var(--scale) * 8px);
+	border-radius: calc(var(--bscale) * 8px);
 
 	display: grid;
 	align-content: center;
 	justify-content: center;
 	text-align: center;
 	line-height: 1;
-	font-size: calc(var(--scale) * 6px);
+	font-size: calc(var(--bscale) * 6px);
 
 	background: #BBB;
 	color: #444;
@@ -594,7 +597,7 @@ input[type="button"]:not(:disabled) + b:hover {
 }
 b.icon {
 	font-weight: normal;
-	font-size: calc(var(--scale) * 10px);
+	font-size: calc(var(--bscale) * 10px);
 }
 div {
 	display: grid;
@@ -602,7 +605,7 @@ div {
 	grid-auto-flow: row;
 }
 b > canvas {
-	width: calc(var(--scale) * 8px);
+	width: calc(var(--bscale) * 8px);
 }
 `
 

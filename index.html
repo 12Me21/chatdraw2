@@ -3,6 +3,13 @@
 
 <script src=brush.js></script>
 
+Scale:<input type=number min=1 max=10 value=2 onchange="$chatdraw.set_scale($scale.value)" id=$scale></input>
+<hr>
 <chat-draw id=$chatdraw></chat-draw>
+
+<script>$chatdraw.set_scale($scale.value)</script>
+
+
+
 
 <pre id=$log></pre>
