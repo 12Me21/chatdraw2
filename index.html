@@ -115,15 +115,22 @@
 	let brushes = []
 	for (let d=1; d<=7; d++) {
 		let r = d/2
-		let origin = new Point(-.5, -.5)
+		let origin = new Point(r, r)
 		let fills = []
-		for (let y=0.5-r; y<0.5+r; y++) {
-			for (let x=0.5-r; x<0.5+r; x++) {
-				if (x*x+y*y <= r*r) {
-					fills.push([x-1, y-1, -x*2+1, 1])
+		r -= 0.5
+		for (let y=-r; y<=r; y++) {
+			let x = Math.ceil((r+0.5)**2 - y*y)
+			fills.push([x+r, y+r, -x*2+1, 1])
+			
+			/*for (let x=-r; x<=0; x++) {
+				//x*x+y*y <= (r+0.5)**2
+				//x*x <= (r+0.5)**2-y*y
+				
+				if (x*x+y*y <= (r+0.5)**2) {
+					fills.push([x+r, y+r, -x*2+1, 1])
 					break
 				}
-			}
+			}*/
 		}
 		
 		brushes.push(new Brush(origin, fills))
