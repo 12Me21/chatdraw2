@@ -100,6 +100,9 @@ class Brush {
 }
 
 
+
+// todo: want a setting that allows drawing "behind" existing colors
+
 class Drawer {
 	constructor(width, height) {
 		this.canvas = document.createElement('canvas')
@@ -111,9 +114,9 @@ class Drawer {
 		this.canvas.style.imageRendering = 'pixelated'
 		this.canvas.style.touchAction = 'none'
 		
-		this.c2d = this.canvas.getContext('2d', {alpha: false})
+		this.c2d = this.canvas.getContext('2d')
 		this.c2d.imageSmoothingEnabled = false
-		//this.c2d.globalCompositeOperation = 'copy'
+		this.set_composite('source-over')
 		this.c2d.shadowOffsetX = 1000
 		this.c2d.shadowOffsetY = 0
 		
@@ -153,6 +156,13 @@ class Drawer {
 			this.tool.drag(this, pos, old)
 		}
 		
+	}
+	
+	//'source-over' - replace
+	//'destination-over' - draw behind
+	//'source-atop' - draw on existing colors
+	set_composite(mode) {
+		this.c2d.globalCompositeOperation = mode
 	}
 	
 	// tools
@@ -212,7 +222,8 @@ class Drawer {
 		this.history_add()
 		this.c2d.save()
 		this.c2d.resetTransform()
-		this.c2d.fillStyle = 'white'
+		this.c2d.globalCompositeOperation = 'copy'
+		this.c2d.fillStyle = 'transparent'
 		this.c2d.shadowColor = 'transparent'
 		this.c2d.fillRect(0, 0, this.canvas.width, this.canvas.height)
 		this.c2d.restore()

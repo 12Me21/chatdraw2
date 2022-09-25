@@ -17,7 +17,7 @@
 		/ min-content;
 		background: gray;
 		padding: 1px;
-		--scale: 2;
+		--scale: 3;
 	}
 	chat-draw > canvas {
 		grid-area: canvas;
@@ -68,6 +68,8 @@
 		<input name=color type=color>
 		<input type=range min=0 max=15 value=5 name=pattern>
 		<input type=range min=1 max=7 value=2 name=brush>
+		<input type=checkbox name=comp1>
+		<input type=checkbox name=comp2>
 	</form>
 </chat-draw>
 
@@ -127,6 +129,14 @@
 			chatdraw.set_pattern(patterns[+ev.target.value])
 		if (n=='brush')
 			chatdraw.set_brush(brushes2[+ev.target.value-1])
+		if (n=='comp1' || n=='comp2') {
+			let a = form.comp1.checked // draw over existing
+			let b = form.comp2.checked // draw over new
+			//1,1 -> 'source-over' - replace
+			//0,1 -> 'destination-over' - draw behind
+			//1,0 -> 'source-atop'? or in? - draw on existing colors
+			chatdraw.set_composite((a?'source':'destination') + (b?'-over':'-in'))
+		}
 	}
 	
 	form.onclick = ev=>{
