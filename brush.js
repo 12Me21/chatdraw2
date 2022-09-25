@@ -17,16 +17,21 @@ class Point extends DOMPointReadOnly {
 	subtract(p) {
 		return new Point(this.x-p.x, this.y-p.y)
 	}
+	lerp(p, t) {
+		return new Point(this.x*(1-t)+p.x*t, this.y*(1-t)+p.y*t)
+	}
 	floor() {
 		return new Point(Math.floor(this.x), Math.floor(this.y))
 	}
 	round() {
 		return new Point(Math.round(this.x), Math.round(this.y))
 	}
-	cursor_adjust(size) {
-		let x = size.x%2 ? Math.floor(this.x)+0.5 : Math.floor(this.x+0.5)
-		let y = size.y%2 ? Math.floor(this.y)+0.5 : Math.floor(this.y+0.5)
-		return new Point(x, y)
+	cursor_adjust(brush) {
+		return this.subtract(brush.origin).round().add(brush.origin)
+		
+		//let x = size.x%2 ? Math.floor(this.x)+0.5 : Math.floor(this.x+0.5)
+		//let y = size.y%2 ? Math.floor(this.y)+0.5 : Math.floor(this.y+0.5)
+		//return new Point(x, y)
 	}
 	signs() {
 		return new Point(Math.sign(this.x), Math.sign(this.y))
@@ -51,15 +56,40 @@ class Freehand extends Tool {
 		d.draw_line2(old, pos, new Point(3,3), pos=>{
 			d.draw(pos)
 		})
-		//d.draw_line(old, pos)
-		//console
 	}
 	end(d, pos) {
 		d.draw(pos)
 	}
 }
+
+class Slow extends Tool {
+	constructor() {
+		super()
+		this.speed = 0.15
+		this.avg = new Point()
+	}
+	start(d, pos) {
+		this.avg = pos
+	}
+	drag(d, pos, old) {
+		pos = this.avg.lerp(pos, this.speed)
+		d.draw_line2(this.avg, pos, new Point(3,3), pos=>{
+			d.draw(pos)
+		})
+		this.avg = pos
+	}
+	end(d, pos) {
+		this.drag(d, pos, pos)
+	}
+}
+
 
-//class Brush
+class Brush {
+	constructor(origin, fills) {
+		this.origin = origin
+		this.fills = fills
+	}
+}
 
 
 class Drawer {
@@ -86,12 +116,9 @@ class Drawer {
 		
 		this.set_tool(new Freehand())
 		
-		this.set_brush({
-			origin: new Point(1, 1),
-			fills: [
-				[0, 0, 2, 2],
-			],
-		})//new Path2D('M-100,0 m-1-1 h2 v2 h-2 z'))
+		this.set_brush(new Brush(new Point(1, 1), [
+			[0, 0, 2, 2],
+		]))//new Path2D('M-100,0 m-1-1 h2 v2 h-2 z'))
 		this.set_pattern('white')
 		this.set_color('black')
 		
@@ -215,8 +242,8 @@ class Drawer {
 		let hstep = new Point(sign.x, 0)
 		let vstep = new Point(0, sign.y)
 		//
-		let pos = start.cursor_adjust(csize)
-		let stop = end.cursor_adjust(csize)
+		let pos = start.cursor_adjust(this.brush)
+		let stop = end.cursor_adjust(this.brush)
 		let i
 		for (i=0;i<500;i++) {
 			callback(pos)
