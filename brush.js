@@ -10,6 +10,9 @@ class Point extends DOMPointReadOnly {
 	max_distance(p) { //todo: what was this actually called?
 		return Math.max(this.x-p.x, this.y-p.y)
 	}
+	axis_diff(p) {
+		return Math.abs(this.x - this.y)
+	}
 	
 	Divide(p) {
 		return new Point(this.x/p.x, this.y/p.y)
@@ -19,6 +22,9 @@ class Point extends DOMPointReadOnly {
 	}
 	Subtract(p) {
 		return new Point(this.x-p.x, this.y-p.y)
+	}
+	Multiply(p) {
+		return new Point(this.x*p.x, this.y*p.y)
 	}
 	Lerp(p, t) {
 		return new Point(this.x*(1-t)+p.x*t, this.y*(1-t)+p.y*t)
@@ -31,10 +37,6 @@ class Point extends DOMPointReadOnly {
 	}
 	Cursor_adjust(brush) {
 		return this.Subtract(brush.origin).Round().Add(brush.origin)
-		
-		//let x = size.x%2 ? Math.floor(this.x)+0.5 : Math.floor(this.x+0.5)
-		//let y = size.y%2 ? Math.floor(this.y)+0.5 : Math.floor(this.y+0.5)
-		//return new Point(x, y)
 	}
 	Signs() {
 		return new Point(Math.sign(this.x), Math.sign(this.y))
@@ -223,25 +225,26 @@ class Drawer {
 		// distance
 		let diff = end.Subtract(start)
 		// steps
-		let sign = diff.Signs()
-		let hstep = new Point(sign.x, 0)
-		let vstep = new Point(0, sign.y)
+		let step_h = new Point(Math.sign(diff.x), 0)
+		let step_v = new Point(0, Math.sign(diff.y))
+		let rdiff = new Point(diff.y, diff.x)
 		//
 		let pos = start.Cursor_adjust(this.brush)
 		let stop = end.Cursor_adjust(this.brush)
 		let i
-		for (i=0;i<500;i++) {
+		for (i=0; i<500; i++) {
 			callback(pos)
 			if (Math.abs(pos.x-end.x)<=0.5 && Math.abs(pos.y-end.y)<=0.5)
 				break
 			// move in the direction that takes us closest to the ideal line
 			// ugh doing this as vector ops is just really gross.
-			let cdiff = pos.Subtract(start)
-			let c = diff.x*cdiff.y - diff.y*cdiff.x
-			let horiz = Math.abs(c-hstep.x*diff.y)
-			let vert = Math.abs(c+vstep.y*diff.x)
+			let c_diff = pos.Subtract(start)
+			let horiz = c_diff.Add(step_h).Multiply(rdiff).axis_diff()
+			let vert = c_diff.Add(step_v).Multiply(rdiff).axis_diff()
+			// (c + sh) * r
+			// (c + sv) * r
 			
-			pos = pos.Add(hstep.x && horiz<=vert ? hstep : vstep)
+			pos = pos.Add(step_h.x && horiz<=vert ? step_h : step_v)
 		}
 		if (i>400)
 			console.log('failed', start,end,pos,stop)
