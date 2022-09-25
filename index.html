@@ -119,12 +119,13 @@
 		let fills = []
 		for (let y=0; y<=d; y++) {
 			for (let x=0; x<=d; x++) {
-				if ((y-r-0.5)**2+(x-r-0.5)**2 <= r**2) {
-					fills.push([x, y, -x*2+1, 1])
+				if ((y+0.5-r)**2 + (x+0.5-r)**2 <= r**2) {
+					fills.push([x, y, d-x*2, 1])
 					break
 				}
 			}
 		}
+		
 		brushes.push(new Brush(origin, fills))
 	}
 	
