@@ -6,6 +6,8 @@ function draw_button(arg) {
 		Object.assign(input, {type, name:arg[type], value:arg.value})
 		let span = document.createElement('b')
 		span.append(arg.text)
+		if (arg.text[0] > '~')
+			span.classList.add('icon')
 		let label = document.createElement('label')
 		label.append(input, span)
 		return label
@@ -345,8 +347,32 @@ class Drawer {
 				return
 			r = new Point(Math.random()*10-5, Math.random()*10-5)
 			r = r.Cursor_adjust(this.brush).Add(this.brush.origin)
-		} while (!this.c2d.isPointInPath(this.brush, r.x+.5, r.y+.5))
+		} while (!this.c2d.isPointInPath(this.brush, r.x+.5-1000, r.y+.5))
 		pos = pos.Add(r).Subtract(this.brush.origin)
 		this.c2d.fillRect(pos.x, pos.y, 1, 1)
+	}
+	erase_color(color) {
+		this.history_add()
+		this.c2d.save()
+		this.c2d.resetTransform()
+		this.c2d.globalCompositeOperation = 'copy'
+		let w = this.canvas.width
+		let data = this.c2d.getImageData(0, 0, w, this.canvas.height)
+		let d = data.data
+		let c = [
+			parseInt(color.substr(1,2), 16),
+			parseInt(color.substr(3,2), 16),
+			parseInt(color.substr(5,2), 16),
+			255,
+		]
+		p: for (let i=0; i<d.length; i+=4) {
+			for (let j=0; j<4; j++) {
+				if (d[i+j] != c[j])
+					continue p
+			}
+			d.fill(0, i, i+4)
+		}
+		this.c2d.putImageData(data, 0, 0)
+		this.c2d.restore()
 	}
 }

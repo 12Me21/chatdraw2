@@ -57,10 +57,11 @@
 	// also todo: define the labels, actions, etc. of buttons in one place
 	// and then their positions/insert them separately.
 	let buttons = [
+		{button:'clear', text:"reset"},
 		{button:'undo', text:"↶"},
 		{button:'redo', text:"↷"},
-		{button:'clear', text:"reset"},
 		{button:'fill', text:"fill"},
+		{button:'bg', text:"set bg"},
 		{radio:'tool', text:"pen", value:'freehand'},
 		{radio:'tool', text:"slow", value:'slow'},
 		{radio:'tool', text:"line", value:'line'},
@@ -108,6 +109,8 @@
 			chatdraw.clear(true)
 		if (n=='fill')
 			chatdraw.clear()
+		if (n=='bg')
+			chatdraw.erase_color(form.color.value)
 		
 		if (n=='undo')
 			chatdraw.history_do()

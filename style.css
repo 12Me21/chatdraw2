@@ -47,9 +47,9 @@ chat-draw b {
 	border: 5px solid gray;
 	border-color: #FFF #888 #666 #DDD;
 	
-	display: flex;
+	display: grid;
 	align-items: center;
-	justify-content: center;
+	text-align: center;
 }
 
 chat-draw b {
@@ -57,10 +57,14 @@ chat-draw b {
 	color: #444;
 	font-family: monospace;
 }
-chat-draw :disabled + b {
+chat-draw input:disabled + b {
 	border-color: #999;
 	color: #666;
 	background: #2929291A;
+}
+chat-draw input[type="button"]:not(:disabled) + b:hover {
+	border-color: #CCC;
+	text-shadow: 0 0 1px yellow;
 }
 chat-draw b:hover {
 	background: #DDD;
@@ -77,6 +81,7 @@ chat-draw :checked + b {
 chat-draw input[type="range"] {
 	--cells: 4;
 }
-button.icon {
+b.icon {
+	font-weight: normal;
 	font-size: calc(var(--scale) * 16px);
 }
