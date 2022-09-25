@@ -119,8 +119,8 @@
 		let fills = []
 		r -= 0.5
 		for (let y=-r; y<=r; y++) {
-			let x = Math.ceil((r+0.5)**2 - y*y)
-			fills.push([x+r, y+r, -x*2+1, 1])
+			let x = Math.ceil(Math.sqrt((r+0.5)**2 - y*y)+r)
+			fills.push([x, y+r, (r-x+0.5)*2, 1])
 			
 			/*for (let x=-r; x<=0; x++) {
 				//x*x+y*y <= (r+0.5)**2
