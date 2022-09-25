@@ -1,113 +1,12 @@
 <!doctype html><html lang=en-QS><meta charset=utf-8><meta name=viewport content="width=device-width, height=device-height, initial-scale=1" id=$meta_viewport>
 <title>CHATDRAW 2!!!</title>
 
-<link rel=stylesheet href=style.css>
 <script src=brush.js></script>
 
-<chat-draw id=$chatdraw>
-	<form autocomplete=off method=dialog></form>
-</chat-draw>
+<chat-draw id=$chatdraw></chat-draw>
 
 <script>
 	"use strict"
-	let chatdraw = new Drawer(200, 100)
-
-	let patterns = []
-	for (let i=0; i<16; i++)
-		patterns[i] = chatdraw.dither_pattern(i)
-	let brushes = []
-	for (let d=1; d<=8; d++)
-		brushes.push(new CircleBrush(d))
-	let tools = {
-		pen: new Freehand(),
-		slow: new Slow(),
-		line: new LineTool(),
-		spray: new Spray(),
-	}
-	
-	let form = $chatdraw.lastElementChild
-	
-	// todo: group fields into sections
-	// also todo: define the labels, actions, etc. of buttons in one place
-	// and then their positions/insert them separately.
-	let buttons = [
-		{items:[
-			{button:'clear', text:"reset"},
-			{button:'undo', text:"↶"},
-			{button:'redo', text:"↷"},
-			{button:'fill', text:"!fill"},
-			{button:'bg', text:"!color ➙bg"},
-			...Object.keys(tools).map(k=>{
-				return {radio:'tool', text:k, value:k}
-			}),
-		]},
-		{items:[
-			{radio:'comp', text:"all", value:'source-over'},
-			{radio:'comp', text:"below", value:'destination-over'},
-			{radio:'comp', text:"in", value:'source-atop'},
-			{radio:'comp', text:"erase", value:'destination-out'},
-		]},
-		
-		{items:['#000000','#FFFFFF','#FF0000','#0000FF'].map(x=>({
-			radio:'color', text:"■", value:x,
-		}))},
-		//{color:'pick', text:"■"},
-		{items:brushes.map((b,i)=>{
-			return {radio:'brush', text:""+(i+1), value:i, icon:true}
-		}),size:1},
-		{items:patterns.map((b,i)=>{
-			return {radio:'pattern', text:b[1], value:i}
-		}),size:1,flow:'column'},
-	]
-	for (let {items,size=2,flow} of buttons) {
-		let fs = document.createElement('fieldset')
-		for (let sb of items) {
-			fs.append(draw_button(sb))
-		}
-		form.append(fs)
-		fs.style.gridTemplateColumns = `repeat(${Math.ceil(items.length/(8/size))}, 1fr)`
-		fs.style.gridTemplateRows = `repeat(${Math.ceil(8/size)}, 1fr)`
-		if (size)
-			fs.style.setProperty('--scale', size)
-		if (flow)
-			fs.style.gridAutoFlow = flow
-	}
-	
-	form.onchange = ev=>{
-		let n = ev.target.name
-		if (n=='color')
-			chatdraw.set_color(ev.target.value)
-		if (n=='comp')
-			chatdraw.set_composite(ev.target.value)
-		if (n=='pattern')
-			chatdraw.set_pattern(patterns[+ev.target.value][0])
-		if (n=='brush')
-			chatdraw.set_brush(brushes[+ev.target.value])
-		if (n=='tool')
-			chatdraw.set_tool(tools[ev.target.value])
-	}
-	
-	form.onclick = ev=>{
-		let n = ev.target.name
-		if (n=='clear')
-			chatdraw.clear(true)
-		if (n=='fill')
-			chatdraw.clear()
-		if (n=='bg')
-			chatdraw.erase_color(form.color.value)
-		
-		if (n=='undo')
-			chatdraw.history_do()
-		if (n=='redo')
-			chatdraw.history_do(true)
-	}
-	
-	chatdraw.history_onchange = ()=>{
-		form.undo.disabled = !chatdraw.history[0].length
-		form.redo.disabled = !chatdraw.history[1].length
-	}
-	chatdraw.history_onchange()
-	
 	let make_cursor=(size=1)=>{
 		let r = size/2+1 //  3->
 		let svg = `
@@ -123,15 +22,5 @@
 		chatdraw.canvas.style.cursor = `url("${url}") ${ox} ${oy}, crosshair`
 	}
 	
-	//make_cursor(3)
-	
-	 // hack
-	form.brush.value = 1
-	form.tool.value = "pen"
-	form.comp.value = "source-over"
-	form.color.value = "#000000"
-	form.pattern.value = 15
-	
-	$chatdraw.prepend(chatdraw.canvas)
 </script>
 <pre id=$log></pre>

@@ -407,3 +407,206 @@ class Drawer {
 		return [pattern, canvas]
 	}
 }
+
+class ChatDraw extends HTMLElement {
+	constructor() {
+		super()
+		super.attachShadow({mode: 'open'})
+		this.draw = new Drawer(200, 100)
+		
+		let patterns = []
+		for (let i=0; i<16; i++)
+			patterns[i] = this.draw.dither_pattern(i)
+		let brushes = []
+		for (let d=1; d<=8; d++)
+			brushes.push(new CircleBrush(d))
+		let tools = {
+			pen: new Freehand(),
+			slow: new Slow(),
+			line: new LineTool(),
+			spray: new Spray(),
+		}
+		
+		let form = document.createElement('form')
+		form.autocomplete = 'off'
+		form.method = 'dialog'
+		
+		let buttons = [
+			{items:[
+				{button:'clear', text:"reset"},
+				{button:'undo', text:"↶"},
+				{button:'redo', text:"↷"},
+				{button:'fill', text:"!fill"},
+				{button:'bg', text:"!color ➙bg"},
+				...Object.keys(tools).map(k=>{
+					return {radio:'tool', text:k, value:k}
+				}),
+			]},
+			{items:[
+				{radio:'comp', text:"all", value:'source-over'},
+				{radio:'comp', text:"below", value:'destination-over'},
+				{radio:'comp', text:"in", value:'source-atop'},
+				{radio:'comp', text:"erase", value:'destination-out'},
+			]},
+			
+			{items:['#000000','#FFFFFF','#FF0000','#0000FF'].map(x=>({
+				radio:'color', text:"■", value:x,
+			}))},
+			//{color:'pick', text:"■"},
+			{items:brushes.map((b,i)=>{
+				return {radio:'brush', text:""+(i+1), value:i, icon:true}
+			}),size:1},
+			{items:patterns.map((b,i)=>{
+				return {radio:'pattern', text:b[1], value:i}
+			}),size:1,flow:'column'},
+		]
+		for (let {items,size=2,flow} of buttons) {
+			let fs = document.createElement('div')
+			for (let sb of items) {
+				fs.append(draw_button(sb))
+			}
+			form.append(fs)
+			fs.style.gridTemplateColumns = `repeat(${Math.ceil(items.length/(8/size))}, 1fr)`
+			fs.style.gridTemplateRows = `repeat(${Math.ceil(8/size)}, 1fr)`
+			if (size)
+				fs.style.setProperty('--scale', size)
+			if (flow)
+				fs.style.gridAutoFlow = flow
+		}
+		
+		form.onchange = ev=>{
+			let n = ev.target.name
+			if (n=='color')
+				this.draw.set_color(ev.target.value)
+			if (n=='comp')
+				this.draw.set_composite(ev.target.value)
+			if (n=='pattern')
+				this.draw.set_pattern(patterns[+ev.target.value][0])
+			if (n=='brush')
+				this.draw.set_brush(brushes[+ev.target.value])
+			if (n=='tool')
+				this.draw.set_tool(tools[ev.target.value])
+		}
+		
+		form.onclick = ev=>{
+			let n = ev.target.name
+			if (n=='clear')
+				this.draw.clear(true)
+			if (n=='fill')
+				this.draw.clear()
+			if (n=='bg')
+				this.draw.erase_color(form.color.value)
+			
+			if (n=='undo')
+				this.draw.history_do()
+			if (n=='redo')
+				this.draw.history_do(true)
+		}
+		
+		this.draw.history_onchange = ()=>{
+			form.undo.disabled = !this.draw.history[0].length
+			form.redo.disabled = !this.draw.history[1].length
+		}
+		this.draw.history_onchange()
+		
+		form.brush.value = 1
+		form.tool.value = "pen"
+		form.comp.value = "source-over"
+		form.color.value = "#000000"
+		form.pattern.value = 15
+		
+		this.form = form
+		super.shadowRoot.append(document.importNode(ChatDraw.style, true), this.draw.canvas, this.form)
+	}
+}
+ChatDraw.style = document.createElement('style')
+ChatDraw.style.textContent = `
+:host {
+	display: inline-grid !important;
+	grid-template:
+		"canvas" max-content
+		"gap" 1px
+		"controls" auto
+		/ min-content;
+	padding: 1px;
+	--scale: 2;
+	background: silver;
+}
+:host > canvas {
+	grid-area: canvas;
+	width: calc(var(--width) * 1px * var(--scale, 1));
+	cursor: crosshair;
+}
+canvas {
+	image-rendering: -moz-crisp-edges; image-rendering: pixelated;
+	background: repeating-linear-gradient(12.23deg, #F0E0AA, #D8D0A8 0.38291px);
+}
+form {
+	grid-area: controls;
+	display: flex;
+	flex-flow: column-wrap;
+	-webkit-user-select: none; -moz-user-select: none; user-select: none;
+	padding: calc(var(--scale) * 3px) 0;
+	justify-content: space-around;
+}
+label {
+	display: contents;
+}
+input {
+	display: none;
+}
+b {
+	box-sizing: border-box;
+	width: calc(var(--scale) * 25px);
+	height: calc(var(--scale) * 15px);
+	
+	border: solid calc(var(--scale) * 2px);
+	border-color: #FFF #888 #666 #DDD;
+	border-radius: calc(var(--scale) * 8px);
+
+	display: grid;
+	align-content: center;
+	justify-content: center;
+	text-align: center;
+	line-height: 1;
+	font-size: calc(var(--scale) * 6px);
+
+	background: #BBB;
+	color: #444;
+}
+b:hover {
+	background: #DDD;
+}
+
+:checked + b {
+	border-color: #777 #555 #555 #777;
+	box-shadow: 0 0 10px 0px inset black;
+	color: #FFFF00A0;
+	text-shadow: 0 0 1px red;
+	background: #888;
+	border-style: none;
+}
+input:disabled + b {
+	border-color: #999;
+	color: #666;
+	background: #2929291A;
+}
+input[type="button"]:not(:disabled) + b:hover {
+	border-color: #CCC;
+	text-shadow: 0 0 1px yellow;
+}
+b.icon {
+	font-weight: normal;
+	font-size: calc(var(--scale) * 10px);
+}
+div {
+	display: grid;
+	align-content: start;
+	grid-auto-flow: row;
+}
+b > canvas {
+	width: calc(var(--scale) * 8px);
+}
+`
+
+customElements.define('chat-draw', ChatDraw)
