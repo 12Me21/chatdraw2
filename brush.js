@@ -84,6 +84,20 @@ class Freehand extends Tool {
 	}
 }
 
+class Spray extends Tool {
+	start(d, pos) {
+		this.drag(d,pos)
+		//d.random_in_brush(pos)
+	}
+	drag(d, pos, old) {
+		for (let i=0;i<10;i++)
+			d.random_in_brush(pos)
+	}
+	end(d, pos) {
+		this.drag(d,pos)
+	}
+}
+
 class LineTool extends Tool {
 	constructor() {
 		super()
@@ -119,10 +133,15 @@ class Slow extends Tool {
 }
 
 
-class Brush {
+class Brush extends Path2D {
 	constructor(origin, fills) {
+		super()
+		//this.moveTo(origin.x, origin.y)
+		for (let f of fills)
+			this.rect(...f)
 		this.origin = origin
-		this.fills = fills
+		//this.origin = origin
+		//this.fills = fills
 	}
 }
 
@@ -271,21 +290,30 @@ class Drawer {
 	set_brush(brush) {
 		this.brush = brush
 	}
-	draw(pos) {
-		let {origin, fills} = this.brush
-		let {x,y} = pos.Subtract(origin).Round()
-		fills.forEach(([s,t,w,h])=>this.c2d.fillRect(x+s-1000,y+t,w,h))
+	
+	add_brush(path, pos) {
+		let {x,y} = pos.Subtract(this.brush.origin).Round()
+		path.addPath(this.brush, new DOMMatrixReadOnly([1,0,0,1,x-1000,y]))
 	}
-	draw_line(start, end, callback=pos=>this.draw(pos)) {
+	draw(pos) {
+		let path = new Path2D()
+		this.add_brush(path, pos)
+		this.c2d.fill(path)
+		//let {origin, fills} = this.brush
+		//let {x,y} = pos.Subtract(origin).Round()
+		//fills.forEach(([s,t,w,h])=>this.c2d.fillRect(x+s-1000,y+t,w,h))
+	}
+	draw_line(start, end) {
 		// steps
-		let step_h = new Point(Math.sign(end.x-start.x), 0)
-		let step_v = new Point(0, Math.sign(end.y-start.y))
+		let diff = end.Subtract(start)
+		let step_h = new Point(Math.sign(diff.x), 0)
+		let step_v = new Point(0, Math.sign(diff.y))
 		//
 		let pos = start.Cursor_adjust(this.brush)
-		let stop = end.Cursor_adjust(this.brush)
 		let i
+		let path = new Path2D()
 		for (i=0; i<500; i++) {
-			callback(pos)
+			this.add_brush(path, pos)
 			
 			let rem = pos.Subtract(end)
 			if (Math.abs(rem.x)<=0.5 && Math.abs(rem.y)<=0.5)
@@ -302,7 +330,20 @@ class Drawer {
 		}
 		if (i>400)
 			console.log('failed', start,end,pos,stop)
-		//console.log(pos, stop)
-		callback(stop)
+		this.add_brush(path, end)
+		this.c2d.fill(path)
+	}
+	random_in_brush(pos) {
+		let r
+		let n = 0
+		do {
+			n++
+			if (n>30)
+				return
+			r = new Point(Math.random()*10-5, Math.random()*10-5)
+			r = r.Cursor_adjust(this.brush).Add(this.brush.origin)
+		} while (!this.c2d.isPointInPath(this.brush, r.x+.5, r.y+.5))
+		pos = pos.Add(r).Subtract(this.brush.origin)
+		this.c2d.fillRect(pos.x-1000, pos.y, 1, 1)
 	}
 }

@@ -46,6 +46,7 @@
 		freehand: new Freehand(),
 		slow: new Slow(),
 		line: new LineTool(),
+		spray: new Spray(),
 	}
 
 	$chatdraw.prepend(chatdraw.canvas)
@@ -75,6 +76,7 @@
 		{radio:'tool', text:"pen", value:'freehand'},
 		{radio:'tool', text:"slow", value:'slow'},
 		{radio:'tool', text:"line", value:'line'},
+		{radio:'tool', text:"spray", value:'spray'},
 	]
 	brushes.forEach((b,i)=>{
 		buttons.push({radio:'brush', text:"b"+i, value:i})
