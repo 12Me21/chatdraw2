@@ -3,11 +3,14 @@
 function draw_button(arg) {
 	for (let type in arg) {
 		let input = document.createElement('input')
-		Object.assign(input, {type, name:arg[type], value:arg.value})
+		let name = arg[type]
+		Object.assign(input, {type, name, value:arg.value})
 		let span = document.createElement('b')
 		span.append(arg.text)
-		if (arg.text[0] > '~')
+		if (arg.text[0] > '~' || arg.icon)
 			span.classList.add('icon')
+		if (name=='color')
+			span.style.color = arg.value
 		let label = document.createElement('label')
 		label.append(input, span)
 		return label

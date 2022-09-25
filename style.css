@@ -13,44 +13,51 @@ chat-draw {
 	--scale: 2;
 	background: silver;
 }
-chat-draw canvas {
+chat-draw > canvas {
 	grid-area: canvas;
 	width: calc(var(--width) * 1px * var(--scale, 1));
 	cursor: crosshair;
 }
+chat-draw canvas {
+	image-rendering: -moz-crisp-edges; image-rendering: pixelated;
+	background: repeating-linear-gradient(12.23deg, #F0E0AA, #D8D0A8 0.38291px);/*#E8D899;*/
+}
 chat-draw form {
-	/*margin-left: -1px;*/
 	grid-area: controls;
 	display: flex;
-	flex-flow: row wrap;
+	flex-flow: column-wrap;
 	-webkit-user-select: none; -moz-user-select: none; user-select: none;
+	padding: calc(var(--scale) * 3px) 0;
+	/*gap: calc(var(--scale) * 4px);*/
+	justify-content: space-around;
 }
-chat-draw fieldset, chat-draw label {
+chat-draw label {
 	display: contents;
 }
 chat-draw input {
 	display: none;
 }
-input[type="radio"] + b {
-	/*border-radius: 50px;*/
+b {
+	border-radius: calc(var(--scale) * 8px);
 }
 chat-draw b {
 	display: block;
 	box-sizing: border-box;
 	flex: none;
-	--cells: 1;
-	width: calc(var(--scale) * 25px * var(--cells));
-	height: calc(var(--scale) * 25px);
+	width: calc(var(--scale) * 25px);
+	height: calc(var(--scale) * 15px);
 	
 	appearance: none;
 	margin: 0;
 	padding: 0;
-	border: 5px solid gray;
+	border: solid calc(var(--scale) * 2px);
 	border-color: #FFF #888 #666 #DDD;
 	
 	display: grid;
-	align-items: center;
+	align-content: center;
+	justify-content: center;
 	text-align: center;
+	line-height: 1;
 }
 
 chat-draw b {
@@ -77,19 +84,22 @@ chat-draw :checked + b {
 	color: #FFFF00A0;
 	text-shadow: 0 0 1px red;
 	background: #888;
-	border-width: 0;
+	border-style: none;
 }
 
 chat-draw input[type="range"] {
 	--cells: 4;
 }
+b {
+	font-size: calc(var(--scale) * 6px);
+}
 b.icon {
 	font-weight: normal;
-	font-size: calc(var(--scale) * 16px);
+	font-size: calc(var(--scale) * 10px);
 }
-fieldset > :first-child b {
-	border-radius: 50px 0 0 50px;
-}
-fieldset > :last-child b {
-	border-radius: 0 50px 50px 0;
+fieldset {
+	all: unset;
+	display: grid;
+	align-content: start;
+	grid-auto-flow: row;
 }

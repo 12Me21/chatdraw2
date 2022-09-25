@@ -9,17 +9,18 @@
 </chat-draw>
 
 <script>
-	let chatdraw = new Drawer(300, 150)
+	let chatdraw = new Drawer(200, 100)
 
 	let od = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
 	let patterns = []
+	let pl = []
 	// temporary canvas
-	let pcanvas = document.createElement('canvas')
-	pcanvas.width = 4
-	pcanvas.height = 4
-	let p2d = pcanvas.getContext('2d')
 	//
 	for (let i=0; i<16; i++) {
+		let pcanvas = document.createElement('canvas')
+		pcanvas.width = 4
+		pcanvas.height = 4
+		let p2d = pcanvas.getContext('2d')
 		let data = new ImageData(4, 4)
 		for (let x=0; x<16; x++)
 			if (od[x] <= i)
@@ -29,10 +30,12 @@
 		p2d.putImageData(data, 0, 0)
 		let pattern = chatdraw.c2d.createPattern(pcanvas, 'repeat')
 		patterns.push(pattern)
+		pcanvas.style.width = "8px"
+		pl.push(pcanvas)
 	}
 
 	let brushes = []
-	for (let d=1; d<=7; d++) {
+	for (let d=1; d<=8; d++) {
 		let r = d/2, sr = r-0.5
 		let fills = []
 		for (let y=-sr; y<=sr; y++) {
@@ -57,48 +60,47 @@
 	// also todo: define the labels, actions, etc. of buttons in one place
 	// and then their positions/insert them separately.
 	let buttons = [
-		{button:'clear', text:"reset"},
-		{button:'undo', text:"↶"},
-		{button:'redo', text:"↷"},
-		[
+		{items:[
+			{button:'clear', text:"reset"},
+			{button:'undo', text:"↶"},
+			{button:'redo', text:"↷"},
 			{button:'fill', text:"!fill"},
 			{button:'bg', text:"!color ➙bg"},
 			{radio:'tool', text:"pen", value:'freehand'},
 			{radio:'tool', text:"slow", value:'slow'},
 			{radio:'tool', text:"line", value:'line'},
 			{radio:'tool', text:"spray", value:'spray'},
-		],
-		[
+		]},
+		{items:[
 			{radio:'comp', text:"all", value:'source-over'},
 			{radio:'comp', text:"below", value:'destination-over'},
 			{radio:'comp', text:"in", value:'source-atop'},
 			{radio:'comp', text:"erase", value:'destination-out'},
-		],
+		]},
 		
-		[
-			{radio:'color', text:"black", value:'#000000'},
-			{radio:'color', text:"white", value:'#FFFFFF'},
-			{radio:'color', text:"red", value:'#FF0000'},
-			{radio:'color', text:"blue", value:'#0000FF'},
-		],
-		{color:'pick', text:"■"},
-		brushes.map((b,i)=>{
-			return {radio:'brush', text:"b"+i, value:i}
-		}),
-		patterns.map((b,i)=>{
-			return {radio:'pattern', text:"p"+i, value:i}
-		}),
+		{items:['#000000','#FFFFFF','#FF0000','#0000FF'].map(x=>({
+			radio:'color', text:"■", value:x,
+		}))},
+		//{color:'pick', text:"■"},
+		{items:brushes.map((b,i)=>{
+			return {radio:'brush', text:""+(i+1), value:i, icon:true}
+		}),size:1},
+		{items:patterns.map((b,i)=>{
+			return {radio:'pattern', text:pl[i], value:i}
+		}),size:1,flow:'column'},
 	]
-	for (let b of buttons) {
-		if (b.length) {
-			let fs = document.createElement('fieldset')
-			for (let sb of b) {
-				fs.append(draw_button(sb))
-			}
-			form.append(fs)
-		} else {
-			form.append(draw_button(b))
+	for (let {items,size=2,flow} of buttons) {
+		let fs = document.createElement('fieldset')
+		for (let sb of items) {
+			fs.append(draw_button(sb))
 		}
+		form.append(fs)
+		fs.style.gridTemplateColumns = `repeat(${Math.ceil(items.length/(8/size))}, 1fr)`
+		fs.style.gridTemplateRows = `repeat(${Math.ceil(8/size)}, 1fr)`
+		if (size)
+			fs.style.setProperty('--scale', size)
+		if (flow)
+			fs.style.gridAutoFlow = flow
 	}
 	
 	form.onchange = ev=>{
