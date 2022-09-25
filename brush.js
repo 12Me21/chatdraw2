@@ -378,14 +378,18 @@ class Drawer {
 	dither_pattern(level) {
 		const od = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
 		let canvas = document.createElement('canvas')
-		canvas.width = 4
-		canvas.height = 4
+		canvas.width = 8
+		canvas.height = 8
 		let c2d = canvas.getContext('2d')
 		let data = c2d.createImageData(4, 4)
 		for (let x=0; x<16; x++)
 			if (od[x] <= level)
 				data.data[x<<2|3] = 0xFF
+		// hack: we want a larger canvas to use as a button label
 		c2d.putImageData(data, 0, 0)
+		c2d.putImageData(data, 4, 0)
+		c2d.putImageData(data, 0, 4)
+		c2d.putImageData(data, 4, 4)
 		let pattern = this.c2d.createPattern(canvas, 'repeat')
 		return [pattern, canvas]
 	}
@@ -401,8 +405,9 @@ function draw_button(arg) {
 		span.append(arg.text)
 		if (arg.text[0] > '~' || arg.icon)
 			span.classList.add('icon')
-		if (name=='color')
+		if (name=='color') {
 			span.style.color = arg.value
+		}
 		let label = document.createElement('label')
 		label.append(input, span)
 		return label
@@ -426,11 +431,25 @@ class ChatDraw extends HTMLElement {
 			slow: new Slow(),
 			line: new LineTool(),
 			spray: new Spray(),
+			a: null,
+			b: null,
+			c: null,
+			d: null,
 		}
 		
 		let form = document.createElement('form')
 		form.autocomplete = 'off'
 		form.method = 'dialog'
+		
+		let color_icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+		let color_path = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+		/*color_icon.viewBox.baseVal.width = 1
+		  color_icon.viewBox.baseVal.height = 1*/
+		color_icon.setAttribute('viewBox', "0 0 1 1")
+		color_path.width.baseVal.value = "1"
+		color_path.height.baseVal.value = "1"
+		color_path.style.fill = "currentColor"
+		color_icon.append(color_path)
 		
 		let buttons = [
 			{items:[
@@ -438,21 +457,23 @@ class ChatDraw extends HTMLElement {
 				{button:'undo', text:"↶"},
 				{button:'redo', text:"↷"},
 				{button:'fill', text:"fill"},
-				{button:'bg', text:"color ➙bg"},
 				...Object.keys(tools).map(k=>{
 					return {radio:'tool', text:k, value:k}
 				}),
-			]},
+			], cols:4},
 			{items:[
 				{radio:'comp', text:"all", value:'source-over'},
 				{radio:'comp', text:"below", value:'destination-over'},
 				{radio:'comp', text:"in", value:'source-atop'},
 				{radio:'comp', text:"erase", value:'destination-out'},
 			]},
-			
-			{items:['#000000','#FFFFFF','#FF0000','#0000FF'].map(x=>({
-				radio:'color', text:"■", value:x,
-			}))},
+			{items:[
+				{button:'pick', text:"new"},
+				{button:'bg', text:" ➙bg"},
+				...['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'].map(x=>({
+					radio:'color', text:color_icon.cloneNode(true), value:x,
+				}))
+			], cols:2},
 			//{color:'pick', text:"■"},
 			{items:brushes.map((b,i)=>{
 				return {radio:'brush', text:""+(i+1), value:i, icon:true}
@@ -461,13 +482,15 @@ class ChatDraw extends HTMLElement {
 				return {radio:'pattern', text:b[1], value:i}
 			}),size:1,flow:'column'},
 		]
-		for (let {items,size=2,flow} of buttons) {
+		for (let {items,size=2,flow,cols} of buttons) {
 			let fs = document.createElement('div')
 			for (let sb of items) {
 				fs.append(draw_button(sb))
 			}
 			form.append(fs)
-			fs.style.gridTemplateColumns = `repeat(${Math.ceil(items.length/(8/size))}, 1fr)`
+			if (!cols)
+				cols = Math.ceil(items.length/(8/size))
+			fs.style.gridTemplateColumns = `repeat(${cols}, 1fr)`
 			fs.style.gridTemplateRows = `repeat(${Math.ceil(8/size)}, 1fr)`
 			if (size)
 				fs.style.setProperty('--bscale', `calc(${size/2} * var(--scale))`)
@@ -487,6 +510,9 @@ class ChatDraw extends HTMLElement {
 			bg: ()=>d.erase_color(form.color.value),
 			undo: ()=>d.history_do(false),
 			redo: ()=>d.history_do(true),
+			add: ()=>d.history_do(true),
+			replace: ()=>d.history_do(true),
+			remove: ()=>d.history_do(true),
 		}
 		
 		form.onchange = ev=>{
@@ -557,22 +583,22 @@ input {
 }
 b {
 	box-sizing: border-box;
-	width: calc(var(--bscale) * 25px);
+	width: calc(var(--bscale) * 20px);
 	height: calc(var(--bscale) * 15px);
 	
 	border: solid calc(var(--bscale) * 2px);
 	border-color: #FFF #888 #666 #DDD;
 	
-
 	display: grid;
 	align-content: center;
 	justify-content: center;
 	text-align: center;
-	line-height: 1;
+	/*line-height: 1;*/
 	font-size: calc(var(--bscale) * 6px);
-
+	
 	background: #BBB;
 	color: #444;
+	overflow: hidden;
 }
 input[type="radio"] + b {
 	border-radius: calc(var(--bscale) * 8px);
@@ -589,6 +615,7 @@ b:hover {
 	text-shadow: 0 0 1px red;
 	background: #888;
 	border-style: none;
+	padding: calc(var(--bscale) * 2px);
 }
 input:disabled + b {
 	border-color: #999;
@@ -607,9 +634,11 @@ div {
 	display: grid;
 	align-content: start;
 	grid-auto-flow: row;
+	gap: calc(var(--bscale) * 1px);
 }
 b > canvas {
-	width: calc(var(--bscale) * 8px);
+	width: calc(var(--bscale) * 16px);
+	margin-bottom: calc(var(--bscale) * 2px);
 }
 `
 
