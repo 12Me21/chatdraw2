@@ -57,9 +57,14 @@
 	// also todo: define the labels, actions, etc. of buttons in one place
 	// and then their positions/insert them separately.
 	let buttons = [
-		{button:'clear', text:"reset"},
 		{button:'undo', text:"↶"},
 		{button:'redo', text:"↷"},
+		{button:'clear', text:"reset"},
+		{button:'fill', text:"fill"},
+		{radio:'tool', text:"pen", value:'freehand'},
+		{radio:'tool', text:"slow", value:'slow'},
+		{radio:'tool', text:"line", value:'line'},
+		{radio:'tool', text:"spray", value:'spray'},
 		
 		{radio:'comp', text:"over", value:'source-over'},
 		{radio:'comp', text:"behind", value:'destination-over'},
@@ -72,11 +77,6 @@
 		{radio:'color', text:"blue", value:'#0000FF'},
 		
 		{color:'pick', text:"■"},
-		
-		{radio:'tool', text:"pen", value:'freehand'},
-		{radio:'tool', text:"slow", value:'slow'},
-		{radio:'tool', text:"line", value:'line'},
-		{radio:'tool', text:"spray", value:'spray'},
 	]
 	brushes.forEach((b,i)=>{
 		buttons.push({radio:'brush', text:"b"+i, value:i})
@@ -105,6 +105,8 @@
 	form.onclick = ev=>{
 		let n = ev.target.name
 		if (n=='clear')
+			chatdraw.clear(true)
+		if (n=='fill')
 			chatdraw.clear()
 		
 		if (n=='undo')

@@ -165,11 +165,12 @@ class Drawer {
 		this.set_composite('source-over')
 		this.c2d.shadowOffsetX = 1000
 		this.c2d.shadowOffsetY = 0
+		this.c2d.translate(-1000, 0)
 		
 		this.history_max = 20
 		this.history_reset()
 		
-		this.clear()
+		this.clear(true)
 		
 		this.set_tool(new Freehand())
 		
@@ -271,13 +272,15 @@ class Drawer {
 	}
 	
 	// drawing
-	clear() {
+	clear(all) {
 		this.history_add()
 		this.c2d.save()
-		this.c2d.resetTransform()
-		this.c2d.globalCompositeOperation = 'copy'
-		this.c2d.fillStyle = 'transparent'
-		this.c2d.shadowColor = 'transparent'
+		if (all) {
+			this.c2d.resetTransform()
+			this.c2d.globalCompositeOperation = 'copy'
+			this.c2d.fillStyle = 'transparent'
+			this.c2d.shadowColor = 'transparent'
+		}
 		this.c2d.fillRect(0, 0, this.canvas.width, this.canvas.height)
 		this.c2d.restore()
 	}
@@ -293,7 +296,7 @@ class Drawer {
 	
 	add_brush(path, pos) {
 		let {x,y} = pos.Subtract(this.brush.origin).Round()
-		path.addPath(this.brush, new DOMMatrixReadOnly([1,0,0,1,x-1000,y]))
+		path.addPath(this.brush, new DOMMatrixReadOnly([1,0,0,1,x,y]))
 	}
 	draw(pos) {
 		let path = new Path2D()
@@ -301,7 +304,7 @@ class Drawer {
 		this.c2d.fill(path)
 		//let {origin, fills} = this.brush
 		//let {x,y} = pos.Subtract(origin).Round()
-		//fills.forEach(([s,t,w,h])=>this.c2d.fillRect(x+s-1000,y+t,w,h))
+		//fills.forEach(([s,t,w,h])=>this.c2d.fillRect(x+s,y+t,w,h))
 	}
 	draw_line(start, end) {
 		// steps
@@ -344,6 +347,6 @@ class Drawer {
 			r = r.Cursor_adjust(this.brush).Add(this.brush.origin)
 		} while (!this.c2d.isPointInPath(this.brush, r.x+.5, r.y+.5))
 		pos = pos.Add(r).Subtract(this.brush.origin)
-		this.c2d.fillRect(pos.x-1000, pos.y, 1, 1)
+		this.c2d.fillRect(pos.x, pos.y, 1, 1)
 	}
 }
