@@ -1,22 +1,5 @@
 "use strict"
 
-function draw_button(arg) {
-	for (let type in arg) {
-		let input = document.createElement('input')
-		let name = arg[type]
-		Object.assign(input, {type, name, value:arg.value})
-		let span = document.createElement('b')
-		span.append(arg.text)
-		if (arg.text[0] > '~' || arg.icon)
-			span.classList.add('icon')
-		if (name=='color')
-			span.style.color = arg.value
-		let label = document.createElement('label')
-		label.append(input, span)
-		return label
-	}
-}
-
 class Point extends DOMPointReadOnly {
 	distance(p) {
 		return Math.hypot(this.x-p.x, this.y-p.y)
@@ -408,15 +391,33 @@ class Drawer {
 	}
 }
 
+
+function draw_button(arg) {
+	for (let type in arg) {
+		let input = document.createElement('input')
+		let name = arg[type]
+		Object.assign(input, {type, name, value:arg.value})
+		let span = document.createElement('b')
+		span.append(arg.text)
+		if (arg.text[0] > '~' || arg.icon)
+			span.classList.add('icon')
+		if (name=='color')
+			span.style.color = arg.value
+		let label = document.createElement('label')
+		label.append(input, span)
+		return label
+	}
+}
+
 class ChatDraw extends HTMLElement {
 	constructor() {
 		super()
 		super.attachShadow({mode: 'open'})
-		this.draw = new Drawer(200, 100)
+		let d = this.draw = new Drawer(200, 100)
 		
 		let patterns = []
 		for (let i=0; i<16; i++)
-			patterns[i] = this.draw.dither_pattern(i)
+			patterns[i] = d.dither_pattern(i)
 		let brushes = []
 		for (let d=1; d<=8; d++)
 			brushes.push(new CircleBrush(d))
@@ -474,40 +475,37 @@ class ChatDraw extends HTMLElement {
 				fs.style.gridAutoFlow = flow
 		}
 		
+		let actions = {
+			color: v=>d.set_color(v),
+			comp: v=>d.set_composite(v),
+			pattern: v=>d.set_pattern(patterns[+v][0]),
+			brush: v=>d.set_brush(brushes[+v]),
+			tool: v=>d.set_tool(tools[v]),
+			
+			clear: ()=>d.clear(true),
+			fill: ()=>d.clear(false),
+			bg: ()=>d.erase_color(this.form.color.value),
+			undo: ()=>d.history_do(false),
+			redo: ()=>d.history_do(true),
+		}
+		
 		form.onchange = ev=>{
-			let n = ev.target.name
-			if (n=='color')
-				this.draw.set_color(ev.target.value)
-			if (n=='comp')
-				this.draw.set_composite(ev.target.value)
-			if (n=='pattern')
-				this.draw.set_pattern(patterns[+ev.target.value][0])
-			if (n=='brush')
-				this.draw.set_brush(brushes[+ev.target.value])
-			if (n=='tool')
-				this.draw.set_tool(tools[ev.target.value])
+			let e = ev.target
+			if (e.type=='radio')
+				actions[e.name](e.value)
 		}
 		
 		form.onclick = ev=>{
-			let n = ev.target.name
-			if (n=='clear')
-				this.draw.clear(true)
-			if (n=='fill')
-				this.draw.clear()
-			if (n=='bg')
-				this.draw.erase_color(form.color.value)
-			
-			if (n=='undo')
-				this.draw.history_do()
-			if (n=='redo')
-				this.draw.history_do(true)
+			let e = ev.target
+			if (e.type=='button')
+				actions[e.name]()
 		}
 		
-		this.draw.history_onchange = ()=>{
-			form.undo.disabled = !this.draw.history[0].length
-			form.redo.disabled = !this.draw.history[1].length
+		d.history_onchange = ()=>{
+			form.undo.disabled = !d.history[0].length
+			form.redo.disabled = !d.history[1].length
 		}
-		this.draw.history_onchange()
+		d.history_onchange()
 		
 		form.brush.value = 1
 		form.tool.value = "pen"
@@ -515,8 +513,7 @@ class ChatDraw extends HTMLElement {
 		form.color.value = "#000000"
 		form.pattern.value = 15
 		
-		this.form = form
-		super.shadowRoot.append(document.importNode(ChatDraw.style, true), this.draw.canvas, this.form)
+		super.shadowRoot.append(document.importNode(ChatDraw.style, true), d.canvas, form)
 	}
 }
 ChatDraw.style = document.createElement('style')
@@ -610,3 +607,18 @@ b > canvas {
 `
 
 customElements.define('chat-draw', ChatDraw)
+
+let make_cursor=(size=1)=>{
+	let r = size/2+1 //  3->
+	let svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="${r*2}" height="${r*2}">
+<rect x="${r-0.5}" y="${r-0.5}" width="1" height="1"/>
+<rect x="${0.5}" y="${0.5}" width="${r*2-1}" height="${r*2-1}" fill="none" stroke="red" stroke-width="1"/>
+</svg>
+		`
+	let ox = r-0.5
+	let oy = r-0.5
+	let url = "data:image/svg+xml;base64,"+btoa(svg)
+	
+	chatdraw.canvas.style.cursor = `url("${url}") ${ox} ${oy}, crosshair`
+}
