@@ -15,9 +15,9 @@
 		"gap" 1px
 		"controls" auto
 		/ min-content;
-		background: gray;
 		padding: 1px;
 		--scale: 3;
+		background: silver;
 	}
 	chat-draw > canvas {
 		grid-area: canvas;
@@ -25,52 +25,45 @@
 		cursor: crosshair;
 	}
 	chat-draw > form {
-		margin-left: -1px;
+		/*margin-left: -1px;*/
 		grid-area: controls;
 		display: flex;
 		flex-flow: row wrap;
 	}
-	chat-draw button {
-		margin-left: 1px;
+	chat-draw > form > label {
+		display: contents;
+	}
+	chat-draw > form > label > input {
+		display: none;
+	}
+	chat-draw > form > label > span,
+	chat-draw > form > input,
+	chat-draw > form > button {
+		border: 2px solid gray;
+		appearance: none;
+		display: block;
+		--cells: 1;
+		width: calc(var(--scale) * 20px * var(--cells));
+		height: calc(var(--scale) * 20px);
+		margin: 0;
 		flex: none;
 		padding: 0;
-		/*border: none;*/
-		/*margin: 0;
-		padding: 0;
-		border: none;*/
-		/*appearance: none;*/
-		width: calc(var(--scale) * 20px);
-		height: calc(var(--scale) * 20px);
+		box-sizing: border-box;
+	}
+	chat-draw button {
 	}
 	chat-draw input {
-		width: calc(var(--scale) * 20px);
-		height: calc(var(--scale) * 20px);
 	}
 	chat-draw input[type="range"] {
-		width: calc(var(--scale) * 20px * 4);
-		height: calc(var(--scale) * 20px);
+		--cells: 4;
 	}
 	button.icon {
 		font-size: calc(var(--scale) * 16px);
-		/*line-height: calc(var(--scale) * 20px);*/
 	}
 </style>
 
 <chat-draw id=$chatdraw>
-	<form autocomplete=off method=dialog>
-		<button name=clear type=button>reset</button>
-		<button name=undo type=button class=icon>↶</button>
-		<button name=redo type=button class=icon>↷</button>
-		<button name=black type=button>black</button>
-		<button name=white type=button>white</button>
-		<button name=red type=button>red</button>
-		<button name=blue type=button>blue</button>
-		<input name=color type=color>
-		<input type=range min=0 max=15 value=5 name=pattern>
-		<input type=range min=1 max=7 value=2 name=brush>
-		<input type=checkbox name=comp1>
-		<input type=checkbox name=comp2>
-	</form>
+	<form autocomplete=off method=dialog></form>
 </chat-draw>
 
 <script>
@@ -121,36 +114,46 @@
 	
 	let form = $chatdraw.lastElementChild
 	
+	
+	let buttons = [
+		{button:'clear', text:"reset"},
+		{button:'clear', text:"reset"},
+		{button:'undo', text:"undo"},
+		{button:'redo', text:"redo"},
+		
+		{radio:'comp', text:"replace", value:'source-over'},
+		{radio:'comp', text:"behind", value:'destination-over'},
+		{radio:'comp', text:"in", value:'source-atop'},
+		{radio:'comp', text:"erase", value:'destination-out'},
+		
+		{radio:'color', text:"black", value:'#000000'},
+		{radio:'color', text:"white", value:'#FFFFFF'},
+		{radio:'color', text:"red", value:'#FF0000'},
+		{radio:'color', text:"blue", value:'#0000FF'},
+		
+		{color:'pick', text:"■"},
+	]
+	for (let b of buttons) {
+		form.append(draw_button(b))
+	}
+	
 	form.onchange = ev=>{
 		let n = ev.target.name
 		if (n=='color')
 			chatdraw.set_color(ev.target.value)
+		if (n=='comp')
+			chatdraw.set_composite(ev.target.value)
 		if (n=='pattern')
 			chatdraw.set_pattern(patterns[+ev.target.value])
 		if (n=='brush')
 			chatdraw.set_brush(brushes2[+ev.target.value-1])
-		if (n=='comp1' || n=='comp2') {
-			let a = form.comp1.checked // draw over existing
-			let b = form.comp2.checked // draw over new
-			//1,1 -> 'source-over' - replace
-			//0,1 -> 'destination-over' - draw behind
-			//1,0 -> 'source-atop'? or in? - draw on existing colors
-			chatdraw.set_composite((a?'source':'destination') + (b?'-over':'-in'))
-		}
 	}
 	
 	form.onclick = ev=>{
 		let n = ev.target.name
 		if (n=='clear')
 			chatdraw.clear()
-		if (n=='red')
-			chatdraw.set_color('red')
-		if (n=='black')
-			chatdraw.set_color('black')
-		if (n=='blue')
-			chatdraw.set_color('blue')
-		if (n=='white')
-			chatdraw.set_color('white')
+		
 		if (n=='undo')
 			chatdraw.history_do()
 		if (n=='redo')

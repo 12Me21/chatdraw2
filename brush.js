@@ -1,5 +1,17 @@
 //let 𖹭 = Object.assign
 
+function draw_button(arg) {
+	for (let type in arg) {
+		let input = document.createElement('input')
+		Object.assign(input, {type, name:arg[type], value:arg.value})
+		let span = document.createElement('span')
+		span.append(arg.text)
+		let label = document.createElement('label')
+		label.append(input, span)
+		return label
+	}
+}
+
 class Point extends DOMPointReadOnly {
 	distance(p) {
 		return Math.hypot(this.x-p.x, this.y-p.y)
