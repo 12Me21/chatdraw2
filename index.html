@@ -1,89 +1,8 @@
 <!doctype html><html lang=en-QS><meta charset=utf-8><meta name=viewport content="width=device-width, height=device-height, initial-scale=1" id=$meta_viewport>
 <title>CHATDRAW 2!!!</title>
 
+<link rel=stylesheet href=style.css>
 <script src=brush.js></script>
-
-<style>
-	body, html {
-		background: aliceblue;
-	}
-	
-	chat-draw {
-		display: inline-grid;
-		grid-template:
-			"canvas" max-content
-		"gap" 1px
-		"controls" auto
-		/ min-content;
-		padding: 1px;
-		--scale: 2;
-		background: silver;
-	}
-	chat-draw canvas {
-		grid-area: canvas;
-		width: calc(var(--width) * 1px * var(--scale, 1));
-		cursor: crosshair;
-	}
-	chat-draw form {
-		/*margin-left: -1px;*/
-		grid-area: controls;
-		display: flex;
-		flex-flow: row wrap;
-	}
-	chat-draw label {
-		display: contents;
-	}
-	chat-draw input {
-		display: none;
-	}
-	chat-draw b {
-		display: block;
-		box-sizing: border-box;
-		flex: none;
-		--cells: 1;
-		width: calc(var(--scale) * 25px * var(--cells));
-		height: calc(var(--scale) * 25px);
-		
-		appearance: none;
-		margin: 0;
-		padding: 0;
-		border: 5px solid gray;
-		border-color: #FFF #888 #666 #DDD;
-		
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
-	
-	chat-draw b {
-		background: #BBB;
-		color: #444;
-		font-family: monospace;
-	}
-	chat-draw :disabled + b {
-		border-color: #999;
-		color: #666;
-		background: #2929291A;
-	}
-	chat-draw b:hover {
-		background: #DDD;
-	}
-	chat-draw :checked + b {
-		border-color: #777 #555 #555 #777;
-		box-shadow: 0 0 10px 0px inset black;
-		color: #FFFF00A0;
-		text-shadow: 0 0 1px red;
-		background: #888;
-		border-width: 0;
-	}
-	
-	chat-draw input[type="range"] {
-		--cells: 4;
-	}
-	button.icon {
-		font-size: calc(var(--scale) * 16px);
-	}
-</style>
 
 <chat-draw id=$chatdraw>
 	<form autocomplete=off method=dialog></form>
@@ -91,7 +10,7 @@
 
 <script>
 	let chatdraw = new Drawer(300, 150)
-	
+
 	let od = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
 	let patterns = []
 	// temporary canvas
@@ -111,37 +30,24 @@
 		let pattern = chatdraw.c2d.createPattern(pcanvas, 'repeat')
 		patterns.push(pattern)
 	}
-	
+
 	let brushes = []
 	for (let d=1; d<=7; d++) {
-		let r = d/2
-		let origin = new Point(r, r)
+		let r = d/2, sr = r-0.5
 		let fills = []
-		r -= 0.5
-		for (let y=-r; y<=r; y++) {
-			let x = Math.ceil(Math.sqrt((r+0.5)**2 - y*y)+r)
-			fills.push([x, y+r, (r-x+0.5)*2, 1])
-			
-			/*for (let x=-r; x<=0; x++) {
-				//x*x+y*y <= (r+0.5)**2
-				//x*x <= (r+0.5)**2-y*y
-				
-				if (x*x+y*y <= (r+0.5)**2) {
-					fills.push([x+r, y+r, -x*2+1, 1])
-					break
-				}
-			}*/
+		for (let y=-sr; y<=sr; y++) {
+			let x = Math.ceil(Math.sqrt(r*r - y*y)+sr)
+			fills.push([x, y+sr, (r-x)*2, 1])
 		}
-		
-		brushes.push(new Brush(origin, fills))
+		brushes.push(new Brush(new Point(r, r), fills))
 	}
-	
+
 	let tools = {
 		freehand: new Freehand(),
 		slow: new Slow(),
 		line: new LineTool(),
 	}
-	
+
 	$chatdraw.prepend(chatdraw.canvas)
 	
 	let form = $chatdraw.lastElementChild
@@ -227,10 +133,5 @@
 	}
 	
 	make_cursor(3)
-	
-	//document.body.append(chatdraw.canvas)
-
-	// aw why are we using ctx instead of c2d anymore..
-	
 </script>
 <pre id=$log></pre>
