@@ -378,8 +378,8 @@ class Drawer {
 	dither_pattern(level) {
 		const od = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
 		let canvas = document.createElement('canvas')
-		canvas.width = 8
-		canvas.height = 8
+		canvas.width = 4
+		canvas.height = 4
 		let c2d = canvas.getContext('2d')
 		let data = c2d.createImageData(4, 4)
 		for (let x=0; x<16; x++)
@@ -387,10 +387,12 @@ class Drawer {
 				data.data[x<<2|3] = 0xFF
 		// hack: we want a larger canvas to use as a button label
 		c2d.putImageData(data, 0, 0)
-		c2d.putImageData(data, 4, 0)
-		c2d.putImageData(data, 0, 4)
-		c2d.putImageData(data, 4, 4)
 		let pattern = this.c2d.createPattern(canvas, 'repeat')
+		canvas.width = 7
+		canvas.height = 5
+		for (let y=0;y<12;y+=4)
+			for (let x=0;x<12;x+=4)
+				c2d.putImageData(data, x, y)
 		return [pattern, canvas]
 	}
 }

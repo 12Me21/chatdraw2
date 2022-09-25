@@ -261,9 +261,9 @@ div {
 	grid-auto-flow: row;
 }
 b > canvas {
-	width: calc(var(--bscale) * 16px);
-	margin-bottom: calc(var(--bscale) * 2px);
-	background: none;
+	width: calc(var(--bscale) * 7px * 2);
+	border-radius: calc(var(--bscale) * 4.5px);	
+	/*background: none;*/
 }
 `
 
