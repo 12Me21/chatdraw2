@@ -4,7 +4,7 @@ function draw_button(arg) {
 	for (let type in arg) {
 		let input = document.createElement('input')
 		Object.assign(input, {type, name:arg[type], value:arg.value})
-		let span = document.createElement('span')
+		let span = document.createElement('b')
 		span.append(arg.text)
 		let label = document.createElement('label')
 		label.append(input, span)

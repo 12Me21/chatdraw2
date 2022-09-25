@@ -19,41 +19,61 @@
 		--scale: 3;
 		background: silver;
 	}
-	chat-draw > canvas {
+	chat-draw canvas {
 		grid-area: canvas;
 		width: calc(var(--width) * 1px * var(--scale, 1));
 		cursor: crosshair;
 	}
-	chat-draw > form {
+	chat-draw form {
 		/*margin-left: -1px;*/
 		grid-area: controls;
 		display: flex;
 		flex-flow: row wrap;
 	}
-	chat-draw > form > label {
+	chat-draw label {
 		display: contents;
 	}
-	chat-draw > form > label > input {
+	chat-draw input {
 		display: none;
 	}
-	chat-draw > form > label > span,
-	chat-draw > form > input,
-	chat-draw > form > button {
-		border: 2px solid gray;
-		appearance: none;
+	chat-draw b {
 		display: block;
+		box-sizing: border-box;
+		flex: none;
 		--cells: 1;
 		width: calc(var(--scale) * 20px * var(--cells));
 		height: calc(var(--scale) * 20px);
+		
+		appearance: none;
 		margin: 0;
-		flex: none;
 		padding: 0;
-		box-sizing: border-box;
+		border: 2px solid gray;
+		border-color: #FFF #888 #666 #DDD;
+		
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
-	chat-draw button {
+	
+	chat-draw b {
+		background: #BBB;
+		color: #222;
 	}
-	chat-draw input {
+	chat-draw :disabled + b {
+		border-color: #999;
+		color: #666;
+		background: #2929291A;
 	}
+	chat-draw b:hover {
+		background: #DDD;
+	}
+	chat-draw :checked + b {
+		border-color: #777 #555 #555 #777;
+		box-shadow: 0 0 5px 0px inset black;
+		color: #E9E9E6;
+		background: #888;
+	}
+	
 	chat-draw input[type="range"] {
 		--cells: 4;
 	}
@@ -118,8 +138,8 @@
 	let buttons = [
 		{button:'clear', text:"reset"},
 		{button:'clear', text:"reset"},
-		{button:'undo', text:"undo"},
-		{button:'redo', text:"redo"},
+		{button:'undo', text:"↶"},
+		{button:'redo', text:"↷"},
 		
 		{radio:'comp', text:"replace", value:'source-over'},
 		{radio:'comp', text:"behind", value:'destination-over'},
