@@ -1,4 +1,4 @@
-//let 𖹭 = Object.assign
+"use strict"
 
 function draw_button(arg) {
 	for (let type in arg) {
