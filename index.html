@@ -112,25 +112,20 @@
 		patterns.push(pattern)
 	}
 	
-	let brushes2 = []
-	for (let i=1; i<=7; i++) {
-		let r = i/2
+	let brushes = []
+	for (let d=1; d<=7; d++) {
+		let r = d/2
 		let origin = new Point(r, r)
-		let rs = r*r
-		r += 0.5
 		let fills = []
-		for (let y=-r; y<=r; y++) {
-			for (let x=-r; x<=r; x++) {
-				if (x*x+y*y <= rs) {
-					fills.push([
-						Math.floor(r-1+x), Math.floor(r-1+y),
-						Math.floor(-x*2)+1, 1
-					])
+		for (let y=0; y<=d; y++) {
+			for (let x=0; x<=d; x++) {
+				if ((y-r-0.5)**2+(x-r-0.5)**2 <= r**2) {
+					fills.push([x, y, -x*2+1, 1])
 					break
 				}
 			}
 		}
-		brushes2.push(new Brush(origin, fills))
+		brushes.push(new Brush(origin, fills))
 	}
 	
 	let tools = {
@@ -167,7 +162,7 @@
 		{radio:'tool', text:"slow", value:'slow'},
 		{radio:'tool', text:"line", value:'line'},
 	]
-	brushes2.forEach((b,i)=>{
+	brushes.forEach((b,i)=>{
 		buttons.push({radio:'brush', text:"b"+i, value:i})
 	})
 	patterns.forEach((b,i)=>{
@@ -186,7 +181,7 @@
 		if (n=='pattern')
 			chatdraw.set_pattern(patterns[+ev.target.value])
 		if (n=='brush')
-			chatdraw.set_brush(brushes2[+ev.target.value])
+			chatdraw.set_brush(brushes[+ev.target.value])
 		if (n=='tool')
 			chatdraw.set_tool(tools[ev.target.value])
 	}
