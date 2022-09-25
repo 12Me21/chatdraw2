@@ -23,15 +23,16 @@ chat-draw form {
 	grid-area: controls;
 	display: flex;
 	flex-flow: row wrap;
+	-webkit-user-select: none; -moz-user-select: none; user-select: none;
 }
-chat-draw label {
+chat-draw fieldset, chat-draw label {
 	display: contents;
 }
 chat-draw input {
 	display: none;
 }
 input[type="radio"] + b {
-	border-radius: 50px;
+	/*border-radius: 50px;*/
 }
 chat-draw b {
 	display: block;
@@ -55,7 +56,7 @@ chat-draw b {
 chat-draw b {
 	background: #BBB;
 	color: #444;
-	font-family: monospace;
+	/*font-family: monospace;*/
 }
 chat-draw input:disabled + b {
 	border-color: #999;
@@ -69,6 +70,7 @@ chat-draw input[type="button"]:not(:disabled) + b:hover {
 chat-draw b:hover {
 	background: #DDD;
 }
+
 chat-draw :checked + b {
 	border-color: #777 #555 #555 #777;
 	box-shadow: 0 0 10px 0px inset black;
@@ -84,4 +86,10 @@ chat-draw input[type="range"] {
 b.icon {
 	font-weight: normal;
 	font-size: calc(var(--scale) * 16px);
+}
+fieldset > :first-child b {
+	border-radius: 50px 0 0 50px;
+}
+fieldset > :last-child b {
+	border-radius: 0 50px 50px 0;
 }

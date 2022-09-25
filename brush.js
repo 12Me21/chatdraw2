@@ -247,7 +247,11 @@ class Drawer {
 		return this.c2d.getImageData(0, 0, this.canvas.width, this.canvas.height)
 	}
 	history_set(data) {
+		this.c2d.save()
+		this.c2d.resetTransform()
+		this.c2d.globalCompositeOperation = 'copy'
 		this.c2d.putImageData(data, 0, 0)
+		this.c2d.restore()
 	}
 	history_reset() {
 		this.history = [[], []]

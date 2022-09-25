@@ -60,33 +60,45 @@
 		{button:'clear', text:"reset"},
 		{button:'undo', text:"↶"},
 		{button:'redo', text:"↷"},
-		{button:'fill', text:"fill"},
-		{button:'bg', text:"set bg"},
-		{radio:'tool', text:"pen", value:'freehand'},
-		{radio:'tool', text:"slow", value:'slow'},
-		{radio:'tool', text:"line", value:'line'},
-		{radio:'tool', text:"spray", value:'spray'},
+		[
+			{button:'fill', text:"!fill"},
+			{button:'bg', text:"!color ➙bg"},
+			{radio:'tool', text:"pen", value:'freehand'},
+			{radio:'tool', text:"slow", value:'slow'},
+			{radio:'tool', text:"line", value:'line'},
+			{radio:'tool', text:"spray", value:'spray'},
+		],
+		[
+			{radio:'comp', text:"all", value:'source-over'},
+			{radio:'comp', text:"below", value:'destination-over'},
+			{radio:'comp', text:"in", value:'source-atop'},
+			{radio:'comp', text:"erase", value:'destination-out'},
+		],
 		
-		{radio:'comp', text:"all", value:'source-over'},
-		{radio:'comp', text:"below", value:'destination-over'},
-		{radio:'comp', text:"in", value:'source-atop'},
-		{radio:'comp', text:"erase", value:'destination-out'},
-		
-		{radio:'color', text:"black", value:'#000000'},
-		{radio:'color', text:"white", value:'#FFFFFF'},
-		{radio:'color', text:"red", value:'#FF0000'},
-		{radio:'color', text:"blue", value:'#0000FF'},
-		
+		[
+			{radio:'color', text:"black", value:'#000000'},
+			{radio:'color', text:"white", value:'#FFFFFF'},
+			{radio:'color', text:"red", value:'#FF0000'},
+			{radio:'color', text:"blue", value:'#0000FF'},
+		],
 		{color:'pick', text:"■"},
+		brushes.map((b,i)=>{
+			return {radio:'brush', text:"b"+i, value:i}
+		}),
+		patterns.map((b,i)=>{
+			return {radio:'pattern', text:"p"+i, value:i}
+		}),
 	]
-	brushes.forEach((b,i)=>{
-		buttons.push({radio:'brush', text:"b"+i, value:i})
-	})
-	patterns.forEach((b,i)=>{
-		buttons.push({radio:'pattern', text:"p"+i, value:i})
-	})
 	for (let b of buttons) {
-		form.append(draw_button(b))
+		if (b.length) {
+			let fs = document.createElement('fieldset')
+			for (let sb of b) {
+				fs.append(draw_button(sb))
+			}
+			form.append(fs)
+		} else {
+			form.append(draw_button(b))
+		}
 	}
 	
 	form.onchange = ev=>{
@@ -139,6 +151,13 @@
 		chatdraw.canvas.style.cursor = `url("${url}") ${ox} ${oy}, crosshair`
 	}
 	
-	make_cursor(3)
+	//make_cursor(3)
+	
+	 // hack
+	form.brush.value = 1
+	form.tool.value = "freehand"
+	form.comp.value = "source-over"
+	form.color.value = "#000000"
+	form.pattern.value = 15
 </script>
 <pre id=$log></pre>
