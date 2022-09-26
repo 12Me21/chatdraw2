@@ -10,37 +10,19 @@ class RadioSelector {
 }
 
 class Point extends DOMPointReadOnly {
-	c_dist(p) {
-		return Math.max(Math.abs(this.x-p.x), Math.abs(this.y-p.y))
-	}
-	distance(p) {
-		return Math.hypot(this.x-p.x, this.y-p.y)
-	}
-	magnitude() {
-		return Math.hypot(this.x, this.y)
-	}
+	c_dist(p) { return Math.max(Math.abs(this.x-p.x), Math.abs(this.y-p.y)) }
+	toString() { return `(${this.x}, ${this.y})` }
 	
-	Divide(p) {
-		return new Point(this.x/p.x, this.y/p.y)
-	}
-	Add(p) {
-		return new Point(this.x+p.x, this.y+p.y)
-	}
-	Subtract(p) {
-		return new Point(this.x-p.x, this.y-p.y)
-	}
-	Multiply(p) {
-		return new Point(this.x*p.x, this.y*p.y)
-	}
-	Lerp(p, t) {
-		return new Point(this.x*(1-t)+p.x*t, this.y*(1-t)+p.y*t)
-	}
-	Floor() {
-		return new Point(Math.floor(this.x), Math.floor(this.y))
-	}
-	Round() {
-		return new Point(Math.round(this.x), Math.round(this.y))
-	}
+	Divide(p) { return new Point(this.x/p.x, this.y/p.y) }
+	Add(p) { return new Point(this.x+p.x, this.y+p.y) }
+	Subtract(p) { return new Point(this.x-p.x, this.y-p.y) }
+	Multiply(p) { return new Point(this.x*p.x, this.y*p.y) }
+	Lerp(p, t) { return new Point(this.x*(1-t)+p.x*t, this.y*(1-t)+p.y*t) }
+	Floor() { return new Point(Math.floor(this.x), Math.floor(this.y)) }
+	Round() { return new Point(Math.round(this.x), Math.round(this.y)) }
+	
+	static FromRect({width, height}) { return new this(width, height) }
+	
 	* follow_line(start, end) {
 		let diff = end.Subtract(start)
 		let step_h = new Point(Math.sign(diff.x), 0)
@@ -56,12 +38,6 @@ class Point extends DOMPointReadOnly {
 			}
 		}
 		yield end
-	}
-	static FromRect({width, height}) {
-		return new this(width, height)
-	}
-	toString() {
-		return `(${this.x}, ${this.y})`
 	}
 }
 
@@ -137,7 +113,21 @@ class Brush extends Path2D {
 	adjust_cursor(pos) {
 		return pos.Subtract(this.origin).Round().Add(this.origin)
 	}
-
+	point(pos) {
+		let path = new Path2D()
+		this.add_to(path, pos)
+		return path
+	}
+	line(start, end) {
+		let path = new Path2D()
+		let i=0
+		for (let pos of this.adjust_cursor(start).follow_line(start, end)) {
+			if (i++>400)
+				throw new Error(`Infinite loop when drawing line:\nfrom ${start} to ${end}.`)
+			this.add_to(path, pos)
+		}
+		return path
+	}
 }
 
 class CircleBrush extends Brush {
@@ -151,7 +141,6 @@ class CircleBrush extends Brush {
 		super(new Point(r, r), fills)
 	}
 }
-
 
 
 // todo: want a setting that allows drawing "behind" existing colors
@@ -214,12 +203,12 @@ class Drawer {
 		this.tool[ev.type.slice(7)](this, pos, old)
 	}
 	event_pos(ev) {
-		let csizeP = Point.FromRect(this.canvas.getBoundingClientRect())
-		let cdimP = Point.FromRect(this.canvas)
-		let scaleP = csizeP.Divide(cdimP)
+		let scale = Point.FromRect(this.canvas.getBoundingClientRect()).Divide(Point.FromRect(this.canvas))
+		
 		let ps = 1/window.devicePixelRatio/2
-		let adjustP = new Point(ps, ps).Divide(scaleP)
-		return new Point(ev.offsetX, ev.offsetY).Add(adjustP).Divide(scaleP)
+		let adjust = new Point(ps, ps).Divide(scale)
+		
+		return new Point(ev.offsetX, ev.offsetY).Add(adjust).Divide(scale)
 	}
 	/////////////////
 	/// undo/redo ///
@@ -227,31 +216,31 @@ class Drawer {
 	
 	// TODO: save/restore the palette!!
 	history_get() {
-		return this.c2d.getImageData(0, 0, this.canvas.width, this.canvas.height)
+		return this.get_data()
 	}
 	history_put(data) {
-		this.c2d.putImageData(data, 0, 0)
+		this.put_data(data)
 	}
 	// clear
 	history_reset() {
-		this.history = [[], []]
+		this.history = {false:[], true:[]}
 		this.history_onchange()
 	}
 	// push state
 	history_add() {
-		let undo = this.history[0]
+		let undo = this.history.false
 		undo.push(this.history_get())
-		this.history[1] = []
+		this.history.true = []
 		while (undo.length > this.history_max)
 			undo.shift()
 		this.history_onchange()
 	}
 	// undo/redo
 	history_do(redo=false) {
-		let data = this.history[redo?1:0].pop()
+		let data = this.history[redo].pop()
 		if (data===undefined)
 			return false
-		this.history[redo?0:1].push(this.history_get())
+		this.history[!redo].push(this.history_get())
 		this.history_put(data)
 		this.history_onchange()
 		return true
@@ -269,6 +258,12 @@ class Drawer {
 	///////////////
 	/// drawing ///
 	///////////////
+	get_data() {
+		return this.c2d.getImageData(0, 0, this.canvas.width, this.canvas.height)
+	}
+	put_data(data) {
+		this.c2d.putImageData(data, 0, 0)
+	}
 	clear(all) {
 		this.history_add()
 		if (all) {
@@ -281,19 +276,10 @@ class Drawer {
 			this.c2d.restore()
 	}
 	draw(pos) {
-		let path = new Path2D()
-		this.brush.add_to(path, pos)
-		this.c2d.fill(path)
+		this.c2d.fill(this.brush.point(pos))
 	}
 	draw_line(start, end) {
-		let path = new Path2D()
-		let i=0
-		for (let pos of this.brush.adjust_cursor(start).follow_line(start, end)) {
-			if (i++>400)
-				throw new Error(`Infinite loop when drawing line:\nfrom ${start} to ${end}.`)
-			this.brush.add_to(path, pos)
-		}
-		this.c2d.fill(path)
+		this.c2d.fill(this.brush.line(start, end))
 	}
 	// bad
 	random_in_brush(pos) {
@@ -320,12 +306,12 @@ class Drawer {
 		this.history_add()
 		before = this.color32(before)
 		after = this.color32(after)
-		let data = this.c2d.getImageData(0, 0, this.canvas.width, this.canvas.height)
+		let data = this.get_data()
 		new Uint32Array(data.data.buffer).forEach((n,i,d)=>{
 			if (n==before)
 				d[i] = after
 		})
-		this.c2d.putImageData(data, 0, 0)
+		this.put_data(data)
 	}
 	
 	dither_pattern(level) {

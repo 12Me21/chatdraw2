@@ -141,8 +141,8 @@ class ChatDraw extends HTMLElement {
 		}
 		
 		d.history_onchange = ()=>{
-			form.undo.disabled = !d.history[0].length
-			form.redo.disabled = !d.history[1].length
+			form.undo.disabled = !d.history.false.length
+			form.redo.disabled = !d.history.true.length
 		}
 		d.history_onchange()
 		
