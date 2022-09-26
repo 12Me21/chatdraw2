@@ -10,31 +10,18 @@ class RadioSelector {
 }
 
 class Point extends DOMPointReadOnly {
+	c_dist(p) {
+		return Math.max(Math.abs(this.x-p.x), Math.abs(this.y-p.y))
+	}
 	distance(p) {
 		return Math.hypot(this.x-p.x, this.y-p.y)
 	}
 	magnitude() {
 		return Math.hypot(this.x, this.y)
 	}
-	max_distance(p) { //todo: what was this actually called?
-		return Math.max(this.x-p.x, this.y-p.y)
-	}
-	axis_diff() {
-		return Math.abs(this.x - this.y)
-	}
-	// not a real measurement, only useful for comparing points' distances from the same line
-	ldist(start, end) {
-		return end.Subtract(start).RMultiply(start.Subtract(this)).axis_diff()
-	}
 	
 	Divide(p) {
 		return new Point(this.x/p.x, this.y/p.y)
-	}
-	RMultiply(p) { // name?
-		return new Point(this.x*p.y, this.y*p.x)
-	}
-	SwapAxes() {
-		return new Point(this.y, this.x)
 	}
 	Add(p) {
 		return new Point(this.x+p.x, this.y+p.y)
@@ -57,26 +44,19 @@ class Point extends DOMPointReadOnly {
 	Cursor_adjust(brush) {
 		return this.Subtract(brush.origin).Round().Add(brush.origin)
 	}
-	Signs() {
-		return new Point(Math.sign(this.x), Math.sign(this.y))
-	}
 	* follow_line(start, end) {
 		let diff = end.Subtract(start)
 		let step_h = new Point(Math.sign(diff.x), 0)
 		let step_v = new Point(0, Math.sign(diff.y))
-		let pos = this
-		while (1) {
+		for (let pos=this,step=step_v; pos.c_dist(end)>0.5; pos=pos.Add(step)) {
 			yield pos
-			let rem = pos.Subtract(end)
-			if (Math.abs(rem.x)<=0.5 && Math.abs(rem.y)<=0.5)
-				break
-			// move in the direction that takes us closest to the ideal line
-			let horiz = pos.Add(step_h)
-			let vert = pos.Add(step_v)
-			if (step_h.x && horiz.ldist(start, end)<=vert.ldist(start, end))
-				pos = horiz
-			else
-				pos = vert
+			// choose step that takes us closest to the ideal line
+			if (step_h.x) {
+				let c = diff.x*(pos.y-start.y) - diff.y*(pos.x-start.x)
+				let horz = Math.abs(c - step_h.x*diff.y)
+				let vert = Math.abs(c + step_v.y*diff.x)
+				step = horz<=vert ? step_h : step_v
+			}
 		}
 		yield end
 	}

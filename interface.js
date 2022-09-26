@@ -154,6 +154,23 @@ class ChatDraw extends HTMLElement {
 		//form.pick.disabled = true
 		
 		super.shadowRoot.append(document.importNode(ChatDraw.style, true), d.canvas, form)
+		
+		let make_cursor=(size=1)=>{
+			let r = size/2+1 //  3->
+			let svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="${r*2}" height="${r*2}">
+<rect x="${r-0.5}" y="${r-0.5}" width="1" height="1"/>
+<rect x="${0.5}" y="${0.5}" width="${r*2-1}" height="${r*2-1}" fill="none" stroke="red" stroke-width="1"/>
+</svg>
+		`
+			let ox = r-0.5
+			let oy = r-0.5
+			let url = "data:image/svg+xml;base64,"+btoa(svg)
+			
+			this.draw.canvas.style.cursor = `url("${url}") ${ox} ${oy}, crosshair`
+		}
+		make_cursor(3)
+		
 	}
 	set_scale(n) {
 		this.style.setProperty('--scale', n)
@@ -291,18 +308,3 @@ b > span {
 `
 
 customElements.define('chat-draw', ChatDraw)
-
-let make_cursor=(size=1)=>{
-	let r = size/2+1 //  3->
-	let svg = `
-<svg xmlns="http://www.w3.org/2000/svg" width="${r*2}" height="${r*2}">
-<rect x="${r-0.5}" y="${r-0.5}" width="1" height="1"/>
-<rect x="${0.5}" y="${0.5}" width="${r*2-1}" height="${r*2-1}" fill="none" stroke="red" stroke-width="1"/>
-</svg>
-		`
-	let ox = r-0.5
-	let oy = r-0.5
-	let url = "data:image/svg+xml;base64,"+btoa(svg)
-	
-	chatdraw.canvas.style.cursor = `url("${url}") ${ox} ${oy}, crosshair`
-}
