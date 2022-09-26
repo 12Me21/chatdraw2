@@ -161,6 +161,7 @@ class Drawer {
 		
 		this.set_composite('source-over')
 		// todo: dont uh, make new tools here..
+		// also tbh these could be setters..
 		this.set_tool(new Freehand())
 		this.set_brush(new Brush(new Point(1, 1), [ [0, 0, 2, 2] ]))
 		this.set_pattern('white')
@@ -212,13 +213,15 @@ class Drawer {
 	history_get() {
 		return this.c2d.getImageData(0, 0, this.canvas.width, this.canvas.height)
 	}
-	history_set(data) {
+	history_put(data) {
 		this.c2d.putImageData(data, 0, 0)
 	}
+	// clear
 	history_reset() {
 		this.history = [[], []]
 		this.history_onchange()
 	}
+	// push state
 	history_add() {
 		let undo = this.history[0]
 		undo.push(this.history_get())
@@ -227,35 +230,26 @@ class Drawer {
 			undo.shift()
 		this.history_onchange()
 	}
+	// undo/redo
 	history_do(redo=false) {
 		let data = this.history[redo?1:0].pop()
 		if (data===undefined)
 			return false
 		this.history[redo?0:1].push(this.history_get())
-		this.history_set(data)
+		this.history_put(data)
 		this.history_onchange()
 		return true
 	}
-	history_onchange() {
-	}
+	// callback, assign to this
+	history_onchange() {}
 	/////////////////////
 	/// setting state ///
 	/////////////////////
-	set_color(color) {
-		this.c2d.shadowColor = color
-	}
-	set_pattern(pattern) {
-		this.c2d.fillStyle = pattern
-	}
-	set_brush(brush) {
-		this.brush = brush
-	}
-	set_composite(mode) {
-		this.c2d.globalCompositeOperation = mode
-	}
-	set_tool(tool) {
-		this.tool = tool
-	}
+	set_color(color) { this.c2d.shadowColor = color }
+	set_pattern(pattern) { this.c2d.fillStyle = pattern }
+	set_brush(brush) { this.brush = brush}
+	set_composite(mode) { this.c2d.globalCompositeOperation = mode }
+	set_tool(tool) { this.tool = tool }
 	///////////////
 	/// drawing ///
 	///////////////
