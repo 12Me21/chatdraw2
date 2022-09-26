@@ -1,5 +1,14 @@
 "use strict"
 
+class RadioSelector {
+	constructor() {
+		
+	}
+	add() {
+		
+	}
+}
+
 class Point extends DOMPointReadOnly {
 	distance(p) {
 		return Math.hypot(this.x-p.x, this.y-p.y)
@@ -51,9 +60,31 @@ class Point extends DOMPointReadOnly {
 	Signs() {
 		return new Point(Math.sign(this.x), Math.sign(this.y))
 	}
-	
+	* follow_line(start, end) {
+		let diff = end.Subtract(start)
+		let step_h = new Point(Math.sign(diff.x), 0)
+		let step_v = new Point(0, Math.sign(diff.y))
+		let pos = this
+		while (1) {
+			yield pos
+			let rem = pos.Subtract(end)
+			if (Math.abs(rem.x)<=0.5 && Math.abs(rem.y)<=0.5)
+				break
+			// move in the direction that takes us closest to the ideal line
+			let horiz = pos.Add(step_h)
+			let vert = pos.Add(step_v)
+			if (step_h.x && horiz.ldist(start, end)<=vert.ldist(start, end))
+				pos = horiz
+			else
+				pos = vert
+		}
+		yield end
+	}
 	static FromRect({width, height}) {
 		return new this(width, height)
+	}
+	toString() {
+		return `(${this.x}, ${this.y})`
 	}
 }
 
@@ -276,29 +307,13 @@ class Drawer {
 		this.c2d.fill(path)
 	}
 	draw_line(start, end) {
-		// steps
-		let diff = end.Subtract(start)
-		let step_h = new Point(Math.sign(diff.x), 0)
-		let step_v = new Point(0, Math.sign(diff.y))
-		let pos = start.Cursor_adjust(this.brush)
-		let i
 		let path = new Path2D()
-		for (i=0; i<500; i++) {
+		let i=0
+		for (let pos of start.Cursor_adjust(this.brush).follow_line(start, end)) {
+			if (i++>400)
+				throw new Error(`Infinite loop when drawing line:\nfrom ${start} to ${end}.`)
 			this.add_brush(path, pos)
-			let rem = pos.Subtract(end)
-			if (Math.abs(rem.x)<=0.5 && Math.abs(rem.y)<=0.5)
-				break
-			// move in the direction that takes us closest to the ideal line
-			let horiz = pos.Add(step_h)
-			let vert = pos.Add(step_v)
-			if (step_h.x && horiz.ldist(start, end)<=vert.ldist(start, end))
-				pos = horiz
-			else
-				pos = vert
 		}
-		if (i>400)
-			console.log('failed', start,end,pos,stop)
-		this.add_brush(path, end)
 		this.c2d.fill(path)
 	}
 	// bad
