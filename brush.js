@@ -41,9 +41,6 @@ class Point extends DOMPointReadOnly {
 	Round() {
 		return new Point(Math.round(this.x), Math.round(this.y))
 	}
-	Cursor_adjust(brush) {
-		return this.Subtract(brush.origin).Round().Add(brush.origin)
-	}
 	* follow_line(start, end) {
 		let diff = end.Subtract(start)
 		let step_h = new Point(Math.sign(diff.x), 0)
@@ -130,9 +127,17 @@ class Brush extends Path2D {
 	constructor(origin, fills) {
 		super()
 		for (let f of fills)
-			this.rect(...f)
+			super.rect(...f)
 		this.origin = origin
 	}
+	add_to(path, pos) {
+		let {x,y} = pos.Subtract(this.origin).Round()
+		path.addPath(this, new DOMMatrixReadOnly([1,0,0,1,x,y]))
+	}
+	adjust_cursor(pos) {
+		return pos.Subtract(this.origin).Round().Add(this.origin)
+	}
+
 }
 
 class CircleBrush extends Brush {
@@ -264,35 +269,29 @@ class Drawer {
 	///////////////
 	/// drawing ///
 	///////////////
-	// add brush to path
-	add_brush(path, pos) {
-		let {x,y} = pos.Subtract(this.brush.origin).Round()
-		path.addPath(this.brush, new DOMMatrixReadOnly([1,0,0,1,x,y]))
-	}
 	clear(all) {
 		this.history_add()
-		this.c2d.save()
 		if (all) {
-			this.c2d.resetTransform()
-			this.c2d.globalCompositeOperation = 'copy'
-			this.c2d.fillStyle = 'transparent'
-			this.c2d.shadowColor = 'transparent'
+			this.c2d.save()
+			this.c2d.globalCompositeOperation = 'destination-out'
+			this.c2d.fillStyle = 'black'
 		}
 		this.c2d.fillRect(0, 0, this.canvas.width, this.canvas.height)
-		this.c2d.restore()
+		if (all)
+			this.c2d.restore()
 	}
 	draw(pos) {
 		let path = new Path2D()
-		this.add_brush(path, pos)
+		this.brush.add_to(path, pos)
 		this.c2d.fill(path)
 	}
 	draw_line(start, end) {
 		let path = new Path2D()
 		let i=0
-		for (let pos of start.Cursor_adjust(this.brush).follow_line(start, end)) {
+		for (let pos of this.brush.adjust_cursor(start).follow_line(start, end)) {
 			if (i++>400)
 				throw new Error(`Infinite loop when drawing line:\nfrom ${start} to ${end}.`)
-			this.add_brush(path, pos)
+			this.brush.add_to(path, pos)
 		}
 		this.c2d.fill(path)
 	}
@@ -305,7 +304,7 @@ class Drawer {
 			if (n>30)
 				return
 			r = new Point(Math.random()*10-5, Math.random()*10-5)
-			r = r.Cursor_adjust(this.brush).Add(this.brush.origin)
+			r = this.brush.adjust_cursor(r).Add(this.brush.origin)
 		} while (!this.c2d.isPointInPath(this.brush, r.x+.5-1000, r.y+.5))
 		pos = pos.Add(r).Subtract(this.brush.origin)
 		this.c2d.fillRect(pos.x, pos.y, 1, 1)
