@@ -160,6 +160,7 @@ class Drawer {
 		this.history_reset()
 		
 		this.set_composite('source-over')
+		// todo: dont uh, make new tools here..
 		this.set_tool(new Freehand())
 		this.set_brush(new Brush(new Point(1, 1), [ [0, 0, 2, 2] ]))
 		this.set_pattern('white')
@@ -186,25 +187,22 @@ class Drawer {
 	//////////////////////
 	/// event handling ///
 	//////////////////////
-	do_tool({type, pointerId, offsetX, offsetY}) {
-		let ptr = this.pointers.get(pointerId)
+	do_tool(ev) {
+		let ptr = this.pointers.get(ev.pointerId)
 		if (!ptr)
 			return
-		let scaleP = this.canvas_scale()
-		let ps = 1/window.devicePixelRatio/2
-		let adjustP = new Point(ps, ps).Divide(scaleP)
-		
-		let pos = new Point(offsetX, offsetY).Add(adjustP).Divide(scaleP)
+		let pos = this.event_pos(ev)
 		let old = ptr.old
 		ptr.old = pos
-		if (type=='pointerup')
-			console.log(pos, old)
-		this.tool[type.slice(7)](this, pos, old)
+		this.tool[ev.type.slice(7)](this, pos, old)
 	}
-	canvas_scale() {
+	event_pos(ev) {
 		let csizeP = Point.FromRect(this.canvas.getBoundingClientRect())
 		let cdimP = Point.FromRect(this.canvas)
-		return csizeP.Divide(cdimP)
+		let scaleP = csizeP.Divide(cdimP)
+		let ps = 1/window.devicePixelRatio/2
+		let adjustP = new Point(ps, ps).Divide(scaleP)
+		return new Point(ev.offsetX, ev.offsetY).Add(adjustP).Divide(scaleP)
 	}
 	/////////////////
 	/// undo/redo ///
