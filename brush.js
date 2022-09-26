@@ -58,31 +58,27 @@ class Point extends DOMPointReadOnly {
 }
 
 class Tool {
+	down(){}
+	move(){}
+	up(){}
 }
 
 class Freehand extends Tool {
-	start(d, pos) {
+	down(d, pos) {
 		d.draw(pos)
 	}
-	drag(d, pos, old) {
+	move(d, pos, old) {
 		d.draw_line(old, pos)
-	}
-	end(d, pos) {
-		d.draw(pos)
 	}
 }
 
 class Spray extends Tool {
-	start(d, pos) {
-		this.drag(d,pos)
-		//d.random_in_brush(pos)
+	down(d, pos) {
+		this.move(d, pos)
 	}
-	drag(d, pos, old) {
+	move(d, pos, old) {
 		for (let i=0;i<10;i++)
 			d.random_in_brush(pos)
-	}
-	end(d, pos) {
-		this.drag(d,pos)
 	}
 }
 
@@ -91,12 +87,10 @@ class LineTool extends Tool {
 		super()
 		this.old = new Point()
 	}
-	start(d, pos) {
+	down(d, pos) {
 		this.old = pos
 	}
-	drag(d, pos, old) {
-	}
-	end(d, pos) {
+	up(d, pos) {
 		d.draw_line(this.old, pos)
 	}
 }
@@ -107,16 +101,16 @@ class Slow extends Tool {
 		this.speed = 0.15
 		this.avg = new Point()
 	}
-	start(d, pos) {
+	down(d, pos) {
 		this.avg = pos
 	}
-	drag(d, pos, old) {
+	move(d, pos) {
 		pos = this.avg.Lerp(pos, this.speed)
 		d.draw_line(this.avg, pos)
 		this.avg = pos
 	}
-	end(d, pos) {
-		this.drag(d, pos, pos)
+	up(d, pos) {
+		this.move(d, pos)
 	}
 }
 
@@ -159,94 +153,69 @@ class Drawer {
 		
 		this.c2d = this.canvas.getContext('2d')
 		this.c2d.imageSmoothingEnabled = false
-		this.set_composite('source-over')
 		this.c2d.shadowOffsetX = 1000
-		this.c2d.shadowOffsetY = 0
 		this.c2d.translate(-1000, 0)
 		
 		this.history_max = 20
 		this.history_reset()
 		
-		this.clear(true)
-		
+		this.set_composite('source-over')
 		this.set_tool(new Freehand())
-		
-		this.set_brush(new Brush(new Point(1, 1), [
-			[0, 0, 2, 2],
-		]))//new Path2D('M-100,0 m-1-1 h2 v2 h-2 z'))
+		this.set_brush(new Brush(new Point(1, 1), [ [0, 0, 2, 2] ]))
 		this.set_pattern('white')
 		this.set_color('black')
+		
+		this.clear(true)
 		
 		// stroke handling:
 		this.pointers = new Map()
 		this.canvas.onpointerdown = ev=>{
 			ev.target.setPointerCapture(ev.pointerId)
-			let pos = this.event_pos(ev)
-			this.pointers.set(ev.pointerId, pos)
-			
 			this.history_add()
-			this.tool.start(this, pos)
+			this.pointers.set(ev.pointerId, {old: null})
+			this.do_tool(ev)
 		}
-		this.canvas.onpointerup = ev=>{
-			let old = this.pointers.get(ev.pointerId)
-			if (!old)
-				return
-			let pos = this.event_pos(ev)
-			this.tool.end(this, pos, old)
+		this.canvas.onpointermove = this.canvas.onpointerup = ev=>{
+			this.do_tool(ev)
 		}
 		this.canvas.onlostpointercapture = ev=>{
 			this.pointers.delete(ev.pointerId)
 		}
-		this.canvas.onpointermove = ev=>{
-			let old = this.pointers.get(ev.pointerId)
-			if (!old)
-				return
-			let pos = this.event_pos(ev)
-			this.pointers.set(ev.pointerId, pos)
-			
-			this.tool.drag(this, pos, old)
-		}
+	}
+	
+	//////////////////////
+	/// event handling ///
+	//////////////////////
+	do_tool({type, pointerId, offsetX, offsetY}) {
+		let ptr = this.pointers.get(pointerId)
+		if (!ptr)
+			return
+		let scaleP = this.canvas_scale()
+		let ps = 1/window.devicePixelRatio/2
+		let adjustP = new Point(ps, ps).Divide(scaleP)
 		
+		let pos = new Point(offsetX, offsetY).Add(adjustP).Divide(scaleP)
+		let old = ptr.old
+		ptr.old = pos
+		if (type=='pointerup')
+			console.log(pos, old)
+		this.tool[type.slice(7)](this, pos, old)
 	}
-	
-	//'source-over' - replace
-	//'destination-over' - draw behind
-	//'source-atop' - draw on existing colors
-	set_composite(mode) {
-		this.c2d.globalCompositeOperation = mode
-	}
-	
-	// tools
-	set_tool(tool) {
-		this.tool = tool
-	}
-	
-	// event handling
 	canvas_scale() {
 		let csizeP = Point.FromRect(this.canvas.getBoundingClientRect())
 		let cdimP = Point.FromRect(this.canvas)
 		return csizeP.Divide(cdimP)
 	}
+	/////////////////
+	/// undo/redo ///
+	/////////////////
 	
-	event_pos(ev) {
-		let scaleP = this.canvas_scale()
-		
-		let ps = 1/window.devicePixelRatio/2
-		let adjustP = new Point(ps, ps).Divide(scaleP)
-		
-		return new Point(ev.offsetX, ev.offsetY).Add(adjustP).Divide(scaleP)
-	}
-	
-	// undo/redo
+	// TODO: save/restore the palette!!
 	history_get() {
 		return this.c2d.getImageData(0, 0, this.canvas.width, this.canvas.height)
 	}
 	history_set(data) {
-		this.c2d.save()
-		this.c2d.resetTransform()
-		this.c2d.globalCompositeOperation = 'copy'
 		this.c2d.putImageData(data, 0, 0)
-		this.c2d.restore()
 	}
 	history_reset() {
 		this.history = [[], []]
@@ -271,8 +240,32 @@ class Drawer {
 	}
 	history_onchange() {
 	}
-	
-	// drawing
+	/////////////////////
+	/// setting state ///
+	/////////////////////
+	set_color(color) {
+		this.c2d.shadowColor = color
+	}
+	set_pattern(pattern) {
+		this.c2d.fillStyle = pattern
+	}
+	set_brush(brush) {
+		this.brush = brush
+	}
+	set_composite(mode) {
+		this.c2d.globalCompositeOperation = mode
+	}
+	set_tool(tool) {
+		this.tool = tool
+	}
+	///////////////
+	/// drawing ///
+	///////////////
+	// add brush to path
+	add_brush(path, pos) {
+		let {x,y} = pos.Subtract(this.brush.origin).Round()
+		path.addPath(this.brush, new DOMMatrixReadOnly([1,0,0,1,x,y]))
+	}
 	clear(all) {
 		this.history_add()
 		this.c2d.save()
@@ -285,48 +278,27 @@ class Drawer {
 		this.c2d.fillRect(0, 0, this.canvas.width, this.canvas.height)
 		this.c2d.restore()
 	}
-	set_color(color) {
-		this.c2d.shadowColor = this.color = color
-	}
-	set_pattern(pattern) {
-		this.c2d.fillStyle = this.pattern = pattern
-	}
-	set_brush(brush) {
-		this.brush = brush
-	}
-	
-	add_brush(path, pos) {
-		let {x,y} = pos.Subtract(this.brush.origin).Round()
-		path.addPath(this.brush, new DOMMatrixReadOnly([1,0,0,1,x,y]))
-	}
 	draw(pos) {
 		let path = new Path2D()
 		this.add_brush(path, pos)
 		this.c2d.fill(path)
-		//let {origin, fills} = this.brush
-		//let {x,y} = pos.Subtract(origin).Round()
-		//fills.forEach(([s,t,w,h])=>this.c2d.fillRect(x+s,y+t,w,h))
 	}
 	draw_line(start, end) {
 		// steps
 		let diff = end.Subtract(start)
 		let step_h = new Point(Math.sign(diff.x), 0)
 		let step_v = new Point(0, Math.sign(diff.y))
-		//
 		let pos = start.Cursor_adjust(this.brush)
 		let i
 		let path = new Path2D()
 		for (i=0; i<500; i++) {
 			this.add_brush(path, pos)
-			
 			let rem = pos.Subtract(end)
 			if (Math.abs(rem.x)<=0.5 && Math.abs(rem.y)<=0.5)
 				break
-			
 			// move in the direction that takes us closest to the ideal line
 			let horiz = pos.Add(step_h)
 			let vert = pos.Add(step_v)
-			
 			if (step_h.x && horiz.ldist(start, end)<=vert.ldist(start, end))
 				pos = horiz
 			else
@@ -337,6 +309,7 @@ class Drawer {
 		this.add_brush(path, end)
 		this.c2d.fill(path)
 	}
+	// bad
 	random_in_brush(pos) {
 		let r
 		let n = 0
@@ -350,35 +323,23 @@ class Drawer {
 		pos = pos.Add(r).Subtract(this.brush.origin)
 		this.c2d.fillRect(pos.x, pos.y, 1, 1)
 	}
-	replace_color(color, rep=null) {
+	// convert a hex color into a Uint32, in system endianness
+	color32(color=null) {
+		if (!color)
+			return 0
+		let x = parseInt(color.slice(1), 16)
+		return new Uint32Array(Uint8Array.of(x>>16, x>>8, x, 255).buffer)[0]
+	}
+	replace_color(before, after=null) {
 		this.history_add()
-		this.c2d.save()
-		this.c2d.resetTransform()
-		this.c2d.globalCompositeOperation = 'copy'
-		let w = this.canvas.width
-		let data = this.c2d.getImageData(0, 0, w, this.canvas.height)
-		let d = data.data
-		let c = [
-			parseInt(color.substr(1,2), 16),
-			parseInt(color.substr(3,2), 16),
-			parseInt(color.substr(5,2), 16),
-			255,
-		]
-		let nc = rep ? [
-			parseInt(rep.substr(1,2), 16),
-			parseInt(rep.substr(3,2), 16),
-			parseInt(rep.substr(5,2), 16),
-			255,
-		] : [0,0,0,0]
-		p: for (let i=0; i<d.length; i+=4) {
-			for (let j=0; j<4; j++) {
-				if (d[i+j] != c[j])
-					continue p
-			}
-			d.set(nc, i)
-		}
+		before = this.color32(before)
+		after = this.color32(after)
+		let data = this.c2d.getImageData(0, 0, this.canvas.width, this.canvas.height)
+		new Uint32Array(data.data.buffer).forEach((n,i,d)=>{
+			if (n==before)
+				d[i] = after
+		})
 		this.c2d.putImageData(data, 0, 0)
-		this.c2d.restore()
 	}
 	
 	dither_pattern(level) {

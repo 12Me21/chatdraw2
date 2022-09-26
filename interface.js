@@ -179,6 +179,7 @@ ChatDraw.style.textContent = `
 	grid-area: canvas;
 	width: calc(var(--width) * 1px * var(--scale, 1));
 	cursor: crosshair;
+	touch-action: none;
 }
 canvas {
 	image-rendering: -moz-crisp-edges; image-rendering: pixelated;
