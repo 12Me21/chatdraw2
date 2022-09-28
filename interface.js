@@ -1,56 +1,19 @@
-/*class Opt {
-	constructor(name, options, change) {
-		this.onchange = change
-		this.options = new Map()
-		this.name = name
-		for (let {text, key, value} of options) {
-			let input = document.createElement('input')
-			Object.assign(input, {type:'radio', name, value:key})
-			let btn = document.createElement('b')
-			btn.append(text)
-			let label = document.createElement('label')
-			label.append(input, btn)
-			this.options.set(key, {value, button:input, elem:label})
-		}
+function draw_button({type, name, value, text, icon}) {
+	let input = document.createElement('input')
+	Object.assign(input, {type, name, value})
+	let span = document.createElement('b')
+	let s = document.createElement('span')
+	s.append(text)
+	span.append(s)
+	if (icon)
+		span.classList.add('icon')
+	if (name=='color') {
+		span.classList.add('color')
+		span.style.color = `var(--color-${value})`
 	}
-}*/
-
-// things:
-// - drawer holds
-//  - list of possible values (the 'palette') (ex for colors)
-//   - updates the button (re-render?) when changed
-//  - which option is selected
-//   - updates the form .value when changed
-
-
-// - form radio buttons store a string value
-//  - map this to a more complex type with an internal palette
-// - sometimes we need to add/remove/change options
-//  - this might involve re-rendering the button
-//  - if this happens to the selected option, we need to signal a selection change
-//  - but sometimes we 
-// -
-
-function draw_button(arg) {
-	for (let type in arg) {
-		let input = document.createElement('input')
-		let name = arg[type]
-		Object.assign(input, {type, name, value:arg.value})
-		let span = document.createElement('b')
-		let s = document.createElement('span')
-		s.append(arg.text)
-		span.append(s)
-		if (arg.text[0] > '~' || arg.icon)
-			span.classList.add('icon')
-		if (name=='color') {
-			/*span.append(document.createElement('span'))*/
-			span.classList.add('color')
-			span.style.color = `var(--color-${arg.value})`
-		}
-		let label = document.createElement('label')
-		label.append(input, span)
-		return label
-	}
+	let label = document.createElement('label')
+	label.append(input, span)
+	return label
 }
 
 class ChatDraw extends HTMLElement {
@@ -68,47 +31,45 @@ class ChatDraw extends HTMLElement {
 			0,[d.choices.pattern.values[i], pl[i]] = d.dither_pattern(i)
 		
 		let buttons = [
-			{items:[
-				{button:'clear', text:"reset!"},
-				{button:'undo', text:"↶"},
-				{button:'redo', text:"↷"},
-				{button:'fill', text:"fill"},
+			{cols:3, items:[
+				{type:'button', name:'clear', text:"reset!"},
+				{type:'button', name:'undo', text:"↶", icon:true},
+				{type:'button', name:'redo', text:"↷", icon:true},
+				{type:'button', name:'fill', text:"fill"},
 				...Object.keys(d.choices.tool.values).map(k=>{
-					return {radio:'tool', text:k, value:k}
+					return {type:'radio', name:'tool', text:k, value:k}
 				}),
-			], cols:3},
-			{items:[
-				{radio:'comp', text:"all", value:'source-over'},
-				{radio:'comp', text:"under", value:'destination-over'},
-				{radio:'comp', text:"in", value:'source-atop'},
-				{radio:'comp', text:"erase", value:'destination-out'},
 			]},
 			{items:[
-				{color:'pick', text:"edit"},
-				{button:'bg', text:" ➙bg"},
+				{type:'radio', name:'comp', text:"all", value:'source-over'},
+				{type:'radio', name:'comp', text:"under", value:'destination-over'},
+				{type:'radio', name:'comp', text:"in", value:'source-atop'},
+				{type:'radio', name:'comp', text:"erase", value:'destination-out'},
+			]},
+			{cols:2, items:[
+				{type:'color', name:'pick', text:"edit"},
+				{type:'button', name:'bg', text:"➙bg"},
 				...[0,1,2,3,4,5].map(x=>({
-					radio:'color', text:"", value:x,
+					type:'radio', name:'color', text:"", value:x,
 				}))
-			], cols:2},
-			{items:d.choices.brush.values.map((b,i)=>{
-				return {radio:'brush', text:""+(i+1), value:i, icon:true}
-			}),size:1},
-			{items:pl.map((b,i)=>{
-				return {radio:'pattern', text:b, value:i}
-			}),size:1,flow:'column'},
+			]},
+			{size:1, items:d.choices.brush.values.map((b,i)=>{
+				return {type:'radio', name:'brush', text:`${i+1}`, value:i, icon:true}
+			})},
+			{size:1, flow:'column', items:pl.map((b,i)=>{
+				return {type:'radio', name:'pattern', text:b, value:i}
+			})},
 		]
-		for (let {items,size=2,flow,cols} of buttons) {
+		for (let {items, size=2, flow, cols} of buttons) {
 			let fs = document.createElement('div')
-			for (let sb of items) {
+			for (let sb of items)
 				fs.append(draw_button(sb))
-			}
 			d.form.append(fs)
 			if (!cols)
 				cols = Math.ceil(items.length/(8/size))
 			fs.style.gridTemplateColumns = `repeat(${cols}, 1fr)`
 			fs.style.gridTemplateRows = `repeat(${Math.ceil(8/size)}, 1fr)`
-			if (size)
-				fs.style.setProperty('font-size', `calc(${size/2}px * var(--scale))`)
+			fs.style.setProperty('font-size', `calc(${size/2}px * var(--scale))`)
 			if (flow)
 				fs.style.gridAutoFlow = flow
 		}
