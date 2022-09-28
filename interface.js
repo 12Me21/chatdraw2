@@ -58,21 +58,14 @@ class ChatDraw extends HTMLElement {
 		super()
 		super.attachShadow({mode: 'open'})
 		
-		let form = this.form = document.createElement('form')
-		form.autocomplete = 'off'
-		form.method = 'dialog'
+		let d = this.draw = new Drawer(200, 100)
 		
-		let patterns = []
+		for (let i=1; i<=8; i++)
+			d.choices.brush.push(new CircleBrush(i))
+		
 		let pl = []
-		let brushes = []
-		for (let d=1; d<=8; d++)
-			brushes.push(new CircleBrush(d))
-		let palette = ['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00']
-		
-		let d = this.draw = new Drawer(200, 100, form, palette, patterns, brushes)
-		
 		for (let i=0; i<16; i++)
-			0,[patterns[i], pl[i]] = d.dither_pattern(i)
+			0,[d.choices.pattern[i], pl[i]] = d.dither_pattern(i)
 		
 		let buttons = [
 			{items:[
@@ -98,7 +91,7 @@ class ChatDraw extends HTMLElement {
 				}))
 			], cols:2},
 			//{color:'pick', text:"■"},
-			{items:brushes.map((b,i)=>{
+			{items:d.choices.brush.map((b,i)=>{
 				return {radio:'brush', text:""+(i+1), value:i, icon:true}
 			}),size:1},
 			{items:pl.map((b,i)=>{
@@ -110,7 +103,7 @@ class ChatDraw extends HTMLElement {
 			for (let sb of items) {
 				fs.append(draw_button(sb))
 			}
-			form.append(fs)
+			d.form.append(fs)
 			if (!cols)
 				cols = Math.ceil(items.length/(8/size))
 			fs.style.gridTemplateColumns = `repeat(${cols}, 1fr)`
@@ -121,14 +114,20 @@ class ChatDraw extends HTMLElement {
 				fs.style.gridAutoFlow = flow
 		}
 		
-		form.brush.value = 1
-		form.tool.value = "pen"
-		form.comp.value = "source-over"
-		form.color.value = 0
-		form.pattern.value = 15
+		let choose = (thing, n)=>{
+			d.form.elements[thing][n].click()
+		}
+		choose('brush', 1)
+		choose('tool', 0)
+		choose('comp', 0)
+		choose('color', 0)
+		choose('pattern', 15)
 		
-		super.shadowRoot.append(document.importNode(ChatDraw.style, true), d.canvas, form)
+		super.shadowRoot.append(document.importNode(ChatDraw.style, true), d.canvas, d.form)
 		
+		d.history_reset()
+		d.clear(true)
+
 		let make_cursor=(size=1)=>{
 			let r = size/2+1 //  3->
 			let svg = `
@@ -145,8 +144,6 @@ class ChatDraw extends HTMLElement {
 		}
 		make_cursor(3)
 		
-		d.history_reset()
-		d.clear(true)
 	}
 	set_scale(n) {
 		this.style.setProperty('--scale', n)

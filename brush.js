@@ -156,7 +156,7 @@ class CircleBrush extends Brush {
 // todo: want a setting that allows drawing "behind" existing colors
 
 class Drawer {
-	constructor(width, height, form, palette, patterns, brushes) {
+	constructor(width, height, patterns, brushes) {
 		this.canvas = document.createElement('canvas')
 		this.canvas.width = width
 		this.canvas.height = height
@@ -171,7 +171,9 @@ class Drawer {
 		this.c2d.shadowOffsetX = 1000
 		this.c2d.translate(-1000, 0)
 		
-		this.form = form
+		this.form = document.createElement('form')
+		this.form.autocomplete = 'off'
+		this.form.method = 'dialog'
 		
 		this.history_max = 20
 		//this.history_reset()
@@ -186,8 +188,8 @@ class Drawer {
 				// todo: put the onchange in here
 			},
 			color: [],
-			brush: brushes,
-			pattern: patterns,
+			brush: [],
+			pattern: [],
 			comp: {
 				'source-over':'source-over',
 				'destination-over':'destination-over',
@@ -195,26 +197,26 @@ class Drawer {
 				'destination-out':'destination-out',
 			},
 		}
-		this.set_palette2(palette)
+		this.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'])
 		
 		let sel_color=()=>this.form.color.value
 		
 		let actions = {
 			color: v=>{
 				this.form.pick.value = v
-				this.set_color(v)
+				this.c2d.shadowColor = v
 			},
-			comp: v=>this.set_composite(v),
-			pattern: v=>this.set_pattern(v),
-			brush: v=>this.set_brush(v),
-			tool: v=>this.set_tool(v),
+			comp: v=>this.c2d.globalCompositeOperation = v,
+			pattern: v=>this.c2d.fillStyle = v,
+			brush: v=>this.brush = v,
+			tool: v=>this.tool = v,
 			
 			pick: color=>{
 				let sel = sel_color()
 				let old = this.choices.color[sel]
 				this.replace_color(old, color)
 				this.set_palette(sel, color)
-				this.set_color(color)
+				actions.color(color)
 			},
 			
 			clear: ()=>this.clear(true),
@@ -241,16 +243,11 @@ class Drawer {
 				actions[e.name]()
 		}
 		
-		// settings
-		this.set_composite('source-over')
-		// todo: dont uh, make new tools here..
-		// also tbh these could be setters..
-		this.set_tool(new Freehand())
-		this.set_brush(new Brush(new Point(1, 1), [ [0, 0, 2, 2] ]))
-		this.set_pattern('white')
-		this.set_color('black')
+		this.brush = null
+		this.tool = null
 		
 		// ready
+		//this.history_reset()
 		//this.clear(true)
 		
 		// stroke handling:
@@ -357,11 +354,6 @@ class Drawer {
 		this.choices.color[i] = color
 	}
 	
-	set_color(color) { this.c2d.shadowColor = color }
-	set_pattern(pattern) { this.c2d.fillStyle = pattern }
-	set_brush(brush) { this.brush = brush}
-	set_composite(mode) { this.c2d.globalCompositeOperation = mode }
-	set_tool(tool) { this.tool = tool }
 	///////////////
 	/// drawing ///
 	///////////////
