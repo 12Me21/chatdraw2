@@ -61,11 +61,11 @@ class ChatDraw extends HTMLElement {
 		let d = this.draw = new Drawer(200, 100)
 		
 		for (let i=1; i<=8; i++)
-			d.choices.brush.push(new CircleBrush(i))
+			d.choices.brush.values.push(new CircleBrush(i))
 		
 		let pl = []
 		for (let i=0; i<16; i++)
-			0,[d.choices.pattern[i], pl[i]] = d.dither_pattern(i)
+			0,[d.choices.pattern.values[i], pl[i]] = d.dither_pattern(i)
 		
 		let buttons = [
 			{items:[
@@ -73,7 +73,7 @@ class ChatDraw extends HTMLElement {
 				{button:'undo', text:"↶"},
 				{button:'redo', text:"↷"},
 				{button:'fill', text:"fill"},
-				...Object.keys(d.choices.tool).map(k=>{
+				...Object.keys(d.choices.tool.values).map(k=>{
 					return {radio:'tool', text:k, value:k}
 				}),
 			], cols:3},
@@ -90,7 +90,7 @@ class ChatDraw extends HTMLElement {
 					radio:'color', text:"", value:x,
 				}))
 			], cols:2},
-			{items:d.choices.brush.map((b,i)=>{
+			{items:d.choices.brush.values.map((b,i)=>{
 				return {radio:'brush', text:""+(i+1), value:i, icon:true}
 			}),size:1},
 			{items:pl.map((b,i)=>{

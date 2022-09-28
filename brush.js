@@ -5,6 +5,9 @@ class Choices {
 		this.values = values
 		this.onchange = change
 	}
+	change(value) {
+		this.onchange(this.values[value])
+	}
 	get(key) {
 		return this.values[key]
 	}
@@ -190,37 +193,41 @@ class Drawer {
 		//this.clear(true)
 		
 		this.choices = {
-			tool: {
+			tool: new Choices({
 				pen: new Freehand(),
 				slow: new Slow(),
 				line: new LineTool(),
 				spray: new Spray(),
-				// todo: put the onchange in here
-			},
-			color: [],
-			brush: [],
-			pattern: [],
-			comp: {
+			}, v=>{
+				this.tool = v
+			}),
+			color: new Choices([
+			], v=>{
+				this.form.pick.value = v
+				this.c2d.shadowColor = v
+			}),
+			brush: new Choices([
+			], v=>{
+				this.brush = v
+			}),
+			pattern: new Choices([
+			], v=>{
+				this.c2d.fillStyle = v
+			}),
+			comp: new Choices({
 				'source-over':'source-over',
 				'destination-over':'destination-over',
 				'source-atop':'source-atop',
 				'destination-out':'destination-out',
-			},
+			}, v=>{
+				this.c2d.globalCompositeOperation = v
+			}),
 		}
 		this.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'])
 		
 		let sel_color=()=>this.form.color.value
 		
 		let actions = {
-			color: v=>{
-				this.form.pick.value = v
-				this.c2d.shadowColor = v
-			},
-			comp: v=>this.c2d.globalCompositeOperation = v,
-			pattern: v=>this.c2d.fillStyle = v,
-			brush: v=>this.brush = v,
-			tool: v=>this.tool = v,
-			
 			pick: color=>{
 				let sel = sel_color()
 				let old = this.choices.color[sel]
@@ -242,7 +249,7 @@ class Drawer {
 		this.form.onchange = ev=>{
 			let e = ev.target
 			if (e.type=='radio')
-				actions[e.name](this.choices[e.name][e.value])
+				this.choices[e.name].change(e.value)
 			else if (e.type=='color')
 				actions[e.name](e.value)
 		}
@@ -304,7 +311,7 @@ class Drawer {
 	history_get() {
 		return {
 			data: this.get_data(),
-			palette: [...this.choices.color],
+			palette: [...this.choices.color.values],
 		}
 	}
 	history_put(data) {
@@ -361,7 +368,7 @@ class Drawer {
 	}
 	set_palette(i, color) {
 		this.form.style.setProperty(`--color-${i}`, color)
-		this.choices.color[i] = color
+		this.choices.color.values[i] = color
 	}
 	
 	///////////////
