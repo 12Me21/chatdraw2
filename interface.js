@@ -90,7 +90,6 @@ class ChatDraw extends HTMLElement {
 					radio:'color', text:"", value:x,
 				}))
 			], cols:2},
-			//{color:'pick', text:"■"},
 			{items:d.choices.brush.map((b,i)=>{
 				return {radio:'brush', text:""+(i+1), value:i, icon:true}
 			}),size:1},

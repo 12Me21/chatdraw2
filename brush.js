@@ -1,5 +1,15 @@
 "use strict"
 
+class Choices {
+	constructor(values, change) {
+		this.values = values
+		this.onchange = change
+	}
+	get(key) {
+		return this.values[key]
+	}
+}
+
 class Point extends DOMPointReadOnly {
 	[Symbol.toPrimitive](type) {
 		if (type=='string')
