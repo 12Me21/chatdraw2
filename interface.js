@@ -62,11 +62,8 @@ class ChatDraw extends HTMLElement {
 		form.autocomplete = 'off'
 		form.method = 'dialog'
 		
-		let d = this.draw = new Drawer(200, 100, form)
-		
 		let patterns = []
-		for (let i=0; i<16; i++)
-			patterns[i] = d.dither_pattern(i)
+		let pl = []
 		let brushes = []
 		for (let d=1; d<=8; d++)
 			brushes.push(new CircleBrush(d))
@@ -76,16 +73,12 @@ class ChatDraw extends HTMLElement {
 			line: new LineTool(),
 			spray: new Spray(),
 		}
+		let palette = ['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00']
 		
-		/*let color_icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
-		let color_path = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
-		/*color_icon.viewBox.baseVal.width = 1
-		  color_icon.viewBox.baseVal.height = 1
-		color_icon.setAttribute('viewBox', "0 0 1 1")
-		color_path.width.baseVal.value = "1"
-		color_path.height.baseVal.value = "1"
-		color_path.style.fill = "currentColor"
-		color_icon.append(color_path)*/
+		let d = this.draw = new Drawer(200, 100, form, palette, patterns, brushes, tools)
+		
+		for (let i=0; i<16; i++)
+			0,[patterns[i], pl[i]] = d.dither_pattern(i)
 		
 		let buttons = [
 			{items:[
@@ -114,8 +107,8 @@ class ChatDraw extends HTMLElement {
 			{items:brushes.map((b,i)=>{
 				return {radio:'brush', text:""+(i+1), value:i, icon:true}
 			}),size:1},
-			{items:patterns.map((b,i)=>{
-				return {radio:'pattern', text:b[1], value:i}
+			{items:pl.map((b,i)=>{
+				return {radio:'pattern', text:b, value:i}
 			}),size:1,flow:'column'},
 		]
 		for (let {items,size=2,flow,cols} of buttons) {
@@ -134,61 +127,14 @@ class ChatDraw extends HTMLElement {
 				fs.style.gridAutoFlow = flow
 		}
 		
-		let actions = {
-			color: v=>{
-				let col = d.palette[+v]
-				form.pick.value = col
-				d.set_color(col)
-			},
-			comp: v=>d.set_composite(v),
-			pattern: v=>d.set_pattern(patterns[+v][0]),
-			brush: v=>d.set_brush(brushes[+v]),
-			tool: v=>d.set_tool(tools[v]),
-			
-			pick: v=>{
-				let sel = +form.color.value
-				let old = d.palette[sel]
-				d.set_palette(sel, v)
-				d.set_color(v)
-				d.replace_color(old, v)
-			},
-			
-			clear: ()=>d.clear(true),
-			fill: ()=>d.clear(false),
-			bg: ()=>{
-				let col = d.palette[+form.color.value]
-				d.replace_color(col)
-			},
-			undo: ()=>d.history_do(false),
-			redo: ()=>d.history_do(true),
-		}
-		
-		this.form = form
-		
-		form.onchange = ev=>{
-			let e = ev.target
-			if (e.type=='radio' || e.type=='color')
-				actions[e.name](e.value)
-		}
-		
-		form.onclick = ev=>{
-			let e = ev.target
-			if (e.type=='button')
-				actions[e.name]()
-		}
-		
 		form.brush.value = 1
 		form.tool.value = "pen"
 		form.comp.value = "source-over"
-		form.color.value = "#000000"
+		form.color.value = 0
 		form.pattern.value = 15
 		//form.pick.disabled = true
 		
 		super.shadowRoot.append(document.importNode(ChatDraw.style, true), d.canvas, form)
-		
-		d.history_reset()
-		d.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'])
-		d.clear(true)
 		
 		let make_cursor=(size=1)=>{
 			let r = size/2+1 //  3->
@@ -206,6 +152,8 @@ class ChatDraw extends HTMLElement {
 		}
 		make_cursor(3)
 		
+		d.history_reset()
+		d.clear(true)
 	}
 	set_scale(n) {
 		this.style.setProperty('--scale', n)

@@ -156,7 +156,7 @@ class CircleBrush extends Brush {
 // todo: want a setting that allows drawing "behind" existing colors
 
 class Drawer {
-	constructor(width, height, form) {
+	constructor(width, height, form, palette, patterns, brushes, tools) {
 		this.canvas = document.createElement('canvas')
 		this.canvas.width = width
 		this.canvas.height = height
@@ -174,9 +174,52 @@ class Drawer {
 		this.form = form
 		
 		this.palette = []
+		this.set_palette2(palette)
 		
 		this.history_max = 20
 		//this.history_reset()
+		//this.clear(true)
+		
+		let actions = {
+			color: v=>{
+				let col = this.palette[+v]
+				this.form.pick.value = col
+				this.set_color(col)
+			},
+			comp: v=>this.set_composite(v),
+			pattern: v=>this.set_pattern(patterns[+v]),
+			brush: v=>this.set_brush(brushes[+v]),
+			tool: v=>this.set_tool(tools[v]),
+			
+			pick: v=>{
+				let sel = +this.form.color.value
+				let old = this.palette[sel]
+				this.set_palette(sel, v)
+				this.set_color(v)
+				this.replace_color(old, v)
+			},
+			
+			clear: ()=>this.clear(true),
+			fill: ()=>this.clear(false),
+			bg: ()=>{
+				let col = this.palette[+this.form.color.value]
+				this.replace_color(col)
+			},
+			undo: ()=>this.history_do(false),
+			redo: ()=>this.history_do(true),
+		}
+		
+		this.form.onchange = ev=>{
+			let e = ev.target
+			if (e.type=='radio' || e.type=='color')
+				actions[e.name](e.value)
+		}
+		
+		this.form.onclick = ev=>{
+			let e = ev.target
+			if (e.type=='button')
+				actions[e.name]()
+		}
 		
 		// settings
 		this.set_composite('source-over')
