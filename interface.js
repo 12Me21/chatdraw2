@@ -67,15 +67,9 @@ class ChatDraw extends HTMLElement {
 		let brushes = []
 		for (let d=1; d<=8; d++)
 			brushes.push(new CircleBrush(d))
-		let tools = {
-			pen: new Freehand(),
-			slow: new Slow(),
-			line: new LineTool(),
-			spray: new Spray(),
-		}
 		let palette = ['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00']
 		
-		let d = this.draw = new Drawer(200, 100, form, palette, patterns, brushes, tools)
+		let d = this.draw = new Drawer(200, 100, form, palette, patterns, brushes)
 		
 		for (let i=0; i<16; i++)
 			0,[patterns[i], pl[i]] = d.dither_pattern(i)
@@ -86,7 +80,7 @@ class ChatDraw extends HTMLElement {
 				{button:'undo', text:"↶"},
 				{button:'redo', text:"↷"},
 				{button:'fill', text:"fill"},
-				...Object.keys(tools).map(k=>{
+				...Object.keys(d.choices.tool).map(k=>{
 					return {radio:'tool', text:k, value:k}
 				}),
 			], cols:3},
@@ -132,7 +126,6 @@ class ChatDraw extends HTMLElement {
 		form.comp.value = "source-over"
 		form.color.value = 0
 		form.pattern.value = 15
-		//form.pick.disabled = true
 		
 		super.shadowRoot.append(document.importNode(ChatDraw.style, true), d.canvas, form)
 		

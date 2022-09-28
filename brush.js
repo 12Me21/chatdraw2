@@ -156,7 +156,7 @@ class CircleBrush extends Brush {
 // todo: want a setting that allows drawing "behind" existing colors
 
 class Drawer {
-	constructor(width, height, form, palette, patterns, brushes, tools) {
+	constructor(width, height, form, palette, patterns, brushes) {
 		this.canvas = document.createElement('canvas')
 		this.canvas.width = width
 		this.canvas.height = height
@@ -173,37 +173,55 @@ class Drawer {
 		
 		this.form = form
 		
-		this.palette = []
-		this.set_palette2(palette)
-		
 		this.history_max = 20
 		//this.history_reset()
 		//this.clear(true)
 		
+		this.choices = {
+			tool: {
+				pen: new Freehand(),
+				slow: new Slow(),
+				line: new LineTool(),
+				spray: new Spray(),
+				// todo: put the onchange in here
+			},
+			color: [],
+			brush: brushes,
+			pattern: patterns,
+			comp: {
+				'source-over':'source-over',
+				'destination-over':'destination-over',
+				'source-atop':'source-atop',
+				'destination-out':'destination-out',
+			},
+		}
+		this.set_palette2(palette)
+		
+		let sel_color=()=>this.form.color.value
+		
 		let actions = {
 			color: v=>{
-				let col = this.palette[+v]
-				this.form.pick.value = col
-				this.set_color(col)
+				this.form.pick.value = v
+				this.set_color(v)
 			},
 			comp: v=>this.set_composite(v),
-			pattern: v=>this.set_pattern(patterns[+v]),
-			brush: v=>this.set_brush(brushes[+v]),
-			tool: v=>this.set_tool(tools[v]),
+			pattern: v=>this.set_pattern(v),
+			brush: v=>this.set_brush(v),
+			tool: v=>this.set_tool(v),
 			
-			pick: v=>{
-				let sel = +this.form.color.value
-				let old = this.palette[sel]
-				this.set_palette(sel, v)
-				this.set_color(v)
-				this.replace_color(old, v)
+			pick: color=>{
+				let sel = sel_color()
+				let old = this.choices.color[sel]
+				this.replace_color(old, color)
+				this.set_palette(sel, color)
+				this.set_color(color)
 			},
 			
 			clear: ()=>this.clear(true),
 			fill: ()=>this.clear(false),
 			bg: ()=>{
-				let col = this.palette[+this.form.color.value]
-				this.replace_color(col)
+				let color = this.choices.color[sel_color()]
+				this.replace_color(color)
 			},
 			undo: ()=>this.history_do(false),
 			redo: ()=>this.history_do(true),
@@ -211,7 +229,9 @@ class Drawer {
 		
 		this.form.onchange = ev=>{
 			let e = ev.target
-			if (e.type=='radio' || e.type=='color')
+			if (e.type=='radio')
+				actions[e.name](this.choices[e.name][e.value])
+			else if (e.type=='color')
 				actions[e.name](e.value)
 		}
 		
@@ -277,7 +297,7 @@ class Drawer {
 	history_get() {
 		return {
 			data: this.get_data(),
-			palette: this.palette,
+			palette: [...this.choices.color],
 		}
 	}
 	history_put(data) {
@@ -334,7 +354,7 @@ class Drawer {
 	}
 	set_palette(i, color) {
 		this.form.style.setProperty(`--color-${i}`, color)
-		this.palette[i] = color
+		this.choices.color[i] = color
 	}
 	
 	set_color(color) { this.c2d.shadowColor = color }
