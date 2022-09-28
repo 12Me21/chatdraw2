@@ -1,27 +1,31 @@
 "use strict"
 
-class RadioSelector {
-	constructor() {
-		
-	}
-	add() {
-		
-	}
-}
-
 class Point extends DOMPointReadOnly {
-	c_dist(p) { return Math.max(Math.abs(this.x-p.x), Math.abs(this.y-p.y)) }
-	toString() { return `(${this.x}, ${this.y})` }
-	
-	Divide(p) { return new Point(this.x/p.x, this.y/p.y) }
-	Add(p) { return new Point(this.x+p.x, this.y+p.y) }
-	Subtract(p) { return new Point(this.x-p.x, this.y-p.y) }
-	Multiply(p) { return new Point(this.x*p.x, this.y*p.y) }
-	Lerp(p, t) { return new Point(this.x*(1-t)+p.x*t, this.y*(1-t)+p.y*t) }
-	Floor() { return new Point(Math.floor(this.x), Math.floor(this.y)) }
-	Round() { return new Point(Math.round(this.x), Math.round(this.y)) }
+	[Symbol.toPrimitive](type) {
+		if (type=='string')
+			return `(${this.x}, ${this.y})`
+		return this
+	}
 	
 	static FromRect({width, height}) { return new this(width, height) }
+	
+	Add(p) {
+		return new Point(this.x+p.x, this.y+p.y)
+	}
+	Subtract(p) {
+		return new Point(this.x-p.x, this.y-p.y)
+	}
+	Divide(p) {
+		return new Point(this.x/p.x, this.y/p.y)
+	}
+	Round() {
+		return new Point(Math.round(this.x), Math.round(this.y))
+	}	
+	Lerp(p, t) {
+		return new Point(this.x*(1-t)+p.x*t, this.y*(1-t)+p.y*t)
+	}
+	
+	c_dist(p) { return Math.max(Math.abs(this.x-p.x), Math.abs(this.y-p.y)) }
 	
 	* follow_line(start, end) {
 		let diff = end.Subtract(start)
@@ -39,6 +43,12 @@ class Point extends DOMPointReadOnly {
 		}
 		yield end
 	}
+	/*
+ideas here:
+- will the 2 points always be on opposite sides of the goal line?
+- is midpoint above/below line?
+- what if we draw a line [such that reflecting point 1 over it results in point 2] what properties does this line have? intersect with goal line?
+*/
 }
 
 class Tool {
@@ -161,9 +171,12 @@ class Drawer {
 		this.c2d.shadowOffsetX = 1000
 		this.c2d.translate(-1000, 0)
 		
+		this.palette = []
+		
 		this.history_max = 20
 		this.history_reset()
 		
+		// settings
 		this.set_composite('source-over')
 		// todo: dont uh, make new tools here..
 		// also tbh these could be setters..
@@ -172,6 +185,7 @@ class Drawer {
 		this.set_pattern('white')
 		this.set_color('black')
 		
+		// ready
 		this.clear(true)
 		
 		// stroke handling:
@@ -216,40 +230,66 @@ class Drawer {
 	
 	// TODO: save/restore the palette!!
 	history_get() {
-		return this.get_data()
+		return {
+			data: this.get_data(),
+			palette: this.palette,
+		}
 	}
 	history_put(data) {
-		this.put_data(data)
+		this.put_data(data.data)
+		this.set_palette2(data.palette)
 	}
 	// clear
 	history_reset() {
-		this.history = {false:[], true:[]}
+		this.history = []
+		this.history_pos = 0
 		this.history_onchange()
 	}
 	// push state
 	history_add() {
-		let undo = this.history.false
-		undo.push(this.history_get())
-		this.history.true = []
-		while (undo.length > this.history_max)
-			undo.shift()
+		this.history.splice(this.history_pos, 9e9, this.history_get())
+		this.history_pos++
 		this.history_onchange()
 	}
+	history_can(redo) {
+		return redo ? this.history_pos<this.history.length : this.history_pos>0
+		//return this.history_pos!=(redo?this.history.length:0)
+	}
 	// undo/redo
-	history_do(redo=false) {
-		let data = this.history[redo].pop()
-		if (data===undefined)
-			return false
-		this.history[!redo].push(this.history_get())
-		this.history_put(data)
-		this.history_onchange()
-		return true
+	history_do(redo) {
+		// 0 1 2 [3] 4 5 - 3+ are redos
+		// 
+		if (!this.history_can(redo))
+			return
+		if (!redo) {
+			this.history_pos--
+			let data = this.history[this.history_pos]
+			this.history[this.history_pos] = this.history_get()
+			this.history_put(data)
+			this.history_onchange()
+		} else {
+			let data = this.history[this.history_pos]
+			this.history[this.history_pos] = this.history_get()
+			this.history_pos++
+			this.history_put(data)
+			this.history_onchange()
+		}
 	}
 	// callback, assign to this
 	history_onchange() {}
 	/////////////////////
 	/// setting state ///
 	/////////////////////
+	set_palette2(colors) {
+		colors.forEach((c,i)=>{
+			this.set_palette(i, c)
+		})
+	}
+	set_palette(i, color) {
+		this.form.style.setProperty(`--color-${i}`, color)
+		this.palette[i] = color
+	}
+	
 	set_color(color) { this.c2d.shadowColor = color }
 	set_pattern(pattern) { this.c2d.fillStyle = pattern }
 	set_brush(brush) { this.brush = brush}

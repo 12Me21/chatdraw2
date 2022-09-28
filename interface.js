@@ -1,3 +1,36 @@
+/*class Opt {
+	constructor(name, options, change) {
+		this.onchange = change
+		this.options = new Map()
+		this.name = name
+		for (let {text, key, value} of options) {
+			let input = document.createElement('input')
+			Object.assign(input, {type:'radio', name, value:key})
+			let btn = document.createElement('b')
+			btn.append(text)
+			let label = document.createElement('label')
+			label.append(input, btn)
+			this.options.set(key, {value, button:input, elem:label})
+		}
+	}
+}*/
+
+// things:
+// - drawer holds
+//  - list of possible values (the 'palette') (ex for colors)
+//   - updates the button (re-render?) when changed
+//  - which option is selected
+//   - updates the form .value when changed
+
+
+// - form radio buttons store a string value
+//  - map this to a more complex type with an internal palette
+// - sometimes we need to add/remove/change options
+//  - this might involve re-rendering the button
+//  - if this happens to the selected option, we need to signal a selection change
+//  - but sometimes we 
+// -
+
 function draw_button(arg) {
 	for (let type in arg) {
 		let input = document.createElement('input')
@@ -12,7 +45,7 @@ function draw_button(arg) {
 		if (name=='color') {
 			/*span.append(document.createElement('span'))*/
 			span.classList.add('color')
-			span.style.color = arg.value
+			span.style.color = `var(--color-${arg.value})`
 		}
 		let label = document.createElement('label')
 		label.append(input, span)
@@ -72,7 +105,7 @@ class ChatDraw extends HTMLElement {
 			{items:[
 				{color:'pick', text:"edit"},
 				{button:'bg', text:" ➙bg"},
-				...['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'].map(x=>({
+				...[0,1,2,3,4,5].map(x=>({
 					radio:'color', text:"", value:x,
 				}))
 			], cols:2},
@@ -102,8 +135,9 @@ class ChatDraw extends HTMLElement {
 		
 		let actions = {
 			color: v=>{
-				form.pick.value = v
-				d.set_color(v)
+				let col = d.palette[+v]
+				form.pick.value = col
+				d.set_color(col)
 			},
 			comp: v=>d.set_composite(v),
 			pattern: v=>d.set_pattern(patterns[+v][0]),
@@ -111,17 +145,19 @@ class ChatDraw extends HTMLElement {
 			tool: v=>d.set_tool(tools[v]),
 			
 			pick: v=>{
-				let sel = form.querySelector('input[name="color"]:checked')
-				let old = sel.value
-				sel.nextSibling.style.color = v
-				sel.value = v
+				let sel = +form.color.value
+				let old = d.palette[sel]
+				d.set_palette(sel, v)
 				d.set_color(v)
 				d.replace_color(old, v)
 			},
 			
 			clear: ()=>d.clear(true),
 			fill: ()=>d.clear(false),
-			bg: ()=>d.replace_color(form.color.value),
+			bg: ()=>{
+				let col = d.palette[+form.color.value]
+				d.replace_color(col)
+			},
 			undo: ()=>d.history_do(false),
 			redo: ()=>d.history_do(true),
 		}
@@ -141,8 +177,8 @@ class ChatDraw extends HTMLElement {
 		}
 		
 		d.history_onchange = ()=>{
-			form.undo.disabled = !d.history.false.length
-			form.redo.disabled = !d.history.true.length
+			form.undo.disabled = !d.history_can(false)
+			form.redo.disabled = !d.history_can(true)
 		}
 		d.history_onchange()
 		
@@ -154,6 +190,10 @@ class ChatDraw extends HTMLElement {
 		//form.pick.disabled = true
 		
 		super.shadowRoot.append(document.importNode(ChatDraw.style, true), d.canvas, form)
+		
+		d.form = form
+		
+		d.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'])
 		
 		let make_cursor=(size=1)=>{
 			let r = size/2+1 //  3->
@@ -231,9 +271,7 @@ b {
 	align-content: center;
 	justify-content: center;
 	text-align: center;
-	/*line-height: 1;*/
-text-transform: uppercase;
-	/*font-variant-caps: small-caps;*/
+	text-transform: uppercase;
 	background: #AA9;
 	color: #221;
 	overflow: hidden;
@@ -242,7 +280,6 @@ text-transform: uppercase;
 	margin-top: 0;
 	margin-left: 0;
 	text-shadow: calc(1em/3) calc(1em/3) 0 #BBA, calc(-1em/3) calc(-1em/3) 0 #776;
-	/*transition: color 2s cubic-bezier(.19,1,.22,1), text-shadow 4s cubic-bezier(.19,1,.22,1);*/
 }
 input[type="radio"] + b {
 	border-radius: 8em;
