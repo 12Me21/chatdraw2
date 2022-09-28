@@ -57,7 +57,12 @@ class ChatDraw extends HTMLElement {
 	constructor() {
 		super()
 		super.attachShadow({mode: 'open'})
-		let d = this.draw = new Drawer(200, 100)
+		
+		let form = this.form = document.createElement('form')
+		form.autocomplete = 'off'
+		form.method = 'dialog'
+		
+		let d = this.draw = new Drawer(200, 100, form)
 		
 		let patterns = []
 		for (let i=0; i<16; i++)
@@ -71,10 +76,6 @@ class ChatDraw extends HTMLElement {
 			line: new LineTool(),
 			spray: new Spray(),
 		}
-		
-		let form = document.createElement('form')
-		form.autocomplete = 'off'
-		form.method = 'dialog'
 		
 		/*let color_icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
 		let color_path = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
@@ -176,12 +177,6 @@ class ChatDraw extends HTMLElement {
 				actions[e.name]()
 		}
 		
-		d.history_onchange = ()=>{
-			form.undo.disabled = !d.history_can(false)
-			form.redo.disabled = !d.history_can(true)
-		}
-		d.history_onchange()
-		
 		form.brush.value = 1
 		form.tool.value = "pen"
 		form.comp.value = "source-over"
@@ -191,9 +186,9 @@ class ChatDraw extends HTMLElement {
 		
 		super.shadowRoot.append(document.importNode(ChatDraw.style, true), d.canvas, form)
 		
-		d.form = form
-		
+		d.history_reset()
 		d.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'])
+		d.clear(true)
 		
 		let make_cursor=(size=1)=>{
 			let r = size/2+1 //  3->

@@ -156,7 +156,7 @@ class CircleBrush extends Brush {
 // todo: want a setting that allows drawing "behind" existing colors
 
 class Drawer {
-	constructor(width, height) {
+	constructor(width, height, form) {
 		this.canvas = document.createElement('canvas')
 		this.canvas.width = width
 		this.canvas.height = height
@@ -171,10 +171,12 @@ class Drawer {
 		this.c2d.shadowOffsetX = 1000
 		this.c2d.translate(-1000, 0)
 		
+		this.form = form
+		
 		this.palette = []
 		
 		this.history_max = 20
-		this.history_reset()
+		//this.history_reset()
 		
 		// settings
 		this.set_composite('source-over')
@@ -186,7 +188,7 @@ class Drawer {
 		this.set_color('black')
 		
 		// ready
-		this.clear(true)
+		//this.clear(true)
 		
 		// stroke handling:
 		this.pointers = new Map()
@@ -275,8 +277,10 @@ class Drawer {
 			this.history_onchange()
 		}
 	}
-	// callback, assign to this
-	history_onchange() {}
+	history_onchange() {
+		this.form.undo.disabled = !this.history_can(false)
+		this.form.redo.disabled = !this.history_can(true)
+	}
 	/////////////////////
 	/// setting state ///
 	/////////////////////
