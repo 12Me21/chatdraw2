@@ -72,11 +72,12 @@ class ChatDraw extends HTMLElement {
 			{size:1, items:d.choices.brush.bdef()},
 			{size:1, flow:'column', items:d.choices.pattern.bdef()},
 		]
+		d.form.append(document.createElement('hr'))
 		for (let {items, size=2, flow, cols} of buttons) {
 			let fs = document.createElement('div')
 			for (let sb of items)
 				fs.append(draw_button(sb))
-			d.form.append(fs)
+			d.form.append(fs, document.createElement('hr'))
 			if (!cols)
 				cols = Math.ceil(items.length/(8/size))
 			fs.style.gridTemplateColumns = `repeat(${cols}, 1fr)`
@@ -85,6 +86,7 @@ class ChatDraw extends HTMLElement {
 			if (flow)
 				fs.style.gridAutoFlow = flow
 		}
+		//d.form.lastChild.remove()
 		
 		super.shadowRoot.append(document.importNode(ChatDraw.style, true), d.canvas, d.form)
 		
@@ -132,7 +134,7 @@ ChatDraw.style.textContent = `
 		/ min-content;
 	padding: 1px;
 	--scale: 2;
-	background: #C0C0B0;
+	background: #B0B098;
 }
 :host > canvas {
 	grid-area: canvas;
@@ -147,9 +149,8 @@ canvas {
 form {
 	grid-area: controls;
 	display: flex;
-	flex-flow: column-wrap;
 	-webkit-user-select: none; -moz-user-select: none; user-select: none;
-	padding: calc(var(--scale) * 3px) 0;
+	padding: calc(var(--scale) * 1px) 0;
 	justify-content: space-around;
 }
 label {
@@ -162,7 +163,7 @@ b {
 	contain: none;
 	
 	box-sizing: border-box;
-	width: 22em;
+	width: 20em;
 	height: 14em;
 	
 	border: solid 1em;
@@ -174,17 +175,21 @@ b {
 	justify-content: center;
 	text-align: center;
 	text-transform: uppercase;
-	background: #AA9;
+	background: #AAAA90;
 	color: #221;
 	overflow: hidden;
 	border-radius: 1em;
-	margin: 2em;
-	margin-top: 0;
-	margin-left: 0;
+	margin: 1em;
 	text-shadow: calc(1em/3) calc(1em/3) 0 #BBA, calc(-1em/3) calc(-1em/3) 0 #776;
 }
 input[type="radio"] + b {
 	border-radius: 8em;
+}
+hr {
+	all: unset;
+	margin: 0;
+	width: calc(1px);
+	background: linear-gradient(45deg, #AA9, #665, #AA8);
 }
 b span {
 	font-size: 5em;
@@ -195,7 +200,7 @@ b:hover {
 	box-shadow: calc(1em/3) calc(1em/3) calc(1em/3) black;
 }
 
-:checked + b, input[type="button"]:not(:disabled) + b:active {
+:checked + b, input:not([type="radio"]):not(:disabled):active + b {
 	color: #FFF078;
 	text-shadow: 0 0 calc(1em/3) red;
 	transition: none;
@@ -219,17 +224,22 @@ b.color > span {
 }
 
 :disabled + b {
-	border-color: #D0D0B0 #777 #777 #D0D0B0;
+	border-color: #776 #444 #444 #776;
+	box-shadow: 0 0 calc(10em/3) 0 inset black, 0 0 calc(10em/3) 0 inset white;
+	background: #887;
+	color: #666;
+	/*border-color: #D0D0B0 #777 #777 #D0D0B0;
 	color: #666;
 	background: #998;
 	box-shadow: 0 0 calc(1em/3) gray;
-	text-shadow: none;
+	text-shadow: none;*/
 }
 b.icon span {
 	font-weight: normal;
 	font-size: 10em;
 }
 div {
+	padding: calc(var(--scale) * 2px) 0;
 	contain: none;
 	display: grid;
 	align-content: start;
@@ -239,7 +249,7 @@ b canvas {
 	width: calc(16em / 5);
 	border-radius: 3em;
 	/*box-shadow: 0 0 calc(1em/3) inset white;*/
-	/*background: none;*/
+	background: none;
 }
 b > span {
 	display: contents;
