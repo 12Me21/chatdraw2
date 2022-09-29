@@ -31,6 +31,8 @@ class ChatDraw extends HTMLElement {
 			0,[d.choices.pattern.values[i], pl[i]] = d.dither_pattern(i)
 		d.choices.pattern.label = (v,i)=>pl[i]
 		
+		d.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'])
+		
 		let buttons = [
 			{cols:3, items:[
 				{type:'button', name:'clear', text:"reset!"},
@@ -62,20 +64,17 @@ class ChatDraw extends HTMLElement {
 				fs.style.gridAutoFlow = flow
 		}
 		
-		let choose = (thing, n)=>{
-			d.form.elements[thing][n].click()
-		}
-		choose('brush', 1)
-		choose('tool', 0)
-		choose('comp', 0)
-		choose('color', 0)
-		choose('pattern', 15)
-		
 		super.shadowRoot.append(document.importNode(ChatDraw.style, true), d.canvas, d.form)
+		
+		d.choose('tool', 0)
+		d.choose('brush', 1)
+		d.choose('comp', 0)
+		d.choose('color', 0)
+		d.choose('pattern', 15)
 		
 		d.history_reset()
 		d.clear(true)
-
+		
 		let make_cursor=(size=1)=>{
 			let r = size/2+1 //  3->
 			let svg = `

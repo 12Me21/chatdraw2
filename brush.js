@@ -76,7 +76,10 @@ class Tool {
 	move(){}
 	up(){}
 }
-
+// todo; should tools store their state on the drawer instead?
+// most of the time its only relevant to the current stroke --
+// ahhh the current.. yeahh.. so definitely make them purely classes
+// and then they store state within the current stroke..
 class Freehand extends Tool {
 	down(d, pos) {
 		d.draw(pos)
@@ -241,23 +244,21 @@ class Drawer {
 				}[v]
 			}),
 		}
-		this.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'])
-		
-		let sel_color=()=>this.form.color.value
 		
 		this.actions = {
 			pick: color=>{
-				let sel = sel_color()
+				let sel = this.sel_color()
 				let old = this.choices.color.get(sel)
 				this.replace_color(old, color)
 				this.set_palette(sel, color)
-				this.choices.color.change(sel)
 			},
 			
 			clear: ()=>this.clear(true),
 			fill: ()=>this.clear(false),
 			bg: ()=>{
-				let color = this.choices.color.get(sel_color())
+				// color here should this.c2d.shadowColor but just in case..
+				let sel = this.sel_color()
+				let color = this.choices.color.get(sel)
 				this.replace_color(color)
 			},
 			undo: ()=>this.history_do(false),
@@ -387,6 +388,16 @@ class Drawer {
 	set_palette(i, color) {
 		this.form.style.setProperty(`--color-${i}`, color)
 		this.choices.color.values[i] = color
+		if (i==this.sel_color())
+			this.choices.color.change(i)
+	}
+	sel_color() {
+		if (!this.form.color)
+			return null
+		return +this.form.color.value
+	}
+	choose(name, item) {
+		this.form.elements[name][item].click()
 	}
 	
 	///////////////
