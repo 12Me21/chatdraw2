@@ -41,6 +41,9 @@ class Point extends DOMPointReadOnly {
 	Round() {
 		return new Point(Math.round(this.x), Math.round(this.y))
 	}	
+	Floor() {
+		return new Point(Math.floor(this.x), Math.floor(this.y))
+	}	
 	Lerp(p, t) {
 		return new Point(this.x*(1-t)+p.x*t, this.y*(1-t)+p.y*t)
 	}
@@ -156,6 +159,13 @@ class Slow extends Stroke {
 Slow.prototype.speed = 0.15
 Slow.label = "slow"
 
+class Flood extends Stroke {
+	down(d) {
+		d.flood_fill(this.pos, d.c2d.shadowColor)
+	}
+}
+Flood.label = "flood"
+
 
 class Brush extends Path2D {
 	constructor(origin, fills) {
@@ -230,7 +240,7 @@ class Drawer {
 		this.choices = {
 			tool: new Choices(
 				'tool',
-				[Freehand, Slow, LineTool, Spray],
+				[Freehand, Slow, LineTool, Spray, Flood],
 				v=>this.tool = v,
 				v=>v.label
 			),
@@ -458,24 +468,64 @@ class Drawer {
 		this.put_data(data)
 	}
 	
-	dither_pattern(level) {
-		const od = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
-		let canvas = document.createElement('canvas')
-		canvas.width = 4
-		canvas.height = 4
-		let c2d = canvas.getContext('2d')
-		let data = c2d.createImageData(4, 4)
-		for (let x=0; x<16; x++)
-			if (od[x] <= level)
-				data.data[x<<2|3] = 0xFF
-		// hack: we want a larger canvas to use as a button label
-		c2d.putImageData(data, 0, 0)
-		let pattern = this.c2d.createPattern(canvas, 'repeat')
-		canvas.width = 8
-		canvas.height = 5
-		for (let y=0;y<5;y+=4)
-			for (let x=-3;x<8;x+=4)
-				c2d.putImageData(data, x, y)
-		return [pattern, canvas]
+	// technically speaking, this should be a  Brush? since it generates a path to fill (kinda)
+	// or we could use the current brush rather than fillrect here. which would allow implementing an.. erode-like operator? not sure how useful that would be tho.
+	flood_fill(pos, color) {
+		let {x,y} = pos.Floor()
+		let data = this.get_data()
+		let pixels = new Uint32Array(data.data.buffer)
+		let {width, height} = this.canvas
+		color = 0x10101010//this.color32()
+		//let path = new Path2D()
+		
+		let old = pixels[x + y*width]
+		if (old==color) // would cause an infinite loop
+			return false
+		
+		// fills pixels in a horizontal line, starting from (x,y),
+		// until it hits a wall or reaches x=limit
+		let to_wall = (x, y, dx, limit)=>{
+			while (x!=limit+dx && pixels[x + y*width]==old) {
+				pixels[x + y*width] = color
+				x += dx
+			}
+			return x-dx
+		}
+		
+		let queue = [[x+1, x, y, -1]]
+		
+		// find fillable areas in row y, between x=left and x=right
+		let find_spans = (left, right, y, dir)=>{
+			if (y<0 || y>=height)
+				return
+			for (let x=left; x<=right; x++) {
+				let stop = to_wall(x, y, +1, right)
+				if (stop >= x) {
+					queue.push([x, stop, y, dir])
+					x = stop
+				}
+			}
+		}
+		
+		while (queue.length) {
+			let [x1, x2, y, dir] = queue.pop()
+			// expand span
+			let left = to_wall(x1-1, y, -1, 0)
+			let right = to_wall(x2+1, y, +1, width-1)
+			this.c2d.fillRect(left, y, right-left+1, 1)
+			//path.rect(left, y, right-left+1, 1)
+			// check row backwards:
+			if (x2<x1) {
+				// (this only happens on the first iteration)
+				find_spans(left, right, y-dir, -dir)
+			} else {
+				find_spans(left, x1-2, y-dir, -dir)
+				find_spans(x2+2, right, y-dir, -dir)
+			}
+			// check row forwards:
+			find_spans(left, right, y+dir, dir)
+		}
+		
+		//this.put_data(data)
 	}
 }

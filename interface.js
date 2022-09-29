@@ -17,6 +17,27 @@ function draw_button({type, name, value, text, icon}) {
 	return label
 }
 
+function dither_pattern(level, context) {
+	const od = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
+	let canvas = document.createElement('canvas')
+	canvas.width = 4
+	canvas.height = 4
+	let c2d = canvas.getContext('2d')
+	let data = c2d.createImageData(4, 4)
+	for (let x=0; x<16; x++)
+		if (od[x] <= level)
+			data.data[x<<2|3] = 0xFF
+	// hack: we want a larger canvas to use as a button label
+	c2d.putImageData(data, 0, 0)
+	let pattern = context.createPattern(canvas, 'repeat')
+	canvas.width = 8
+	canvas.height = 5
+	for (let y=0;y<5;y+=4)
+		for (let x=-3;x<8;x+=4)
+			c2d.putImageData(data, x, y)
+	return [pattern, canvas]
+}
+
 class ChatDraw extends HTMLElement {
 	constructor() {
 		super()
@@ -29,7 +50,7 @@ class ChatDraw extends HTMLElement {
 		
 		let pl = []
 		for (let i=0; i<16; i++)
-			0,[d.choices.pattern.values[i], pl[i]] = d.dither_pattern(i)
+			0,[d.choices.pattern.values[i], pl[i]] = dither_pattern(i, d.c2d)
 		d.choices.pattern.label = (v,i)=>pl[i]
 		
 		d.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'])
