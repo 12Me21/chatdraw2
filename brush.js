@@ -161,10 +161,17 @@ Slow.label = "slow"
 
 class Flood extends Stroke {
 	down(d) {
-		d.flood_fill(this.pos, d.c2d.shadowColor)
+		d.flood_fill(this.pos)
 	}
 }
 Flood.label = "flood"
+
+class Flood2 extends Stroke {
+	down(d) {
+		d.flood_fill(this.pos, true)
+	}
+}
+Flood2.label = "flood2"
 
 
 class Brush extends Path2D {
@@ -173,6 +180,7 @@ class Brush extends Path2D {
 		for (let f of fills)
 			super.rect(...f)
 		this.origin = origin
+		this.fills = fills
 	}
 	add_to(path, pos) {
 		let {x,y} = pos.Subtract(this.origin).Round()
@@ -240,7 +248,7 @@ class Drawer {
 		this.choices = {
 			tool: new Choices(
 				'tool',
-				[Freehand, Slow, LineTool, Spray, Flood],
+				[Freehand, Slow, LineTool, Spray, Flood/*, Flood2*/],
 				v=>this.tool = v,
 				v=>v.label
 			),
@@ -470,23 +478,18 @@ class Drawer {
 	
 	// technically speaking, this should be a  Brush? since it generates a path to fill (kinda)
 	// or we could use the current brush rather than fillrect here. which would allow implementing an.. erode-like operator? not sure how useful that would be tho.
-	flood_fill(pos, color) {
+	flood_fill(pos, brush=false) {
 		let {x,y} = pos.Floor()
 		let data = this.get_data()
 		let pixels = new Uint32Array(data.data.buffer)
 		let {width, height} = this.canvas
-		color = 0x10101010//this.color32()
-		//let path = new Path2D()
-		
 		let old = pixels[x + y*width]
-		if (old==color) // would cause an infinite loop
-			return false
 		
 		// fills pixels in a horizontal line, starting from (x,y),
 		// until it hits a wall or reaches x=limit
 		let to_wall = (x, y, dx, limit)=>{
 			while (x!=limit+dx && pixels[x + y*width]==old) {
-				pixels[x + y*width] = color
+				pixels[x + y*width] = 0x00229900 // arbitrary fill color
 				x += dx
 			}
 			return x-dx
@@ -506,14 +509,20 @@ class Drawer {
 				}
 			}
 		}
-		
+		let size = this.brush.fills.length-1
 		while (queue.length) {
 			let [x1, x2, y, dir] = queue.pop()
 			// expand span
 			let left = to_wall(x1-1, y, -1, 0)
 			let right = to_wall(x2+1, y, +1, width-1)
-			this.c2d.fillRect(left, y, right-left+1, 1)
-			//path.rect(left, y, right-left+1, 1)
+			if (brush) {
+				let path = new Path2D()
+				for (let i=left; i<=right; i++)
+					this.brush.add_to(path, new Point(i, y))
+				this.c2d.fill(path)
+			} else {
+				this.c2d.fillRect(left-size, y-size, right-left+1+size*2, 1+size*2)
+			}
 			// check row backwards:
 			if (x2<x1) {
 				// (this only happens on the first iteration)
@@ -525,7 +534,5 @@ class Drawer {
 			// check row forwards:
 			find_spans(left, right, y+dir, dir)
 		}
-		
-		//this.put_data(data)
 	}
 }
