@@ -29,6 +29,7 @@ class ChatDraw extends HTMLElement {
 		let pl = []
 		for (let i=0; i<16; i++)
 			0,[d.choices.pattern.values[i], pl[i]] = d.dither_pattern(i)
+		d.choices.pattern.label = (v,i)=>pl[i]
 		
 		let buttons = [
 			{cols:3, items:[
@@ -36,29 +37,16 @@ class ChatDraw extends HTMLElement {
 				{type:'button', name:'undo', text:"↶", icon:true},
 				{type:'button', name:'redo', text:"↷", icon:true},
 				{type:'button', name:'fill', text:"fill"},
-				...Object.keys(d.choices.tool.values).map(k=>{
-					return {type:'radio', name:'tool', text:k, value:k}
-				}),
+				...d.choices.tool.bdef(),
 			]},
-			{items:[
-				{type:'radio', name:'comp', text:"all", value:'source-over'},
-				{type:'radio', name:'comp', text:"under", value:'destination-over'},
-				{type:'radio', name:'comp', text:"in", value:'source-atop'},
-				{type:'radio', name:'comp', text:"erase", value:'destination-out'},
-			]},
+			{items:d.choices.comp.bdef()},
 			{cols:2, items:[
 				{type:'color', name:'pick', text:"edit"},
 				{type:'button', name:'bg', text:"➙bg"},
-				...[0,1,2,3,4,5].map(x=>({
-					type:'radio', name:'color', text:"", value:x,
-				}))
+				...d.choices.color.bdef(),
 			]},
-			{size:1, items:d.choices.brush.values.map((b,i)=>{
-				return {type:'radio', name:'brush', text:`${i+1}`, value:i, icon:true}
-			})},
-			{size:1, flow:'column', items:pl.map((b,i)=>{
-				return {type:'radio', name:'pattern', text:b, value:i}
-			})},
+			{size:1, items:d.choices.brush.bdef()},
+			{size:1, flow:'column', items:d.choices.pattern.bdef()},
 		]
 		for (let {items, size=2, flow, cols} of buttons) {
 			let fs = document.createElement('div')

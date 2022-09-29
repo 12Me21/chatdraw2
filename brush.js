@@ -1,15 +1,22 @@
 "use strict"
 
 class Choices {
-	constructor(values, change) {
+	constructor(name, values, change, label) {
+		this.name = name
 		this.values = values
 		this.onchange = change
+		this.label = label
 	}
 	change(value) {
 		this.onchange(this.values[value])
 	}
 	get(key) {
 		return this.values[key]
+	}
+	bdef() {
+		return this.values.map((x,i)=>{
+			return {type:'radio', name:this.name, text:this.label(x,i), value:i}
+		})
 	}
 }
 
@@ -78,6 +85,7 @@ class Freehand extends Tool {
 		d.draw_line(old, pos)
 	}
 }
+Freehand.prototype.name = 'pen'
 
 class Spray extends Tool {
 	down(d, pos) {
@@ -88,6 +96,7 @@ class Spray extends Tool {
 			d.random_in_brush(pos)
 	}
 }
+Spray.prototype.name = 'spray'
 
 class LineTool extends Tool {
 	constructor() {
@@ -101,6 +110,7 @@ class LineTool extends Tool {
 		d.draw_line(this.old, pos)
 	}
 }
+LineTool.prototype.name = 'line'
 
 class Slow extends Tool {
 	constructor() {
@@ -120,6 +130,7 @@ class Slow extends Tool {
 		this.move(d, pos)
 	}
 }
+Slow.prototype.name = 'slow'
 
 
 class Brush extends Path2D {
@@ -169,7 +180,7 @@ class CircleBrush extends Brush {
 // todo: want a setting that allows drawing "behind" existing colors
 
 class Drawer {
-	constructor(width, height, patterns, brushes) {
+	constructor(width, height) {
 		this.canvas = document.createElement('canvas')
 		this.canvas.width = width
 		this.canvas.height = height
@@ -193,53 +204,60 @@ class Drawer {
 		//this.clear(true)
 		
 		this.choices = {
-			tool: new Choices({
-				pen: new Freehand(),
-				slow: new Slow(),
-				line: new LineTool(),
-				spray: new Spray(),
-			}, v=>{
+			tool: new Choices('tool', [
+				new Freehand(),
+				new Slow(),
+				new LineTool(),
+				new Spray(),
+			], v=>{
 				this.tool = v
-			}),
-			color: new Choices([
+			}, v=>v.name),
+			color: new Choices('color', [
 			], v=>{
 				this.form.pick.value = v
 				this.c2d.shadowColor = v
-			}),
-			brush: new Choices([
+			}, v=>""),
+			brush: new Choices('brush', [
 			], v=>{
 				this.brush = v
-			}),
-			pattern: new Choices([
+			}, (v,i)=>`${i+1}`),
+			pattern: new Choices('pattern', [
 			], v=>{
 				this.c2d.fillStyle = v
-			}),
-			comp: new Choices({
-				'source-over':'source-over',
-				'destination-over':'destination-over',
-				'source-atop':'source-atop',
-				'destination-out':'destination-out',
-			}, v=>{
+			}, null),
+			comp: new Choices('comp', [
+				'source-over',
+				'destination-over',
+				'source-atop',
+				'destination-out',
+			], v=>{
 				this.c2d.globalCompositeOperation = v
+			}, v=>{
+				return {
+					'source-over':"all",
+					'destination-over':"under",
+					'source-atop':"in",
+					'destination-out':"erase"
+				}[v]
 			}),
 		}
 		this.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'])
 		
 		let sel_color=()=>this.form.color.value
 		
-		let actions = {
+		this.actions = {
 			pick: color=>{
 				let sel = sel_color()
-				let old = this.choices.color[sel]
+				let old = this.choices.color.get(sel)
 				this.replace_color(old, color)
 				this.set_palette(sel, color)
-				actions.color(color)
+				this.choices.color.change(sel)
 			},
 			
 			clear: ()=>this.clear(true),
 			fill: ()=>this.clear(false),
 			bg: ()=>{
-				let color = this.choices.color[sel_color()]
+				let color = this.choices.color.get(sel_color())
 				this.replace_color(color)
 			},
 			undo: ()=>this.history_do(false),
@@ -251,13 +269,13 @@ class Drawer {
 			if (e.type=='radio')
 				this.choices[e.name].change(e.value)
 			else if (e.type=='color')
-				actions[e.name](e.value)
+				this.actions[e.name](e.value)
 		}
 		
 		this.form.onclick = ev=>{
 			let e = ev.target
 			if (e.type=='button')
-				actions[e.name]()
+				this.actions[e.name]()
 		}
 		
 		this.brush = null
