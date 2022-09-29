@@ -72,15 +72,17 @@ ideas here:
 }
 
 class Stroke {
-	static PointerDown(ev) {
-		let st = new this(ev)
+	static PointerDown(ev, context) {
+		let st = new this(ev, context)
 		Stroke.pointers.set(ev.pointerId, st)
+		st.down(st.context)
 		return st
 	}
 	static pointer_move(ev) {
 		let st = Stroke.pointers.get(ev.pointerId)
 		if (st) {
 			st.update(ev)
+			st[st.type](st.context)
 			return st
 		}
 	}
@@ -88,11 +90,12 @@ class Stroke {
 		Stroke.pointers.delete(ev.pointerId)
 	}
 	
-	constructor(ev) {
+	constructor(ev, context) {
 		ev.target.setPointerCapture(ev.pointerId)
 		this.pos = null
 		this.update(ev)
 		this.start = this.pos
+		this.context = context
 	}
 	update({target, offsetX, offsetY, type}) {
 		this.old = this.pos
@@ -120,7 +123,7 @@ class Freehand extends Stroke {
 		d.draw_line(this.old, this.pos)
 	}
 }
-Freehand.prototype.name = "pen"
+Freehand.label = "pen"
 class Spray extends Stroke {
 	down(d) {
 		this.move(d)
@@ -130,13 +133,13 @@ class Spray extends Stroke {
 			d.random_in_brush(this.pos)
 	}
 }
-Spray.prototype.name = "spray"
+Spray.label = "spray"
 class LineTool extends Stroke {
 	up(d) {
 		d.draw_line(this.start, this.pos)
 	}
 }
-LineTool.prototype.name = "line"
+LineTool.label = "line"
 class Slow extends Stroke {
 	down(d) {
 		this._avg = this.pos
@@ -151,7 +154,7 @@ class Slow extends Stroke {
 	}
 }
 Slow.prototype.speed = 0.15
-Slow.prototype.name = "slow"
+Slow.label = "slow"
 
 
 class Brush extends Path2D {
@@ -232,7 +235,7 @@ class Drawer {
 				Spray,
 			], v=>{
 				this.tool = v
-			}, v=>v.name),
+			}, v=>v.label),
 			color: new Choices('color', [
 			], v=>{
 				this.form.pick.value = v
@@ -306,14 +309,11 @@ class Drawer {
 		
 		// stroke handling:
 		this.canvas.onpointerdown = ev=>{
-			let st = this.tool.PointerDown(ev)
 			this.history_add()
-			st.down(this)
+			this.tool.PointerDown(ev, this)
 		}
 		this.canvas.onpointermove = this.canvas.onpointerup = ev=>{
-			let st = Stroke.pointer_move(ev)
-			if (st)
-				st[st.type](this)
+			Stroke.pointer_move(ev)
 		}
 		this.canvas.onlostpointercapture = ev=>{
 			Stroke.pointer_lost(ev)
