@@ -30,7 +30,7 @@ function dither_pattern(level, context) {
 	// hack: we want a larger canvas to use as a button label
 	c2d.putImageData(data, 0, 0)
 	let pattern = context.createPattern(canvas, 'repeat')
-	canvas.width = 8
+	canvas.width = 7
 	canvas.height = 5
 	for (let y=0;y<5;y+=4)
 		for (let x=-3;x<8;x+=4)
@@ -63,6 +63,7 @@ class ChatDraw extends HTMLElement {
 				{type:'button', name:'fill', text:"fill"},
 				...d.choices.tool.bdef(),
 			]},
+			// maybe swap the following 2 so color is more central?
 			{items:d.choices.comp.bdef()},
 			{cols:2, items:[
 				{type:'color', name:'pick', text:"edit"},
@@ -72,7 +73,7 @@ class ChatDraw extends HTMLElement {
 			{size:1, items:d.choices.brush.bdef()},
 			{size:1, flow:'column', items:d.choices.pattern.bdef()},
 		]
-		d.form.append(document.createElement('hr'))
+		//d.form.append(document.createElement('hr'))
 		for (let {items, size=2, flow, cols} of buttons) {
 			let fs = document.createElement('div')
 			for (let sb of items)
@@ -86,7 +87,7 @@ class ChatDraw extends HTMLElement {
 			if (flow)
 				fs.style.gridAutoFlow = flow
 		}
-		//d.form.lastChild.remove()
+		d.form.lastChild.remove()
 		
 		super.shadowRoot.append(document.importNode(ChatDraw.style, true), d.canvas, d.form)
 		
@@ -129,11 +130,11 @@ ChatDraw.style.textContent = `
 	display: inline-grid !important;
 	grid-template:
 		"canvas" max-content
-		"gap" 1px
 		"controls" auto
 		/ min-content;
-	padding: 1px;
 	--scale: 2;
+	border: solid calc(var(--scale) * 2px);
+	border-color: #998 #887 #666 #887;
 	background: #B0B098;
 }
 :host > canvas {
@@ -150,8 +151,8 @@ form {
 	grid-area: controls;
 	display: flex;
 	-webkit-user-select: none; -moz-user-select: none; user-select: none;
-	padding: calc(var(--scale) * 1px) 0;
-	justify-content: space-around;
+	justify-content: space-evenly;
+	border-top: #776 solid calc(var(--scale) * 2px);
 }
 label {
 	display: contents;
@@ -246,10 +247,10 @@ div {
 	grid-auto-flow: row;
 }
 b canvas {
-	width: calc(16em / 5);
+	width: calc(14em / 5);
 	border-radius: 3em;
 	/*box-shadow: 0 0 calc(1em/3) inset white;*/
-	background: none;
+	/*background: none;*/
 }
 b > span {
 	display: contents;
