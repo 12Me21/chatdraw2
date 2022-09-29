@@ -71,69 +71,97 @@ ideas here:
 */
 }
 
-class Tool {
-	down(){}
-	move(){}
-	up(){}
-}
-// todo; should tools store their state on the drawer instead?
-// most of the time its only relevant to the current stroke --
-// ahhh the current.. yeahh.. so definitely make them purely classes
-// and then they store state within the current stroke..
-class Freehand extends Tool {
-	down(d, pos) {
-		d.draw(pos)
+class Stroke {
+	static PointerDown(ev) {
+		let st = new this(ev)
+		this.pointers.set(ev.pointerId, st)
+		return st
 	}
-	move(d, pos, old) {
-		d.draw_line(old, pos)
+	static PointerMove(ev) {
+		let st = this.pointers.get(ev.pointerId)
+		if (st) {
+			st.update(ev)
+			return st
+		}
+	}
+	static lost_pointer(ev) {
+		this.pointers.delete(ev.pointerId)
+	}
+	
+	constructor(ev) {
+		ev.target.setPointerCapture(ev.pointerId)
+		this.pos = null
+		this.update(ev)
+		this.start = this.pos
+	}
+	update({target, offsetX, offsetY, type}) {
+		this.old = this.pos
+		this.type = type.slice(7)
+		
+		let scale = Point.FromRect(target.getBoundingClientRect()).Divide(Point.FromRect(target))
+		
+		let ps = 1/window.devicePixelRatio/2
+		let adjust = new Point(ps, ps).Divide(scale)
+		
+		this.pos = new Point(offsetX, offsetY).Add(adjust).Divide(scale)
 	}
 }
-Freehand.prototype.name = 'pen'
+Stroke.pointers = new Map()
 
-class Spray extends Tool {
-	down(d, pos) {
-		this.move(d, pos)
-	}
-	move(d, pos, old) {
-		for (let i=0;i<10;i++)
-			d.random_in_brush(pos)
-	}
-}
-Spray.prototype.name = 'spray'
+// or wait actually, tool should extend Stroke maybe!! yeah !
 
-class LineTool extends Tool {
-	constructor() {
-		super()
-		this.old = new Point()
-	}
-	down(d, pos) {
-		this.old = pos
-	}
-	up(d, pos) {
-		d.draw_line(this.old, pos)
-	}
+let Tool = {
+	name: 'tool',
+	down(){},
+	move(){},
+	up(){},
 }
-LineTool.prototype.name = 'line'
-
-class Slow extends Tool {
-	constructor() {
-		super()
-		this.speed = 0.15
-		this.avg = new Point()
-	}
-	down(d, pos) {
-		this.avg = pos
-	}
+let Freehand = {
+	__proto__: Tool,
+	name: 'pen',
+	down(d, st) {
+		d.draw(st.pos)
+	},
+	move(d, st) {
+		d.draw_line(st.old, st.pos)
+	},
+}
+let Spray = {
+	__proto__: Tool,
+	name: 'spray',
+	down(d, st) {
+		this.move(d, st.pos)
+	},
 	move(d, pos) {
-		pos = this.avg.Lerp(pos, this.speed)
-		d.draw_line(this.avg, pos)
-		this.avg = pos
-	}
-	up(d, pos) {
-		this.move(d, pos)
-	}
+		for (let i=0;i<10;i++)
+			d.random_in_brush(st.pos)
+	},
 }
-Slow.prototype.name = 'slow'
+
+let LineTool = {
+	__proto__: Tool,
+	name: 'line',
+	up(d, st) {
+		d.draw_line(st.start, st.pos)
+	},
+}
+
+let Slow = {
+	__proto__: Tool,
+	name: 'slow',
+	speed: 0.15,
+	down(d, st) {
+		st._avg = st.pos
+	},
+	move(d, st) {
+		let pos = st._avg.Lerp(st.pos, this.speed)
+		d.draw_line(st._avg, pos)
+		st._avg = pos
+	},
+	up(d, st) {
+		this.move(d, st)
+	},
+}
 
 
 class Brush extends Path2D {
@@ -208,10 +236,10 @@ class Drawer {
 		
 		this.choices = {
 			tool: new Choices('tool', [
-				new Freehand(),
-				new Slow(),
-				new LineTool(),
-				new Spray(),
+				Freehand,
+				Slow,
+				LineTool,
+				Spray,
 			], v=>{
 				this.tool = v
 			}, v=>v.name),
@@ -287,41 +315,21 @@ class Drawer {
 		//this.clear(true)
 		
 		// stroke handling:
-		this.pointers = new Map()
 		this.canvas.onpointerdown = ev=>{
-			ev.target.setPointerCapture(ev.pointerId)
+			let st = Stroke.PointerDown(ev)
 			this.history_add()
-			this.pointers.set(ev.pointerId, {old: null})
-			this.do_tool(ev)
+			this.tool[st.type](this, st)
 		}
 		this.canvas.onpointermove = this.canvas.onpointerup = ev=>{
-			this.do_tool(ev)
+			let st = Stroke.PointerMove(ev)
+			if (st)
+				this.tool[st.type](this, st)
 		}
 		this.canvas.onlostpointercapture = ev=>{
-			this.pointers.delete(ev.pointerId)
+			Stroke.lost_pointer(ev)
 		}
 	}
 	
-	//////////////////////
-	/// event handling ///
-	//////////////////////
-	do_tool(ev) {
-		let ptr = this.pointers.get(ev.pointerId)
-		if (!ptr)
-			return
-		let pos = this.event_pos(ev)
-		let old = ptr.old
-		ptr.old = pos
-		this.tool[ev.type.slice(7)](this, pos, old)
-	}
-	event_pos(ev) {
-		let scale = Point.FromRect(this.canvas.getBoundingClientRect()).Divide(Point.FromRect(this.canvas))
-		
-		let ps = 1/window.devicePixelRatio/2
-		let adjust = new Point(ps, ps).Divide(scale)
-		
-		return new Point(ev.offsetX, ev.offsetY).Add(adjust).Divide(scale)
-	}
 	/////////////////
 	/// undo/redo ///
 	/////////////////
