@@ -74,18 +74,18 @@ ideas here:
 class Stroke {
 	static PointerDown(ev) {
 		let st = new this(ev)
-		this.pointers.set(ev.pointerId, st)
+		Stroke.pointers.set(ev.pointerId, st)
 		return st
 	}
-	static PointerMove(ev) {
-		let st = this.pointers.get(ev.pointerId)
+	static pointer_move(ev) {
+		let st = Stroke.pointers.get(ev.pointerId)
 		if (st) {
 			st.update(ev)
 			return st
 		}
 	}
-	static lost_pointer(ev) {
-		this.pointers.delete(ev.pointerId)
+	static pointer_lost(ev) {
+		Stroke.pointers.delete(ev.pointerId)
 	}
 	
 	constructor(ev) {
@@ -105,63 +105,53 @@ class Stroke {
 		
 		this.pos = new Point(offsetX, offsetY).Add(adjust).Divide(scale)
 	}
+	down(){}
+	move(){}
+	up(){}
 }
 Stroke.pointers = new Map()
 
 // or wait actually, tool should extend Stroke maybe!! yeah !
-
-let Tool = {
-	name: 'tool',
-	down(){},
-	move(){},
-	up(){},
+class Freehand extends Stroke {
+	down(d) {
+		d.draw(this.pos)
+	}
+	move(d) {
+		d.draw_line(this.old, this.pos)
+	}
 }
-let Freehand = {
-	__proto__: Tool,
-	name: 'pen',
-	down(d, st) {
-		d.draw(st.pos)
-	},
-	move(d, st) {
-		d.draw_line(st.old, st.pos)
-	},
-}
-let Spray = {
-	__proto__: Tool,
-	name: 'spray',
-	down(d, st) {
-		this.move(d, st.pos)
-	},
-	move(d, pos) {
+Freehand.prototype.name = "pen"
+class Spray extends Stroke {
+	down(d) {
+		this.move(d)
+	}
+	move(d) {
 		for (let i=0;i<10;i++)
-			d.random_in_brush(st.pos)
-	},
+			d.random_in_brush(this.pos)
+	}
 }
-
-let LineTool = {
-	__proto__: Tool,
-	name: 'line',
-	up(d, st) {
-		d.draw_line(st.start, st.pos)
-	},
+Spray.prototype.name = "spray"
+class LineTool extends Stroke {
+	up(d) {
+		d.draw_line(this.start, this.pos)
+	}
 }
-
-let Slow = {
-	__proto__: Tool,
-	name: 'slow',
-	speed: 0.15,
-	down(d, st) {
-		st._avg = st.pos
-	},
-	move(d, st) {
-		let pos = st._avg.Lerp(st.pos, this.speed)
-		d.draw_line(st._avg, pos)
-		st._avg = pos
-	},
-	up(d, st) {
-		this.move(d, st)
-	},
+LineTool.prototype.name = "line"
+class Slow extends Stroke {
+	down(d) {
+		this._avg = this.pos
+	}
+	move(d) {
+		let pos = this._avg.Lerp(this.pos, this.speed)
+		d.draw_line(this._avg, pos)
+		this._avg = pos
+	}
+	up(d) {
+		this.move(d)
+	}
 }
+Slow.prototype.speed = 0.15
+Slow.prototype.name = "slow"
 
 
 class Brush extends Path2D {
@@ -316,17 +306,17 @@ class Drawer {
 		
 		// stroke handling:
 		this.canvas.onpointerdown = ev=>{
-			let st = Stroke.PointerDown(ev)
+			let st = this.tool.PointerDown(ev)
 			this.history_add()
-			this.tool[st.type](this, st)
+			st.down(this)
 		}
 		this.canvas.onpointermove = this.canvas.onpointerup = ev=>{
-			let st = Stroke.PointerMove(ev)
+			let st = Stroke.pointer_move(ev)
 			if (st)
-				this.tool[st.type](this, st)
+				st[st.type](this)
 		}
 		this.canvas.onlostpointercapture = ev=>{
-			Stroke.lost_pointer(ev)
+			Stroke.pointer_lost(ev)
 		}
 	}
 	
