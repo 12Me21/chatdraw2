@@ -228,44 +228,47 @@ class Drawer {
 		//this.clear(true)
 		
 		this.choices = {
-			tool: new Choices('tool', [
-				Freehand,
-				Slow,
-				LineTool,
-				Spray,
-			], v=>{
-				this.tool = v
-			}, v=>v.label),
-			color: new Choices('color', [
-			], v=>{
-				this.form.pick.value = v
-				this.c2d.shadowColor = v
-			}, v=>""),
-			brush: new Choices('brush', [
-			], v=>{
-				this.brush = v
-			}, (v,i)=>`${i+1}`),
-			pattern: new Choices('pattern', [
-			], v=>{
-				this.c2d.fillStyle = v
-			}, null),
-			comp: new Choices('comp', [
-				'source-over',
-				'destination-over',
-				'source-atop',
-				'destination-out',
-			], v=>{
-				this.c2d.globalCompositeOperation = v
-			}, v=>{
-				return {
-					'source-over':"all",
-					'destination-over':"under",
-					'source-atop':"in",
-					'destination-out':"erase"
-				}[v]
-			}),
+			tool: new Choices(
+				'tool',
+				[Freehand, Slow, LineTool, Spray],
+				v=>this.tool = v,
+				v=>v.label
+			),
+			color: new Choices(
+				'color',
+				[],
+				v=>{
+					this.form.pick.value = v
+					this.c2d.shadowColor = v
+				},
+				v=>""
+			),
+			brush: new Choices(
+				'brush',
+				[],
+				v=>this.brush = v,
+				(v,i)=>`${i+1}`
+			),
+			pattern: new Choices(
+				'pattern',
+				[],
+				v=>this.c2d.fillStyle = v,
+				null
+			),
+			comp: new Choices(
+				'comp',
+				['source-over', 'destination-over', 'source-atop', 'destination-out'],
+				v=>this.c2d.globalCompositeOperation = v,
+				v=>{
+					return {
+						'source-over':"all",
+						'destination-over':"under",
+						'source-atop':"in",
+						'destination-out':"erase"
+					}[v]
+				}
+			),
 		}
-		
 		this.actions = {
 			pick: color=>{
 				let sel = this.sel_color()
@@ -285,7 +288,6 @@ class Drawer {
 			undo: ()=>this.history_do(false),
 			redo: ()=>this.history_do(true),
 		}
-		
 		this.form.onchange = ev=>{
 			let e = ev.target
 			if (e.type=='radio')
@@ -293,7 +295,6 @@ class Drawer {
 			else if (e.type=='color')
 				this.actions[e.name](e.value)
 		}
-		
 		this.form.onclick = ev=>{
 			let e = ev.target
 			if (e.type=='button')
