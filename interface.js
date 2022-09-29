@@ -145,7 +145,7 @@ ChatDraw.style.textContent = `
 }
 canvas {
 	image-rendering: -moz-crisp-edges; image-rendering: pixelated;
-	background: repeating-linear-gradient(12.23deg, #F0E0AA, #D8D0A8 0.38291px);
+	background: repeating-linear-gradient(1.23deg, #F0E0AA, #D8D0A8 0.38291px);
 }
 form {
 	grid-area: controls;
