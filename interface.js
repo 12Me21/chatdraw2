@@ -1,5 +1,5 @@
 // todo: can we just restyle the normal ones instead? why are we doing it this way?
-function draw_button({type, name, value, text, icon}) {
+function draw_button({type, name, value="", text, icon}) {
 	let input = document.createElement('input')
 	Object.assign(input, {type, name, value})
 	let span = document.createElement('b')
@@ -13,11 +13,12 @@ function draw_button({type, name, value, text, icon}) {
 		span.style.color = `var(--color-${value})`
 	}
 	let label = document.createElement('label')
+	label.tabIndex = 0
 	label.append(input, span)
 	return label
 }
 
-function dither_pattern(level, context) {
+function dither_pattern(level, context, offset=0) {
 	const od = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
 	let canvas = document.createElement('canvas')
 	canvas.width = 4
@@ -25,7 +26,7 @@ function dither_pattern(level, context) {
 	let c2d = canvas.getContext('2d')
 	let data = c2d.createImageData(4, 4)
 	for (let x=0; x<16; x++)
-		if (od[x] <= level)
+		if (od[x+offset & 15] <= level)
 			data.data[x<<2|3] = 0xFF
 	// hack: we want a larger canvas to use as a button label
 	c2d.putImageData(data, 0, 0)
@@ -49,14 +50,25 @@ class ChatDraw extends HTMLElement {
 			d.choices.brush.values.push(new CircleBrush(i))
 		
 		let pl = []
+		// ew. just pass like, a 16 bit number and hardcode the list idk.
+		// maybe we want an input for specifying the pattern transform x/y. not sure how to design this though. numeric inputs kinda suck.
+		// maybe have up/down/left/right shift buttons
+		// and show the patterns on the buttons in their absolute positions?
+		// also we should show a preview of the current brush on the overlay layer.
 		for (let i=0; i<16; i++)
 			0,[d.choices.pattern.values[i], pl[i]] = dither_pattern(i, d.c2d)
+		0,[d.choices.pattern.values[16], pl[16]] = dither_pattern(7, d.c2d, 2)
+		0,[d.choices.pattern.values[17], pl[17]] = dither_pattern(3, d.c2d, 4)
+		0,[d.choices.pattern.values[18], pl[18]] = dither_pattern(3, d.c2d, 6)
+		0,[d.choices.pattern.values[19], pl[19]] = dither_pattern(3, d.c2d, 12)
 		d.choices.pattern.label = (v,i)=>pl[i]
 		
-		d.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'])
+		//d.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'])
+		d.set_palette2(["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
 		
 		let buttons = [
-			{cols:3, items:[
+			{title:'Draw Mode', items:d.choices.comp.bdef()},
+			{title:'Tools', cols:3, items:[
 				{type:'button', name:'clear', text:"reset!"},
 				{type:'button', name:'undo', text:"↶", icon:true},
 				{type:'button', name:'redo', text:"↷", icon:true},
@@ -64,26 +76,28 @@ class ChatDraw extends HTMLElement {
 				...d.choices.tool.bdef(),
 			]},
 			// maybe swap the following 2 so color is more central?
-			{items:d.choices.comp.bdef()},
-			{cols:2, items:[
+			{title:"Brushes", size:1, items:d.choices.brush.bdef()},
+			{title:"Patterns", size:1, flow:'column', items:d.choices.pattern.bdef()},
+			{title:"Colors", cols:2, items:[
 				{type:'color', name:'pick', text:"edit"},
 				{type:'button', name:'bg', text:"➙bg"},
 				...d.choices.color.bdef(),
 			]},
-			{size:1, items:d.choices.brush.bdef()},
-			{size:1, flow:'column', items:d.choices.pattern.bdef()},
 		]
 		//d.form.append(document.createElement('hr'))
-		for (let {items, size=2, flow, cols} of buttons) {
+		for (let {title, items, size=2, flow, cols} of buttons) {
 			let fs = document.createElement('div')
+			let x = document.createElement('div')
+			x.append(title)
+			fs.append(x)
 			for (let sb of items)
 				fs.append(draw_button(sb))
 			d.form.append(fs, document.createElement('hr'))
 			if (!cols)
 				cols = Math.ceil(items.length/(8/size))
 			fs.style.gridTemplateColumns = `repeat(${cols}, 1fr)`
-			fs.style.gridTemplateRows = `repeat(${Math.ceil(8/size)}, 1fr)`
-			fs.style.setProperty('font-size', `calc(${size/2}px * var(--scale))`)
+			fs.style.gridTemplateRows = `auto repeat(${Math.ceil(8/size)}, 1fr)`
+			fs.style.fontSize = `calc(${size/2}px * var(--scale))`
 			if (flow)
 				fs.style.gridAutoFlow = flow
 		}
@@ -256,5 +270,9 @@ b > span {
 	display: contents;
 }
 `
+
+ChatDraw.style = document.createElement('link')
+ChatDraw.style.rel = 'stylesheet'
+ChatDraw.style.href = 'style.css'
 
 customElements.define('chat-draw', ChatDraw)

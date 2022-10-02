@@ -50,17 +50,28 @@ class Point extends DOMPointReadOnly {
 	
 	c_dist(p) { return Math.max(Math.abs(this.x-p.x), Math.abs(this.y-p.y)) }
 	
-	* follow_line(start, end) {
+	* follow_line(start, end, diag=true) {
 		let diff = end.Subtract(start)
-		let step_h = new Point(Math.sign(diff.x), 0)
-		let step_v = new Point(0, Math.sign(diff.y))
+		let step_v, step_h
+		if (diag) {
+			step_v = new Point(Math.sign(diff.x), Math.sign(diff.y))
+			if (Math.abs(diff.x) >= Math.abs(diff.y))
+				step_h = new Point(Math.sign(diff.x), 0)
+			else
+				step_h = new Point(0, Math.sign(diff.y))
+		} else {
+			step_v = new Point(0, Math.sign(diff.y))
+			step_h = new Point(Math.sign(diff.x), 0)
+		}
+		let i=1000
 		for (let pos=this,step=step_v; pos.c_dist(end)>0.5; pos=pos.Add(step)) {
+			if (i--<0)
+				throw new Error(`infinite loop drawing line\nfrom ${start} to ${end} (diag: ${diag})`)
 			yield pos
 			// choose step that takes us closest to the ideal line
-			if (step_h.x) {
-				let c = diff.x*(pos.y-start.y) - diff.y*(pos.x-start.x)
-				let horz = Math.abs(c - step_h.x*diff.y)
-				let vert = Math.abs(c + step_v.y*diff.x)
+			if (step_h.x || step_h.y) {
+				let horz = Math.abs(diff.x*(pos.y-start.y+step_h.y) - diff.y*(pos.x-start.x+step_h.x))
+				let vert = Math.abs(diff.x*(pos.y-start.y+step_v.y) - diff.y*(pos.x-start.x+step_v.x))
 				step = horz<=vert ? step_h : step_v
 			}
 		}
@@ -120,10 +131,11 @@ Stroke.pointers = new Map()
 // or wait actually, tool should extend Stroke maybe!! yeah !
 class Freehand extends Stroke {
 	down(d) {
+		this._old = this.pos
 		d.draw(this.pos)
 	}
 	move(d) {
-		d.draw_line(this.old, this.pos)
+		this._old = d.draw_line(this._old, this.pos)
 	}
 }
 Freehand.label = "pen"
@@ -197,12 +209,15 @@ class Brush extends Path2D {
 	line(start, end) {
 		let path = new Path2D()
 		let i=0
-		for (let pos of this.adjust_cursor(start).follow_line(start, end)) {
+		let a = this.adjust_cursor(start)
+		let b = this.adjust_cursor(end)
+		let pos
+		for (pos of a.follow_line(a, b)) {
 			if (i++>400)
 				throw new Error(`Infinite loop when drawing line:\nfrom ${start} to ${end}.`)
 			this.add_to(path, pos)
 		}
-		return path
+		return [path, pos]
 	}
 }
 
@@ -219,13 +234,19 @@ class CircleBrush extends Brush {
 }
 
 
-// todo: want a setting that allows drawing "behind" existing colors
+// todo: class for specifically the canvas (setting up, and drawing methods) and move everything else into the chatdraw class (incl. cursor handling) 
+// goal: main and overlay canvas should be instances of that class
 
 class Drawer {
 	constructor(width, height) {
 		this.canvas = document.createElement('canvas')
 		this.canvas.width = width
 		this.canvas.height = height
+		/*Object.assign(this.canvas, {
+			style: {
+				imageRendering: = '-moz-crisp-edges'
+			}
+		})*/
 		this.canvas.style.setProperty('--width', width)
 		this.canvas.style.setProperty('--height', height)
 		this.canvas.style.imageRendering = '-moz-crisp-edges'
@@ -441,7 +462,9 @@ class Drawer {
 		this.c2d.fill(this.brush.point(pos))
 	}
 	draw_line(start, end) {
-		this.c2d.fill(this.brush.line(start, end))
+		let [path, pos] = this.brush.line(start, end)
+		this.c2d.fill(path)
+		return pos
 	}
 	// bad
 	random_in_brush(pos) {
