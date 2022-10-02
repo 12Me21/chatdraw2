@@ -1,0 +1,132 @@
+:host {
+	display: inline-grid !important;
+	grid-template:
+		"canvas" max-content
+		"controls" auto
+		/ min-content;
+	--scale: 2;
+	border: solid calc(var(--scale) * 2px);
+	border-color: #998 #887 #666 #887;
+	background: #B0B098;
+}
+
+:host > canvas {
+	grid-area: canvas;
+	width: calc(var(--width) * 1px * var(--scale, 1));
+	cursor: crosshair;
+	touch-action: none;
+}
+canvas {
+	image-rendering: -moz-crisp-edges; image-rendering: pixelated;
+	background: repeating-linear-gradient(1.23deg, #F0E0AA, #D8D0A8 0.38291px);
+}
+
+form {
+	grid-area: controls;
+	display: flex;
+	-webkit-user-select: none; user-select: none;
+	justify-content: space-evenly;
+	border-top: #776 solid calc(var(--scale) * 2px);
+}
+/* sections */
+div {
+	display: grid;
+	grid-auto-flow: row;
+	align-content: start;
+	justify-items: center;
+	padding-bottom: calc(var(--scale) * 2px);
+}
+div > div {
+	grid-column: 1 / -1;
+	font-size: calc(var(--scale) * 5px);
+	letter-spacing: -.1em;
+	height: 0.7em;
+}
+hr {
+	all: unset;
+	margin: 0;
+	width: calc(1px);
+	background: linear-gradient(45deg, #AA9, #665, #AA8);
+}
+/* button container */
+label {
+	display: contents;
+}
+input {
+	display: none;
+}
+/* buttons */
+b {
+	box-sizing: border-box;
+	width: 20em;
+	height: 14em;
+	
+	display: grid;
+	align-content: center;
+	justify-content: center;
+	text-align: center;
+	overflow: hidden;
+	text-transform: uppercase;
+	
+	margin: 1em;
+	border: solid 1em;
+	border-color: #FFD #887 #666 #DDB;
+	border-radius: 1em;
+	box-shadow: calc(1em/3) calc(1em/3) 1em black;
+	text-shadow: calc(1em/3) calc(1em/3) 0 #BBA, calc(-1em/3) calc(-1em/3) 0 #776;
+	background: #AAAA90;
+	color: #221;
+}
+input[type="radio"] + b {
+	border-radius: 8em;
+}
+b span {
+	display: contents;
+	font-size: 5em;
+}
+/* button hovered */
+b:hover, :focus-visible > b {
+	background: #CCC;
+	box-shadow: calc(1em/3) calc(1em/3) calc(1em/3) black;
+}
+/* button checked/active */
+:checked + b, input:not([type="radio"]):not(:disabled):active + b {
+	color: #FFF078;
+	text-shadow: 0 0 calc(1em/3) red;
+	transition: none;
+}
+:checked + b, :active + b {
+	border-color: #776 #444 #444 #776;
+	box-shadow: 0 0 calc(10em/3) 0 inset black, 0 0 calc(10em/3) 0 inset white, 0 0 calc(1em/3) 0 #FF8;
+	background: #887;
+}
+/* button disabled */
+:disabled + b {
+	border-color: #776 #444 #444 #776;
+	box-shadow: 0 0 calc(10em/3) 0 inset black, 0 0 calc(10em/3) 0 inset white;
+	background: #887;
+	color: #666;
+}
+/* larger text button */
+b.icon span {
+	font-weight: normal;
+	font-size: 10em;
+}
+/* color button */
+b.color > span {
+	display: block;
+	background: currentColor;
+	font-size: unset;
+	width: 16em;
+	height: 10em;
+	border-radius: 4.5em;
+	box-shadow: 0 0 calc(10em/3) 0 inset black, 0 0 calc(10em/3) 0 inset white;
+}
+:checked + b.color > span {
+	box-shadow: 0 0 calc(10em/3) 0 inset #0008, 0 0 calc(10em/3) 0 inset white, 0 0 calc(8em/3) calc(-2em/3) currentColor;
+}
+/* pattern button */
+b canvas {
+	width: calc(14em / 5);
+	border-radius: 3em;
+}
