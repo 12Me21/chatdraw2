@@ -359,10 +359,13 @@ class Grp {
 	}
 }
 
-class Drawer {
-	constructor(width, height) {
+class ChatDraw extends HTMLElement {
+	constructor() {
+		let width=200, height=100
+		super()
+		
 		this.grp = new Grp(width, height)
-		this.canvas = this.grp.canvas
+		let canvas = this.grp.canvas
 		
 		this.form = document.createElement('form')
 		this.form.autocomplete = 'off'
@@ -456,16 +459,58 @@ class Drawer {
 		}
 		
 		// stroke handling:
-		this.canvas.onpointerdown = ev=>{
+		canvas.onpointerdown = ev=>{
 			this.history_add()
 			this.tool.PointerDown(ev, this.grp)
 		}
-		this.canvas.onpointermove = this.canvas.onpointerup = ev=>{
+		canvas.onpointermove = canvas.onpointerup = ev=>{
 			Stroke.pointer_move(ev)
 		}
-		this.canvas.onlostpointercapture = ev=>{
+		canvas.onlostpointercapture = ev=>{
 			Stroke.pointer_lost(ev)
 		}
+		
+		for (let i=1; i<=8; i++)
+			this.choices.brush.values.push(new CircleBrush(i))
+		
+		for (let i=0; i<16; i++)
+			this.choices.pattern.values.push(dither_pattern(i, this.grp.c2d))
+		
+		this.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00']) //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
+		
+		draw_form(this.form, [
+			{title:'Tools', cols:3, items:[
+				{name:'clear', text:"reset!"},
+				{name:'undo', text:"↶", icon:true},
+				{name:'redo', text:"↷", icon:true},
+				{name:'fill', text:"fill"},
+				...this.choices.tool.bdef(),
+			]},
+			{title:'Draw Mode', items:this.choices.comp.bdef()},
+			{title:"Brushes", size:1, items:this.choices.brush.bdef()},
+			{title:"Colors", cols:2, items:[
+				{name:'pick', type:'color', text:"edit"},
+				{name:'bg', text:"➙bg"},
+				...this.choices.color.bdef(),
+			]},
+			{title:"Patterns", size:1, flow:'column', items:this.choices.pattern.bdef()},
+		])
+		super.attachShadow({mode: 'open'})
+		super.shadowRoot.append(document.importNode(ChatDraw.style, true), canvas, this.form)
+		
+		this.choose('tool', 0)
+		this.choose('brush', 1)
+		this.choose('comp', 0)
+		this.choose('color', 0)
+		this.choose('pattern', 15)
+		
+		canvas.style.cursor = make_cursor(3)
+		
+		this.history_reset()
+		this.grp.clear(true)
+	}
+	set_scale(n) {
+		this.style.setProperty('--scale', n)
 	}
 	
 	/////////////////
@@ -535,3 +580,8 @@ class Drawer {
 		this.form.elements[name][item].click()
 	}
 }
+ChatDraw.style = document.createElement('link')
+ChatDraw.style.rel = 'stylesheet'
+ChatDraw.style.href = 'style.css'
+
+customElements.define('chat-draw', ChatDraw)

@@ -1,11 +1,8 @@
 // todo: can we just restyle the normal ones instead? why are we doing it this way?
-function draw_button({type, name, value="", text, icon}) {
+function draw_button({type='button', name, value="", text, icon}) {
 	const input = document.createElement('input')
 	Object.assign(input, {type, name, value})
 	const span = document.createElement('b')
-	const s = document.createElement('span')
-	s.append(text)
-	span.append(s)
 	if (icon)
 		span.classList.add('icon')
 	if (name=='color') {
@@ -13,8 +10,10 @@ function draw_button({type, name, value="", text, icon}) {
 		span.style.color = `var(--color-${value})`
 	}
 	const label = document.createElement('label')
-	label.tabIndex = 0
 	label.append(input, span)
+	const s = document.createElement('span')
+	s.append(text)
+	span.append(s)
 	return label
 }
 
@@ -54,6 +53,13 @@ const make_cursor=(size=1)=>{
 	return `url("${url}") ${ox} ${oy}, crosshair`
 }
 
+		
+// ew. just pass like, a 16 bit number and hardcode the list idk.
+// maybe we want an input for specifying the pattern transform x/y. not sure how to design this though. numeric inputs kinda suck.
+// maybe have up/down/left/right shift buttons
+// and show the patterns on the buttons in their absolute positions?
+// also we should show a preview of the current brush on the overlay layer.
+// actually we can just shift the entire drawing to "choose" which offset ww..
 function dither_pattern(level, context, offset=0) {
 	const od = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
 	const canvas = document.createElement('canvas')
@@ -79,66 +85,7 @@ function dither_pattern(level, context, offset=0) {
 // idea: mode where you can move the cursor 1px etc. at a time
 // by clicking the top/bottom/left/right quadrants of the canvas
 // useful for shift moving 1px for dither align?
-
-class ChatDraw extends HTMLElement {
-	constructor() {
-		super()
-		
-		const d = this.draw = new Drawer(200, 100)
-		
-		for (let i=1; i<=8; i++)
-			d.choices.brush.values.push(new CircleBrush(i))
-		
-		// ew. just pass like, a 16 bit number and hardcode the list idk.
-		// maybe we want an input for specifying the pattern transform x/y. not sure how to design this though. numeric inputs kinda suck.
-		// maybe have up/down/left/right shift buttons
-		// and show the patterns on the buttons in their absolute positions?
-		// also we should show a preview of the current brush on the overlay layer.
-		// actually we can just shift the entire drawing to "choose" which offset ww..
-		for (let i=0; i<16; i++)
-			d.choices.pattern.values.push(dither_pattern(i, d.grp.c2d))
-		
-		//d.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'])
-		d.set_palette2(["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
-		
-		draw_form(d.form, [
-			{title:'Tools', cols:3, items:[
-				{type:'button', name:'clear', text:"reset!"},
-				{type:'button', name:'undo', text:"↶", icon:true},
-				{type:'button', name:'redo', text:"↷", icon:true},
-				{type:'button', name:'fill', text:"fill"},
-				...d.choices.tool.bdef(),
-			]},
-			{title:'Draw Mode', items:d.choices.comp.bdef()},
-			{title:"Brushes", size:1, items:d.choices.brush.bdef()},
-			{title:"Colors", cols:2, items:[
-				{type:'color', name:'pick', text:"edit"},
-				{type:'button', name:'bg', text:"➙bg"},
-				...d.choices.color.bdef(),
-			]},
-			{title:"Patterns", size:1, flow:'column', items:d.choices.pattern.bdef()},
-		])
-		
-		super.attachShadow({mode: 'open'})
-		super.shadowRoot.append(document.importNode(ChatDraw.style, true), d.canvas, d.form)
-		
-		d.choose('tool', 0)
-		d.choose('brush', 1)
-		d.choose('comp', 0)
-		d.choose('color', 0)
-		d.choose('pattern', 15)
-		
-		d.history_reset()
-		d.grp.clear(true)
-		
-		d.canvas.style.cursor = make_cursor(3)
-	}
-	set_scale(n) {
-		this.style.setProperty('--scale', n)
-	}
-}
-ChatDraw.style = document.createElement('style')
-ChatDraw.style.textContent = `
+var o = `
 * {
 	contain: content;
 }
@@ -272,9 +219,3 @@ b > span {
 	display: contents;
 }
 `
-
-ChatDraw.style = document.createElement('link')
-ChatDraw.style.rel = 'stylesheet'
-ChatDraw.style.href = 'style.css'
-
-customElements.define('chat-draw', ChatDraw)
