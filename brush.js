@@ -160,7 +160,7 @@ class Slow extends Stroke {
 		this._avg = this.pos
 	}
 	move(d) {
-		let pos = this._avg.Lerp(this.pos, this.speed)
+		let pos = this._avg.Lerp(this.pos, 0.15)
 		d.draw_line(this._avg, pos)
 		this._avg = pos
 	}
@@ -168,7 +168,6 @@ class Slow extends Stroke {
 		this.move(d)
 	}
 }
-Slow.prototype.speed = 0.15
 Slow.label = "slow"
 
 class Flood extends Stroke {
@@ -178,55 +177,44 @@ class Flood extends Stroke {
 }
 Flood.label = "flood"
 
-class Flood2 extends Stroke {
-	down(d) {
-		d.flood_fill(this.pos, true)
-	}
-}
-Flood2.label = "flood2"
-
 
 class Brush extends Path2D {
 	constructor(origin, fills) {
 		super()
-		for (let f of fills)
+		for (const f of fills)
 			super.rect(...f)
 		this.origin = origin
 		this.fills = fills
 	}
 	add_to(path, pos) {
-		let {x,y} = pos.Subtract(this.origin).Round()
+		const {x, y} = pos.Subtract(this.origin).Round()
 		path.addPath(this, new DOMMatrixReadOnly([1,0,0,1,x,y]))
 	}
 	adjust_cursor(pos) {
 		return pos.Subtract(this.origin).Round().Add(this.origin)
 	}
 	point(pos) {
-		let path = new Path2D()
+		const path = new Path2D()
 		this.add_to(path, pos)
 		return path
 	}
 	line(start, end) {
-		let path = new Path2D()
-		let i=0
-		let a = this.adjust_cursor(start)
-		let b = this.adjust_cursor(end)
+		const path = new Path2D()
+		start = this.adjust_cursor(start)
+		end = this.adjust_cursor(end)
 		let pos
-		for (pos of a.follow_line(a, b)) {
-			if (i++>400)
-				throw new Error(`Infinite loop when drawing line:\nfrom ${start} to ${end}.`)
+		for (pos of start.follow_line(start, end))
 			this.add_to(path, pos)
-		}
 		return [path, pos]
 	}
 }
 
 class CircleBrush extends Brush {
 	constructor(d) {
-		let r = d/2, sr = r-0.5
-		let fills = []
+		const r = d/2, sr = r-0.5
+		const fills = []
 		for (let y=-sr; y<=sr; y++) {
-			let x = Math.ceil(Math.sqrt(r*r - y*y)+sr)
+			const x = Math.ceil(Math.sqrt(r*r - y*y)+sr)
 			fills.push([x, y+sr, (r-x)*2, 1])
 		}
 		super(new Point(r, r), fills)
@@ -239,7 +227,7 @@ class CircleBrush extends Brush {
 
 class Grp {
 	constructor(width, height) {
-		let x = this.canvas = document.createElement('canvas')
+		const x = this.canvas = document.createElement('canvas')
 		x.width = width
 		x.height = height
 		x.style.setProperty('--width', width)
@@ -248,7 +236,7 @@ class Grp {
 		x.style.imageRendering = 'pixelated'
 		x.style.touchAction = 'none'
 		
-		let c = this.c2d = this.canvas.getContext('2d')
+		const c = this.c2d = this.canvas.getContext('2d')
 		c.imageSmoothingEnabled = false
 		c.shadowOffsetX = 1000
 		c.translate(-c.shadowOffsetX, 0)
@@ -285,7 +273,7 @@ class Grp {
 		this.c2d.fill(this.brush.point(pos))
 	}
 	draw_line(start, end) {
-		let [path, pos] = this.brush.line(start, end)
+		const [path, pos] = this.brush.line(start, end)
 		this.c2d.fill(path)
 		return pos
 	}
@@ -307,13 +295,13 @@ class Grp {
 	color32(color=null) {
 		if (!color)
 			return 0
-		let x = parseInt(color.slice(1), 16)
+		const x = parseInt(color.slice(1), 16)
 		return new Uint32Array(Uint8Array.of(x>>16, x>>8, x, 255).buffer)[0]
 	}
 	replace_color(before, after=null) {
 		before = this.color32(before)
 		after = this.color32(after)
-		let data = this.get_data()
+		const data = this.get_data()
 		new Uint32Array(data.data.buffer).forEach((n,i,d)=>{
 			if (n==before)
 				d[i] = after
@@ -518,22 +506,14 @@ class Drawer {
 	// undo/redo
 	history_do(redo) {
 		// 0 1 2 [3] 4 5 - 3+ are redos
-		// 
 		if (!this.history_can(redo))
 			return
-		if (!redo) {
-			this.history_pos--
-			let data = this.history[this.history_pos]
-			this.history[this.history_pos] = this.history_get()
-			this.history_put(data)
-			this.history_onchange()
-		} else {
-			let data = this.history[this.history_pos]
-			this.history[this.history_pos] = this.history_get()
-			this.history_pos++
-			this.history_put(data)
-			this.history_onchange()
-		}
+		if (!redo) this.history_pos--
+		const data = this.history[this.history_pos]
+		this.history[this.history_pos] = this.history_get()
+		if (redo) this.history_pos++
+		this.history_put(data)
+		this.history_onchange()
 	}
 	history_onchange() {
 		this.form.undo.disabled = !this.history_can(false)
@@ -543,9 +523,7 @@ class Drawer {
 	/// setting state ///
 	/////////////////////
 	set_palette2(colors) {
-		colors.forEach((c,i)=>{
-			this.set_palette(i, c)
-		})
+		colors.forEach((c,i)=>this.set_palette(i, c))
 	}
 	set_palette(i, color) {
 		this.form.style.setProperty(`--color-${i}`, color)
@@ -554,9 +532,8 @@ class Drawer {
 			this.choices.color.change(i)
 	}
 	sel_color() {
-		if (!this.form.color)
-			return null
-		return +this.form.color.value
+		if (this.form.color)
+			return +this.form.color.value
 	}
 	choose(name, item) {
 		this.form.elements[name][item].click()

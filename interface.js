@@ -1,9 +1,9 @@
 // todo: can we just restyle the normal ones instead? why are we doing it this way?
 function draw_button({type, name, value="", text, icon}) {
-	let input = document.createElement('input')
+	const input = document.createElement('input')
 	Object.assign(input, {type, name, value})
-	let span = document.createElement('b')
-	let s = document.createElement('span')
+	const span = document.createElement('b')
+	const s = document.createElement('span')
 	s.append(text)
 	span.append(s)
 	if (icon)
@@ -12,7 +12,7 @@ function draw_button({type, name, value="", text, icon}) {
 		span.classList.add('color')
 		span.style.color = `var(--color-${value})`
 	}
-	let label = document.createElement('label')
+	const label = document.createElement('label')
 	label.tabIndex = 0
 	label.append(input, span)
 	return label
@@ -20,17 +20,17 @@ function draw_button({type, name, value="", text, icon}) {
 
 function dither_pattern(level, context, offset=0) {
 	const od = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
-	let canvas = document.createElement('canvas')
+	const canvas = document.createElement('canvas')
 	canvas.width = 4
 	canvas.height = 4
-	let c2d = canvas.getContext('2d')
-	let data = c2d.createImageData(4, 4)
+	const c2d = canvas.getContext('2d')
+	const data = c2d.createImageData(4, 4)
 	for (let x=0; x<16; x++)
 		if (od[x+offset & 15] <= level)
 			data.data[x<<2|3] = 0xFF
 	// hack: we want a larger canvas to use as a button label
 	c2d.putImageData(data, 0, 0)
-	let pattern = context.createPattern(canvas, 'repeat')
+	const pattern = context.createPattern(canvas, 'repeat')
 	canvas.width = 7
 	canvas.height = 5
 	for (let y=0;y<5;y+=4)
@@ -39,22 +39,28 @@ function dither_pattern(level, context, offset=0) {
 	return [pattern, canvas]
 }
 
+// idea: mode where you can move the cursor 1px etc. at a time
+// by clicking the top/bottom/left/right quadrants of the canvas
+// useful for shift moving 1px for dither align?
+
 class ChatDraw extends HTMLElement {
 	constructor() {
 		super()
 		super.attachShadow({mode: 'open'})
 		
-		let d = this.draw = new Drawer(200, 100)
+		const d = this.draw = new Drawer(200, 100)
 		
 		for (let i=1; i<=8; i++)
 			d.choices.brush.values.push(new CircleBrush(i))
 		
-		let pl = []
+		
 		// ew. just pass like, a 16 bit number and hardcode the list idk.
 		// maybe we want an input for specifying the pattern transform x/y. not sure how to design this though. numeric inputs kinda suck.
 		// maybe have up/down/left/right shift buttons
 		// and show the patterns on the buttons in their absolute positions?
 		// also we should show a preview of the current brush on the overlay layer.
+		// actually we can just shift the entire drawing to "choose" which offset ww..
+		const pl = []
 		for (let i=0; i<16; i++)
 			0,[d.choices.pattern.values[i], pl[i]] = dither_pattern(i, d.grp.c2d)
 		0,[d.choices.pattern.values[16], pl[16]] = dither_pattern(7, d.grp.c2d, 2)
@@ -66,7 +72,7 @@ class ChatDraw extends HTMLElement {
 		//d.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'])
 		d.set_palette2(["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
 		
-		let buttons = [
+		const buttons = [
 			{title:'Tools', cols:3, items:[
 				{type:'button', name:'clear', text:"reset!"},
 				{type:'button', name:'undo', text:"↶", icon:true},
@@ -85,11 +91,11 @@ class ChatDraw extends HTMLElement {
 		]
 		//d.form.append(document.createElement('hr'))
 		for (let {title, items, size=2, flow, cols} of buttons) {
-			let fs = document.createElement('div')
-			let x = document.createElement('div')
+			const fs = document.createElement('div')
+			const x = document.createElement('div')
 			x.append(title)
 			fs.append(x)
-			for (let sb of items)
+			for (const sb of items)
 				fs.append(draw_button(sb))
 			d.form.append(fs, document.createElement('hr'))
 			if (!cols)
@@ -113,17 +119,17 @@ class ChatDraw extends HTMLElement {
 		d.history_reset()
 		d.grp.clear(true)
 		
-		let make_cursor=(size=1)=>{
-			let r = size/2+1 //  3->
-			let svg = `
+		const make_cursor=(size=1)=>{
+			const r = size/2+1 //  3->
+			const svg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="${r*2}" height="${r*2}">
 <rect x="${r-0.5}" y="${r-0.5}" width="1" height="1"/>
 <rect x="${0.5}" y="${0.5}" width="${r*2-1}" height="${r*2-1}" fill="none" stroke="red" stroke-width="1"/>
 </svg>
 		`
-			let ox = r-0.5
-			let oy = r-0.5
-			let url = "data:image/svg+xml;base64,"+btoa(svg)
+			const ox = r-0.5
+			const oy = r-0.5
+			const url = "data:image/svg+xml;base64,"+btoa(svg)
 			
 			this.draw.canvas.style.cursor = `url("${url}") ${ox} ${oy}, crosshair`
 		}
