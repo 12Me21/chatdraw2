@@ -56,18 +56,17 @@ class ChatDraw extends HTMLElement {
 		// and show the patterns on the buttons in their absolute positions?
 		// also we should show a preview of the current brush on the overlay layer.
 		for (let i=0; i<16; i++)
-			0,[d.choices.pattern.values[i], pl[i]] = dither_pattern(i, d.c2d)
-		0,[d.choices.pattern.values[16], pl[16]] = dither_pattern(7, d.c2d, 2)
-		0,[d.choices.pattern.values[17], pl[17]] = dither_pattern(3, d.c2d, 4)
-		0,[d.choices.pattern.values[18], pl[18]] = dither_pattern(3, d.c2d, 6)
-		0,[d.choices.pattern.values[19], pl[19]] = dither_pattern(3, d.c2d, 12)
+			0,[d.choices.pattern.values[i], pl[i]] = dither_pattern(i, d.grp.c2d)
+		0,[d.choices.pattern.values[16], pl[16]] = dither_pattern(7, d.grp.c2d, 2)
+		0,[d.choices.pattern.values[17], pl[17]] = dither_pattern(3, d.grp.c2d, 4)
+		0,[d.choices.pattern.values[18], pl[18]] = dither_pattern(3, d.grp.c2d, 6)
+		0,[d.choices.pattern.values[19], pl[19]] = dither_pattern(3, d.grp.c2d, 12)
 		d.choices.pattern.label = (v,i)=>pl[i]
 		
 		//d.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'])
 		d.set_palette2(["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
 		
 		let buttons = [
-			{title:'Draw Mode', items:d.choices.comp.bdef()},
 			{title:'Tools', cols:3, items:[
 				{type:'button', name:'clear', text:"reset!"},
 				{type:'button', name:'undo', text:"↶", icon:true},
@@ -75,14 +74,14 @@ class ChatDraw extends HTMLElement {
 				{type:'button', name:'fill', text:"fill"},
 				...d.choices.tool.bdef(),
 			]},
-			// maybe swap the following 2 so color is more central?
+			{title:'Draw Mode', items:d.choices.comp.bdef()},
 			{title:"Brushes", size:1, items:d.choices.brush.bdef()},
-			{title:"Patterns", size:1, flow:'column', items:d.choices.pattern.bdef()},
 			{title:"Colors", cols:2, items:[
 				{type:'color', name:'pick', text:"edit"},
 				{type:'button', name:'bg', text:"➙bg"},
 				...d.choices.color.bdef(),
 			]},
+			{title:"Patterns", size:1, flow:'column', items:d.choices.pattern.bdef()},
 		]
 		//d.form.append(document.createElement('hr'))
 		for (let {title, items, size=2, flow, cols} of buttons) {
@@ -112,7 +111,7 @@ class ChatDraw extends HTMLElement {
 		d.choose('pattern', 15)
 		
 		d.history_reset()
-		d.clear(true)
+		d.grp.clear(true)
 		
 		let make_cursor=(size=1)=>{
 			let r = size/2+1 //  3->

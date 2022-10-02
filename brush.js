@@ -237,36 +237,155 @@ class CircleBrush extends Brush {
 // todo: class for specifically the canvas (setting up, and drawing methods) and move everything else into the chatdraw class (incl. cursor handling) 
 // goal: main and overlay canvas should be instances of that class
 
+class Grp {
+	constructor(width, height) {
+		let x = this.canvas = document.createElement('canvas')
+		x.width = width
+		x.height = height
+		x.style.setProperty('--width', width)
+		x.style.setProperty('--height', height)
+		x.style.imageRendering = '-moz-crisp-edges'
+		x.style.imageRendering = 'pixelated'
+		x.style.touchAction = 'none'
+		
+		let c = this.c2d = this.canvas.getContext('2d')
+		c.imageSmoothingEnabled = false
+		c.shadowOffsetX = 1000
+		c.translate(-c.shadowOffsetX, 0)
+		
+		this.brush = null
+	}
+	set color(v) {
+		this.c2d.shadowColor = v
+	}
+	set pattern(v) {
+		this.c2d.fillStyle = v
+	}
+	set composite(v) {
+		this.c2d.globalCompositeOperation = v
+	}
+	
+	get_data() {
+		return this.c2d.getImageData(0, 0, this.canvas.width, this.canvas.height)
+	}
+	put_data(data) {
+		this.c2d.putImageData(data, 0, 0)
+	}
+	clear(all) {
+		if (all) {
+			this.c2d.save()
+			this.c2d.globalCompositeOperation = 'destination-out'
+			this.c2d.fillStyle = 'black'
+		}
+		this.c2d.fillRect(0, 0, this.canvas.width, this.canvas.height)
+		if (all)
+			this.c2d.restore()
+	}
+	draw(pos) {
+		this.c2d.fill(this.brush.point(pos))
+	}
+	draw_line(start, end) {
+		let [path, pos] = this.brush.line(start, end)
+		this.c2d.fill(path)
+		return pos
+	}
+	// bad
+	random_in_brush(pos) {
+		let r
+		let n = 0
+		do {
+			n++
+			if (n>30)
+				return
+			r = new Point(Math.random()*10-5, Math.random()*10-5)
+			r = this.brush.adjust_cursor(r).Add(this.brush.origin)
+		} while (!this.c2d.isPointInPath(this.brush, r.x+.5-1000, r.y+.5))
+		pos = pos.Add(r).Subtract(this.brush.origin)
+		this.c2d.fillRect(pos.x, pos.y, 1, 1)
+	}
+	// convert a hex color into a Uint32, in system endianness
+	color32(color=null) {
+		if (!color)
+			return 0
+		let x = parseInt(color.slice(1), 16)
+		return new Uint32Array(Uint8Array.of(x>>16, x>>8, x, 255).buffer)[0]
+	}
+	replace_color(before, after=null) {
+		before = this.color32(before)
+		after = this.color32(after)
+		let data = this.get_data()
+		new Uint32Array(data.data.buffer).forEach((n,i,d)=>{
+			if (n==before)
+				d[i] = after
+		})
+		this.put_data(data)
+	}
+	
+	// technically speaking, this should be a  Brush? since it generates a path to fill (kinda)
+	// or we could use the current brush rather than fillrect here. which would allow implementing an.. erode-like operator? not sure how useful that would be tho.
+	flood_fill(pos, brush=false) {
+		const {x, y} = pos.Floor()
+		const {width, height} = this.canvas
+		const data = this.get_data()
+		const pixels = new Uint32Array(data.data.buffer)
+		const old = pixels[x + y*width]
+		const queue = [[x+1, x, y, -1]]
+		const size = this.brush.fills.length-1
+		// fills pixels in a horizontal line, starting from (x,y),
+		// until it hits a wall or reaches x=limit
+		const to_wall = (x, y, dx, limit)=>{
+			for (; x!=limit+dx && pixels[x+y*width]==old; x+=dx)
+				pixels[x+y*width] = 0x00229900 // arbitrary fill color
+			return x-dx
+		}
+		// find fillable areas in row y, between x=left and x=right
+		const find_spans = (left, right, y, dir)=>{
+			y += dir
+			if (y<0 || y>=height)
+				return
+			for (let x=left; x<=right; x++) {
+				const stop = to_wall(x, y, +1, right)
+				if (stop >= x) {
+					queue.push([x, stop, y, dir])
+					x = stop
+				}
+			}
+		}
+		while (queue.length) {
+			const [x1, x2, y, dir] = queue.pop()
+			// expand span
+			const left = to_wall(x1-1, y, -1, 0)
+			const right = to_wall(x2+1, y, +1, width-1)
+			this.c2d.fillRect(left-size, y-size, right-left+1+size*2, 1+size*2)
+			// check row backwards:
+			if (x2<x1) {
+				// (this only happens on the first iteration)
+				find_spans(left, right, y, -dir)
+			} else {
+				find_spans(left, x1-2, y, -dir)
+				find_spans(x2+2, right, y, -dir)
+			}
+			// check row forwards:
+			find_spans(left, right, y, dir)
+		}
+	}
+}
+
 class Drawer {
 	constructor(width, height) {
-		this.canvas = document.createElement('canvas')
-		this.canvas.width = width
-		this.canvas.height = height
-		/*Object.assign(this.canvas, {
-			style: {
-				imageRendering: = '-moz-crisp-edges'
-			}
-		})*/
-		this.canvas.style.setProperty('--width', width)
-		this.canvas.style.setProperty('--height', height)
-		this.canvas.style.imageRendering = '-moz-crisp-edges'
-		this.canvas.style.imageRendering = 'pixelated'
-		this.canvas.style.touchAction = 'none'
-		
-		this.c2d = this.canvas.getContext('2d')
-		this.c2d.imageSmoothingEnabled = false
-		this.c2d.shadowOffsetX = 1000
-		this.c2d.translate(-1000, 0)
+		this.grp = new Grp(width, height)
+		this.canvas = this.grp.canvas
 		
 		this.form = document.createElement('form')
 		this.form.autocomplete = 'off'
 		this.form.method = 'dialog'
 		
 		this.history_max = 20
-		//this.history_reset()
-		//this.clear(true)
+		
+		this.tool = null
 		
 		this.choices = {
+			// i kinda... these could be classes...
 			tool: new Choices(
 				'tool',
 				[Freehand, Slow, LineTool, Spray, Flood/*, Flood2*/],
@@ -278,26 +397,26 @@ class Drawer {
 				[],
 				v=>{
 					this.form.pick.value = v
-					this.c2d.shadowColor = v
+					this.grp.color = v
 				},
 				v=>""
 			),
 			brush: new Choices(
 				'brush',
 				[],
-				v=>this.brush = v,
+				v=>this.grp.brush = v,
 				(v,i)=>`${i+1}`
 			),
 			pattern: new Choices(
 				'pattern',
 				[],
-				v=>this.c2d.fillStyle = v,
+				v=>this.grp.pattern = v,
 				null
 			),
 			comp: new Choices(
 				'comp',
-				['source-over', 'destination-over', 'source-atop', 'destination-out'],
-				v=>this.c2d.globalCompositeOperation = v,
+		 		['source-over', 'destination-over', 'source-atop', 'destination-out'],
+				v=>this.grp.composite = v,
 				v=>{
 					return {
 						'source-over':"all",
@@ -312,17 +431,25 @@ class Drawer {
 			pick: color=>{
 				let sel = this.sel_color()
 				let old = this.choices.color.get(sel)
-				this.replace_color(old, color)
+				this.history_add()
+				this.grp.replace_color(old, color)
 				this.set_palette(sel, color)
 			},
 			
-			clear: ()=>this.clear(true),
-			fill: ()=>this.clear(false),
+			clear: ()=>{
+				this.history_add()
+				this.grp.clear(true)
+			},
+			fill: ()=>{
+				this.history_add()
+				this.grp.clear(false)
+			},
 			bg: ()=>{
 				// color here should this.c2d.shadowColor but just in case..
 				let sel = this.sel_color()
 				let color = this.choices.color.get(sel)
-				this.replace_color(color)
+				this.history_add()
+				this.grp.replace_color(color)
 			},
 			undo: ()=>this.history_do(false),
 			redo: ()=>this.history_do(true),
@@ -340,9 +467,6 @@ class Drawer {
 				this.actions[e.name]()
 		}
 		
-		this.brush = null
-		this.tool = null
-		
 		// ready
 		//this.history_reset()
 		//this.clear(true)
@@ -350,7 +474,7 @@ class Drawer {
 		// stroke handling:
 		this.canvas.onpointerdown = ev=>{
 			this.history_add()
-			this.tool.PointerDown(ev, this)
+			this.tool.PointerDown(ev, this.grp)
 		}
 		this.canvas.onpointermove = this.canvas.onpointerup = ev=>{
 			Stroke.pointer_move(ev)
@@ -367,12 +491,12 @@ class Drawer {
 	// TODO: save/restore the palette!!
 	history_get() {
 		return {
-			data: this.get_data(),
+			data: this.grp.get_data(),
 			palette: [...this.choices.color.values],
 		}
 	}
 	history_put(data) {
-		this.put_data(data.data)
+		this.grp.put_data(data.data)
 		this.set_palette2(data.palette)
 	}
 	// clear
@@ -436,126 +560,5 @@ class Drawer {
 	}
 	choose(name, item) {
 		this.form.elements[name][item].click()
-	}
-	
-	///////////////
-	/// drawing ///
-	///////////////
-	get_data() {
-		return this.c2d.getImageData(0, 0, this.canvas.width, this.canvas.height)
-	}
-	put_data(data) {
-		this.c2d.putImageData(data, 0, 0)
-	}
-	clear(all) {
-		this.history_add()
-		if (all) {
-			this.c2d.save()
-			this.c2d.globalCompositeOperation = 'destination-out'
-			this.c2d.fillStyle = 'black'
-		}
-		this.c2d.fillRect(0, 0, this.canvas.width, this.canvas.height)
-		if (all)
-			this.c2d.restore()
-	}
-	draw(pos) {
-		this.c2d.fill(this.brush.point(pos))
-	}
-	draw_line(start, end) {
-		let [path, pos] = this.brush.line(start, end)
-		this.c2d.fill(path)
-		return pos
-	}
-	// bad
-	random_in_brush(pos) {
-		let r
-		let n = 0
-		do {
-			n++
-			if (n>30)
-				return
-			r = new Point(Math.random()*10-5, Math.random()*10-5)
-			r = this.brush.adjust_cursor(r).Add(this.brush.origin)
-		} while (!this.c2d.isPointInPath(this.brush, r.x+.5-1000, r.y+.5))
-		pos = pos.Add(r).Subtract(this.brush.origin)
-		this.c2d.fillRect(pos.x, pos.y, 1, 1)
-	}
-	// convert a hex color into a Uint32, in system endianness
-	color32(color=null) {
-		if (!color)
-			return 0
-		let x = parseInt(color.slice(1), 16)
-		return new Uint32Array(Uint8Array.of(x>>16, x>>8, x, 255).buffer)[0]
-	}
-	replace_color(before, after=null) {
-		this.history_add()
-		before = this.color32(before)
-		after = this.color32(after)
-		let data = this.get_data()
-		new Uint32Array(data.data.buffer).forEach((n,i,d)=>{
-			if (n==before)
-				d[i] = after
-		})
-		this.put_data(data)
-	}
-	
-	// technically speaking, this should be a  Brush? since it generates a path to fill (kinda)
-	// or we could use the current brush rather than fillrect here. which would allow implementing an.. erode-like operator? not sure how useful that would be tho.
-	flood_fill(pos, brush=false) {
-		let {x,y} = pos.Floor()
-		let data = this.get_data()
-		let pixels = new Uint32Array(data.data.buffer)
-		let {width, height} = this.canvas
-		let old = pixels[x + y*width]
-		
-		// fills pixels in a horizontal line, starting from (x,y),
-		// until it hits a wall or reaches x=limit
-		let to_wall = (x, y, dx, limit)=>{
-			while (x!=limit+dx && pixels[x + y*width]==old) {
-				pixels[x + y*width] = 0x00229900 // arbitrary fill color
-				x += dx
-			}
-			return x-dx
-		}
-		
-		let queue = [[x+1, x, y, -1]]
-		
-		// find fillable areas in row y, between x=left and x=right
-		let find_spans = (left, right, y, dir)=>{
-			if (y<0 || y>=height)
-				return
-			for (let x=left; x<=right; x++) {
-				let stop = to_wall(x, y, +1, right)
-				if (stop >= x) {
-					queue.push([x, stop, y, dir])
-					x = stop
-				}
-			}
-		}
-		let size = this.brush.fills.length-1
-		while (queue.length) {
-			let [x1, x2, y, dir] = queue.pop()
-			// expand span
-			let left = to_wall(x1-1, y, -1, 0)
-			let right = to_wall(x2+1, y, +1, width-1)
-			if (brush) {
-				let path = new Path2D()
-				for (let i=left; i<=right; i++)
-					this.brush.add_to(path, new Point(i, y))
-				this.c2d.fill(path)
-			} else {
-				this.c2d.fillRect(left-size, y-size, right-left+1+size*2, 1+size*2)
-			}
-			// check row backwards:
-			if (x2<x1) {
-				// (this only happens on the first iteration)
-				find_spans(left, right, y-dir, -dir)
-			} else {
-				find_spans(left, x1-2, y-dir, -dir)
-				find_spans(x2+2, right, y-dir, -dir)
-			}
-			// check row forwards:
-			find_spans(left, right, y+dir, dir)
-		}
 	}
 }
