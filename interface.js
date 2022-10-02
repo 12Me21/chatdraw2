@@ -18,6 +18,42 @@ function draw_button({type, name, value="", text, icon}) {
 	return label
 }
 
+function draw_form(form, buttons) {
+	//d.form.append(document.createElement('hr'))
+	for (let {title, items, size=2, flow, cols} of buttons) {
+		const fs = document.createElement('div')
+		const x = document.createElement('div')
+		x.append(title)
+		fs.append(x)
+		for (const sb of items)
+			fs.append(draw_button(sb))
+		form.append(fs, document.createElement('hr'))
+		if (!cols)
+			cols = Math.ceil(items.length/(8/size))
+		fs.style.gridTemplateColumns = `repeat(${cols}, 1fr)`
+		fs.style.gridTemplateRows = `auto repeat(${Math.ceil(8/size)}, 1fr)`
+		fs.style.fontSize = `calc(${size/2}px * var(--scale))`
+		if (flow)
+			fs.style.gridAutoFlow = flow
+	}
+	form.lastChild.remove()
+}
+
+const make_cursor=(size=1)=>{
+	const r = size/2+1 //  3->
+	const svg = `
+<svg xmlns="http://www.w3.org/2000/svg" width="${r*2}" height="${r*2}">
+<rect x="${r-0.5}" y="${r-0.5}" width="1" height="1"/>
+<rect x="${0.5}" y="${0.5}" width="${r*2-1}" height="${r*2-1}" fill="none" stroke="red" stroke-width="1"/>
+</svg>
+		`
+	const ox = r-0.5
+	const oy = r-0.5
+	const url = "data:image/svg+xml;base64,"+btoa(svg)
+	
+	return `url("${url}") ${ox} ${oy}, crosshair`
+}
+
 function dither_pattern(level, context, offset=0) {
 	const od = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
 	const canvas = document.createElement('canvas')
@@ -36,7 +72,8 @@ function dither_pattern(level, context, offset=0) {
 	for (let y=0;y<5;y+=4)
 		for (let x=-3;x<8;x+=4)
 			c2d.putImageData(data, x, y)
-	return [pattern, canvas]
+	pattern._canvas = canvas
+	return pattern
 }
 
 // idea: mode where you can move the cursor 1px etc. at a time
@@ -46,13 +83,11 @@ function dither_pattern(level, context, offset=0) {
 class ChatDraw extends HTMLElement {
 	constructor() {
 		super()
-		super.attachShadow({mode: 'open'})
 		
 		const d = this.draw = new Drawer(200, 100)
 		
 		for (let i=1; i<=8; i++)
 			d.choices.brush.values.push(new CircleBrush(i))
-		
 		
 		// ew. just pass like, a 16 bit number and hardcode the list idk.
 		// maybe we want an input for specifying the pattern transform x/y. not sure how to design this though. numeric inputs kinda suck.
@@ -60,19 +95,13 @@ class ChatDraw extends HTMLElement {
 		// and show the patterns on the buttons in their absolute positions?
 		// also we should show a preview of the current brush on the overlay layer.
 		// actually we can just shift the entire drawing to "choose" which offset ww..
-		const pl = []
 		for (let i=0; i<16; i++)
-			0,[d.choices.pattern.values[i], pl[i]] = dither_pattern(i, d.grp.c2d)
-		0,[d.choices.pattern.values[16], pl[16]] = dither_pattern(7, d.grp.c2d, 2)
-		0,[d.choices.pattern.values[17], pl[17]] = dither_pattern(3, d.grp.c2d, 4)
-		0,[d.choices.pattern.values[18], pl[18]] = dither_pattern(3, d.grp.c2d, 6)
-		0,[d.choices.pattern.values[19], pl[19]] = dither_pattern(3, d.grp.c2d, 12)
-		d.choices.pattern.label = (v,i)=>pl[i]
+			d.choices.pattern.values.push(dither_pattern(i, d.grp.c2d))
 		
 		//d.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'])
 		d.set_palette2(["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
 		
-		const buttons = [
+		draw_form(d.form, [
 			{title:'Tools', cols:3, items:[
 				{type:'button', name:'clear', text:"reset!"},
 				{type:'button', name:'undo', text:"↶", icon:true},
@@ -88,26 +117,9 @@ class ChatDraw extends HTMLElement {
 				...d.choices.color.bdef(),
 			]},
 			{title:"Patterns", size:1, flow:'column', items:d.choices.pattern.bdef()},
-		]
-		//d.form.append(document.createElement('hr'))
-		for (let {title, items, size=2, flow, cols} of buttons) {
-			const fs = document.createElement('div')
-			const x = document.createElement('div')
-			x.append(title)
-			fs.append(x)
-			for (const sb of items)
-				fs.append(draw_button(sb))
-			d.form.append(fs, document.createElement('hr'))
-			if (!cols)
-				cols = Math.ceil(items.length/(8/size))
-			fs.style.gridTemplateColumns = `repeat(${cols}, 1fr)`
-			fs.style.gridTemplateRows = `auto repeat(${Math.ceil(8/size)}, 1fr)`
-			fs.style.fontSize = `calc(${size/2}px * var(--scale))`
-			if (flow)
-				fs.style.gridAutoFlow = flow
-		}
-		d.form.lastChild.remove()
+		])
 		
+		super.attachShadow({mode: 'open'})
 		super.shadowRoot.append(document.importNode(ChatDraw.style, true), d.canvas, d.form)
 		
 		d.choose('tool', 0)
@@ -119,22 +131,7 @@ class ChatDraw extends HTMLElement {
 		d.history_reset()
 		d.grp.clear(true)
 		
-		const make_cursor=(size=1)=>{
-			const r = size/2+1 //  3->
-			const svg = `
-<svg xmlns="http://www.w3.org/2000/svg" width="${r*2}" height="${r*2}">
-<rect x="${r-0.5}" y="${r-0.5}" width="1" height="1"/>
-<rect x="${0.5}" y="${0.5}" width="${r*2-1}" height="${r*2-1}" fill="none" stroke="red" stroke-width="1"/>
-</svg>
-		`
-			const ox = r-0.5
-			const oy = r-0.5
-			const url = "data:image/svg+xml;base64,"+btoa(svg)
-			
-			this.draw.canvas.style.cursor = `url("${url}") ${ox} ${oy}, crosshair`
-		}
-		make_cursor(3)
-		
+		d.canvas.style.cursor = make_cursor(3)
 	}
 	set_scale(n) {
 		this.style.setProperty('--scale', n)

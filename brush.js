@@ -399,7 +399,7 @@ class Drawer {
 				'pattern',
 				[],
 				v=>this.grp.pattern = v,
-				null
+				v=>v._canvas
 			),
 			comp: new Choices(
 				'comp',
@@ -454,10 +454,6 @@ class Drawer {
 			if (e.type=='button')
 				this.actions[e.name]()
 		}
-		
-		// ready
-		//this.history_reset()
-		//this.clear(true)
 		
 		// stroke handling:
 		this.canvas.onpointerdown = ev=>{
