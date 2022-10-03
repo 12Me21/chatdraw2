@@ -16,10 +16,32 @@ function draw_button({type='button', name, value="", text, icon}) {
 	span.append(s)
 	return label
 }
+/*
+<label>
+	<input ...>
+	<b>
+		<span>...</span>
+	</b>
+</label>
+*/
 
-function draw_form(form, buttons) {
+function draw_form(form, choices, actions, buttons) {
+	form.autocomplete = 'off'
+	form.method = 'dialog'
+	form.onchange = ev=>{
+		const e = ev.target
+		if (e.type=='radio')
+			choices[e.name].change(e.value)
+		else if (e.type=='color')
+			actions[e.name](e.value)
+	}
+	form.onclick = ev=>{
+		const e = ev.target
+		if (e.type=='button')
+			actions[e.name]()
+	}
 	//d.form.append(document.createElement('hr'))
-	for (let {title, items, size=2, flow, cols} of buttons) {
+	for (let {title, items, size=2, rows=0, cols} of buttons) {
 		const fs = document.createElement('div')
 		const x = document.createElement('div')
 		x.append(title)
@@ -29,11 +51,13 @@ function draw_form(form, buttons) {
 		form.append(fs, document.createElement('hr'))
 		if (!cols)
 			cols = Math.ceil(items.length/(8/size))
-		fs.style.gridTemplateColumns = `repeat(${cols}, 1fr)`
-		fs.style.gridTemplateRows = `auto repeat(${Math.ceil(8/size)}, 1fr)`
+		fs.style.gridTemplateRows = `auto repeat(${rows}, 1fr)`
+		if (cols)
+			fs.style.gridTemplateColumns = `repeat(${cols}, 1fr)`
+		if (rows)
+			fs.style.gridAutoFlow = 'column'
+		
 		fs.style.fontSize = `calc(${size/2}px * var(--scale))`
-		if (flow)
-			fs.style.gridAutoFlow = flow
 	}
 	form.lastChild.remove()
 }

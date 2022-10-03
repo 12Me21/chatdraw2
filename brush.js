@@ -365,7 +365,10 @@ class Undo {
 	}
 	add() {
 		this.states.splice(this.pos, 9e9, this.get())
-		this.pos++
+		if (this.states.length <= this.max)
+			this.pos++
+		else
+			this.states.shift()
 		this.onchange(true, false)
 	}
 	can(redo) {
@@ -389,23 +392,8 @@ class ChatDraw extends HTMLElement {
 		const width=200, height=100
 		super()
 		this.grp = new Grp(width, height)
-		/// create form ///
-		this.form = document.createElement('form')
-		this.form.autocomplete = 'off'
-		this.form.method = 'dialog'
-		this.form.onchange = ev=>{
-			const e = ev.target
-			if (e.type=='radio')
-				this.choices[e.name].change(e.value)
-			else if (e.type=='color')
-				this.actions[e.name](e.value)
-		}
-		this.form.onclick = ev=>{
-			const e = ev.target
-			if (e.type=='button')
-				this.actions[e.name]()
-		}
 		/// define choices ///
+		this.form = document.createElement('form')
 		this.tool = null
 		this.choices = {
 			// i kinda... these could be classes...
@@ -456,7 +444,7 @@ class ChatDraw extends HTMLElement {
 			this.choices.pattern.values.push(dither_pattern(i, this.grp.c2d))
 		this.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00']) //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
 		/// define button actions ///
-		this.actions = {
+		let actions = {
 			pick: color=>{
 				const sel = this.sel_color()
 				const old = this.choices.color.get(sel)
@@ -483,7 +471,7 @@ class ChatDraw extends HTMLElement {
 			redo: ()=>this.history.do(true),
 		}
 		/// draw form ///
-		draw_form(this.form, [
+		draw_form(this.form, this.choices, actions, [
 			{title:'Tools', cols:3, items:[
 				{name:'clear', text:"reset!"},
 				{name:'undo', text:"↶", icon:true},
@@ -491,18 +479,18 @@ class ChatDraw extends HTMLElement {
 				{name:'fill', text:"fill"},
 				...this.choices.tool.bdef(),
 			]},
-			{title:'Draw Mode', items:this.choices.comp.bdef()},
-			{title:"Brushes", size:1, items:this.choices.brush.bdef()},
+			{title:'Draw Mode', rows:4, items:this.choices.comp.bdef()},
+			{title:"Brushes", rows:8, size:1, items:this.choices.brush.bdef()},
 			{title:"Colors", cols:2, items:[
 				{name:'pick', type:'color', text:"edit"},
 				{name:'bg', text:"➙bg"},
 				...this.choices.color.bdef(),
 			]},
-			{title:"Patterns", size:1, flow:'column', items:this.choices.pattern.bdef()},
+			{title:"Patterns", rows:8, size:1, items:this.choices.pattern.bdef()},
 		])
 		/// undo buffer ///
 		this.history = new Undo(
-			20,
+			50,
 			()=>({
 				data: this.grp.get_data(),
 				palette: [...this.choices.color.values],
