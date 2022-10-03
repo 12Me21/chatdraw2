@@ -711,8 +711,8 @@ class ChatDraw extends HTMLElement {
 		this.style.setProperty('--scale', n)
 	}
 	// fsr .click doesn't work everywhere?
-	choose(name, item) {
-		let elem = this.form.elements[name][item]
+	choose(name, value) {
+		let elem = this.form.querySelector(`input[name="${name}"][value="${value}"]`)
 		elem.checked = true
 		elem.dispatchEvent(new Event('change', {bubbles:true}))
 	}
