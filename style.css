@@ -41,6 +41,11 @@ div {
 	justify-items: center;
 	padding-bottom: calc(var(--scale) * 2px);
 }
+div > div {
+	grid-column: 1 / -1;
+	font-size: calc(var(--scale) * 5px);
+	height: 0.7em;
+}
 hr {
 	all: unset;
 	margin: 0;

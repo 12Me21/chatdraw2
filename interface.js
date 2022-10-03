@@ -42,8 +42,11 @@ function draw_form(choices, actions, buttons) {
 			actions[e.name]()
 	}
 	//d.form.append(document.createElement('hr'))
-	for (let {items, size=2, rows=0, cols} of buttons) {
+	for (let {title, items, size=2, rows=0, cols} of buttons) {
 		const fs = document.createElement('div')
+		let ti = document.createElement('div')
+		ti.append(title)
+		fs.append(ti)
 		for (const sb of items)
 			fs.append(draw_button(sb))
 		form.append(fs, document.createElement('hr'))
@@ -51,10 +54,9 @@ function draw_form(choices, actions, buttons) {
 			cols = Math.ceil(items.length/(8/size))
 		if (cols)
 			fs.style.gridTemplateColumns = `repeat(${cols}, 1fr)`
-		if (rows) {
-			fs.style.gridTemplateRows = `repeat(${rows}, 1fr)`
+		fs.style.gridTemplateRows = `auto repeat(${rows}, 1fr)`
+		if (rows)
 			fs.style.gridAutoFlow = 'column'
-		}
 		fs.style.fontSize = `calc(${size/2}px * var(--scale))`
 	}
 	form.lastChild.remove()

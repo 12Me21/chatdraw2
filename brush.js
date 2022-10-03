@@ -184,6 +184,21 @@ class LineTool extends Stroke {
 	}
 }
 LineTool.label = "line"
+class PlaceTool extends Stroke {
+	down(d, v) {
+		v.copy_settings(d)
+		this.move(d, v)
+	}
+	move(d, v) {
+		v.erase()
+		v.draw(this.pos)
+	}
+	up(d, v) {
+		v.erase()
+		d.draw(this.pos)
+	}
+}
+PlaceTool.label = "place"
 class Slow extends Stroke {
 	down(d) {
 		this._avg = this.pos
@@ -225,7 +240,7 @@ class Mover extends Stroke {
 		this._data = null
 	}
 }
-Mover.label = "⬚↭"
+Mover.label = "move"
 class CopyTool extends Stroke {
 	down(d, v) {
 		// TODO: we need to "lock" the overlay, because 2 strokes can be drawn at the same time with a touchscreen
@@ -251,25 +266,7 @@ class CopyTool extends Stroke {
 		v.erase()
 	}
 }
-CopyTool.label = "⬚copy"
-class PasteTool extends Stroke {
-	down(d, v, c) {
-		v.copy_settings(d)
-		v.erase()
-		this._offset = new Point(c.clipboard.width/2, c.clipboard.height/2)
-		v.put_image(c.clipboard, this.pos.Subtract(this._offset))
-	}
-	move(d, v, c) {
-		v.erase()
-		v.put_image(c.clipboard, this.pos.Subtract(this._offset))
-	}
-	// todo: bring back the overlay class
-	up(d, v, c) {
-		v.erase()
-		d.put_image(c.clipboard, this.pos.Subtract(this._offset))
-	}
-}
-PasteTool.label = "⬚paste"
+CopyTool.label = "copy"
 
 
 // idea: is it best to use rects to define the brush? or a path around the perimeter
@@ -537,6 +534,7 @@ class ChatDraw extends HTMLElement {
 		this.tool = null
 		let brushes = [], patterns = []
 		brushes.push(new Brush(new Point(0,0), [], "CB", false))
+		brushes.push(new Brush(new Point(0,0), [], "CB", false))
 		brushes.push(Brush.Circle(1, "1", true))
 		brushes.push(Brush.Circle(1, "1.5", false))
 		brushes.push(Brush.Circle(2, "2", true))
@@ -566,11 +564,14 @@ class ChatDraw extends HTMLElement {
 			[0,3,1,1],
 			[0,4,1,1],
 		], "|5", true))
+		let cb = dither_pattern(-1, this.grp.c2d)
+		cb._canvas = "\bCB"
+		patterns.push(cb)
 		for (let i=0; i<16; i++)
 			patterns.push(dither_pattern(i, this.grp.c2d))
 		this.choices = {
 			tool: new Choices(
-				'tool', [Freehand, Slow, LineTool, Spray, Flood, Mover, CopyTool, PasteTool],
+				'tool', [Mover, CopyTool, Freehand, Slow, LineTool, Spray, Flood, PlaceTool],
 				v=>this.tool = v,
 				v=>v.label
 			),
@@ -596,7 +597,7 @@ class ChatDraw extends HTMLElement {
 				'composite', ['source-over', 'destination-over', 'source-atop', 'destination-out'],
 				v=>this.grp.composite = v,
 				v=>({
-					'source-over':"all",
+					'source-over':"over",
 					'destination-over':"under",
 					'source-atop':"in",
 					'destination-out':"erase",
@@ -633,21 +634,21 @@ class ChatDraw extends HTMLElement {
 		}
 		/// draw form ///
 		this.form = draw_form(this.choices, actions, [
-			{cols:3, items:[
+			{title:"Tool", cols:3, items:[
 				{name:'clear', text:"reset!"},
 				{name:'undo', text:"↶", icon:true},
 				{name:'redo', text:"↷", icon:true},
 				{name:'fill', text:"fill"},
 				...this.choices.tool.bdef(),
 			]},
-			{rows:4, items:this.choices.composite.bdef()},
-			{rows:8, size:1, items:this.choices.brush.bdef()},
-			{cols:2, items:[
+			{title:"Composite", rows:4, items:this.choices.composite.bdef()},
+			{title:"Brush", rows:8, size:1, items:this.choices.brush.bdef()},
+			{title:"Color", cols:2, items:[
 				{name:'pick', type:'color', text:"edit"},
 				{name:'bg', text:"➙bg"},
 				...this.choices.color.bdef(),
 			]},
-			{rows:8, size:1, items:this.choices.pattern.bdef()},
+			{title:"Pattern", rows:8, size:1, items:this.choices.pattern.bdef()},
 		])
 		/// undo buffer ///
 		this.history = new Undo(
@@ -683,11 +684,11 @@ class ChatDraw extends HTMLElement {
 	// ugh but that would be slow maybe?
 	
 	connectedCallback() {
-		this.choose('tool', 0)
-		this.choose('brush', 1)
+		this.choose('tool', 2)
+		this.choose('brush', 4)
 		this.choose('composite', 0)
 		this.choose('color', 0)
-		this.choose('pattern', 15)
+		this.choose('pattern', 16)
 	}
 	
 	when_copy(data) {
@@ -701,6 +702,8 @@ class ChatDraw extends HTMLElement {
 		this.choices.pattern.values[0] = this.grp.c2d.createPattern(c, 'repeat')
 		this.choices.brush.values[0] = new ImageBrush(new Point(c.width/2, c.height/2), c, 'CB', false, false)
 		this.choices.brush.values[1] = new ImageBrush(new Point(c.width/2, c.height/2), c, 'CB', false, true)
+		this.choose('tool', 7) // prevent accidental overwriting
+		this.choose('brush', 0)
 	}
 	
 	set_scale(n) {
