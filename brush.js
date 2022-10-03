@@ -514,11 +514,11 @@ class ChatDraw extends HTMLElement {
 		this.tool = null
 		let brushes = [], patterns = []
 		brushes.push(Brush.Circle(1, "1", true))
-		brushes.push(Brush.Circle(1, "1", false))
+		brushes.push(Brush.Circle(1, "1.5", false))
 		brushes.push(Brush.Circle(2, "2", true))
-		brushes.push(Brush.Circle(2, "2", false))
+		brushes.push(Brush.Circle(2, "2.5", false))
 		brushes.push(Brush.Circle(3, "3", true))
-		brushes.push(Brush.Circle(3, "3", false))
+		brushes.push(Brush.Circle(3, "3.5", false))
 		for (let i=4; i<=8; i++)
 			brushes.push(Brush.Circle(i, `●${i}`,true))
 		brushes.push(new Brush(new Point(2.5,2.5), [
@@ -551,7 +551,7 @@ class ChatDraw extends HTMLElement {
 				v=>v.label
 			),
 			color: new Choices(
-				'color', ['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'], //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
+				'color', ['#000000','#FFFFFF','#FF0000','#2040EE','#00CC00','#FFFF00'], //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
 				v=>{
 					this.form.pick.value = v
 					this.grp.color = v
