@@ -5,6 +5,7 @@ function draw_button({type='button', name, value="", text, icon}) {
 	const span = document.createElement('b')
 	if (text[0]=="\b") {
 		text = text.slice(1)
+		console.log(text)
 		icon = true
 	}
 	if (icon)

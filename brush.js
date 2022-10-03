@@ -710,8 +710,11 @@ class ChatDraw extends HTMLElement {
 	set_scale(n) {
 		this.style.setProperty('--scale', n)
 	}
+	// fsr .click doesn't work everywhere?
 	choose(name, item) {
-		this.form.elements[name][item].click()
+		let elem = this.form.elements[name][item]
+		elem.checked = true
+		elem.dispatchEvent(new Event('change', {bubbles:true}))
 	}
 	set_palette2(colors) {
 		colors.forEach((c,i)=>this.set_palette(i, c))
