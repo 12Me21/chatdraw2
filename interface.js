@@ -3,7 +3,11 @@ function draw_button({type='button', name, value="", text, icon}) {
 	const input = document.createElement('input')
 	Object.assign(input, {type, name, value})
 	const span = document.createElement('b')
-	if (icon || text[0]=="\b")
+	if (text[0]=="\b") {
+		text=text.slice(1)
+		icon = true
+	}
+	if (icon)
 		span.classList.add('icon')
 	if (name=='color') {
 		span.classList.add('color')

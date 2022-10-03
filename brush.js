@@ -679,16 +679,17 @@ class ChatDraw extends HTMLElement {
 		
 		super.attachShadow({mode: 'open'})
 		super.shadowRoot.append(document.importNode(ChatDraw.style, true), this.grp.canvas, this.overlay.canvas, this.form)
-	}
-	// idea: what if all tools just draw to the overlay, then we copy to main canvas at the end of the stroke? and update undo buffer..
-	// ugh but that would be slow maybe?
-	
-	connectedCallback() {
+		
 		this.choose('tool', 2)
 		this.choose('brush', 4)
 		this.choose('composite', 0)
 		this.choose('color', 0)
 		this.choose('pattern', 16)
+	}
+	// idea: what if all tools just draw to the overlay, then we copy to main canvas at the end of the stroke? and update undo buffer..
+	// ugh but that would be slow maybe?
+	
+	connectedCallback() {
 	}
 	
 	when_copy(data) {
