@@ -442,7 +442,7 @@ class ChatDraw extends HTMLElement {
 			this.choices.brush.values.push(Brush.Circle(i))
 		for (let i=0; i<16; i++)
 			this.choices.pattern.values.push(dither_pattern(i, this.grp.c2d))
-		this.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00']) //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
+		this.choices.color.values = ['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'] //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
 		/// define button actions ///
 		let actions = {
 			pick: color=>{
@@ -471,7 +471,7 @@ class ChatDraw extends HTMLElement {
 			redo: ()=>this.history.do(true),
 		}
 		/// draw form ///
-		draw_form(this.form, this.choices, actions, [
+		this.form = draw_form(this.choices, actions, [
 			{title:'Tools', cols:3, items:[
 				{name:'clear', text:"reset!"},
 				{name:'undo', text:"↶", icon:true},
@@ -505,15 +505,7 @@ class ChatDraw extends HTMLElement {
 			}
 		)
 		/// final preparations ///
-		super.attachShadow({mode: 'open'})
-		super.shadowRoot.append(document.importNode(ChatDraw.style, true), this.grp.canvas, this.form)
-		
-		this.choose('tool', 0)
-		this.choose('brush', 1)
-		this.choose('comp', 0)
-		this.choose('color', 0)
-		this.choose('pattern', 15)
-		
+		this.set_palette2(this.choices.color.values)
 		this.grp.clear(true)
 		
 		Stroke.handle(this.grp.canvas, ev=>{
@@ -522,6 +514,15 @@ class ChatDraw extends HTMLElement {
 		})
 		
 		this.grp.canvas.style.cursor = make_cursor(3)
+		
+		super.attachShadow({mode: 'open'})
+		super.shadowRoot.append(document.importNode(ChatDraw.style, true), this.grp.canvas, this.form)
+		
+		this.choose('tool', 0)
+		this.choose('brush', 1)
+		this.choose('comp', 0)
+		this.choose('color', 0)
+		this.choose('pattern', 15)
 	}
 	
 	set_scale(n) {

@@ -25,7 +25,8 @@ function draw_button({type='button', name, value="", text, icon}) {
 </label>
 */
 
-function draw_form(form, choices, actions, buttons) {
+function draw_form(choices, actions, buttons) {
+	let form = document.createElement('form')
 	form.autocomplete = 'off'
 	form.method = 'dialog'
 	form.onchange = ev=>{
@@ -60,6 +61,7 @@ function draw_form(form, choices, actions, buttons) {
 		fs.style.fontSize = `calc(${size/2}px * var(--scale))`
 	}
 	form.lastChild.remove()
+	return form
 }
 
 const make_cursor=(size=1)=>{
