@@ -171,15 +171,36 @@ class Flood extends Stroke {
 }
 Flood.label = "flood"
 
+class Mover extends Stroke {
+	down(d) {
+		this._data = d.get_data()
+	}
+	move(d) {
+		const ofs = this.pos.Subtract(this.start).Round() // todo: round better
+		let {x, y} = ofs
+		let {width, height} = d.canvas
+		x = (x+width*1000) % width
+		y = (y+height*1000) % height
+		d.put_data(this._data, x, y)
+		d.put_data(this._data, x-width, y)
+		d.put_data(this._data, x, y-height)
+		d.put_data(this._data, x-width, y-height)
+	}
+	up(d) {
+		this._data = null
+	}
+}
+Mover.label = "move"
+
+
 
 class Brush extends Path2D {
-	constructor(origin, fills, thin) {
+	constructor(origin, fills) {
 		super()
 		for (const f of fills)
 			super.rect(...f)
 		this.origin = origin
 		this.fills = fills
-		this.thin = thin
 	}
 	add_to(path, pos) {
 		const {x, y} = pos.Subtract(this.origin).Round()
@@ -193,23 +214,23 @@ class Brush extends Path2D {
 		this.add_to(path, pos)
 		return path
 	}
-	line(start, end) {
+	line(start, end, diag=false) {
 		const path = new Path2D()
 		start = this.adjust_cursor(start)
 		end = this.adjust_cursor(end)
 		let pos
-		for (pos of start.follow_line(start, end, this.thin))
+		for (pos of start.follow_line(start, end, diag))
 			this.add_to(path, pos)
 		return [path, pos]
 	}
-	static Circle(d, thin) {
+	static Circle(d) {
 		const r = d/2, sr = r-0.5
 		const fills = []
 		for (let y=-sr; y<=sr; y++) {
 			const x = Math.ceil(Math.sqrt(r*r - y*y)+sr)
 			fills.push([x, y+sr, (r-x)*2, 1])
 		}
-		return new this(new Point(r, r), fills, thin)
+		return new this(new Point(r, r), fills)
 	}
 }
 
@@ -233,6 +254,7 @@ class Grp {
 		c.shadowOffsetX = 1000
 		c.translate(-c.shadowOffsetX, 0)
 		
+		this.diag = false
 		this.brush = null
 	}
 	set color(v) {
@@ -248,8 +270,8 @@ class Grp {
 	get_data() {
 		return this.c2d.getImageData(0, 0, this.canvas.width, this.canvas.height)
 	}
-	put_data(data) {
-		this.c2d.putImageData(data, 0, 0)
+	put_data(data, x=0, y=0) {
+		this.c2d.putImageData(data, x, y)
 	}
 	clear(all) {
 		if (all) {
@@ -265,7 +287,7 @@ class Grp {
 		this.c2d.fill(this.brush.point(pos))
 	}
 	draw_line(start, end) {
-		const [path, pos] = this.brush.line(start, end)
+		const [path, pos] = this.brush.line(start, end, this.diag)
 		this.c2d.fill(path)
 		return pos
 	}
@@ -396,15 +418,13 @@ class ChatDraw extends HTMLElement {
 		/// define choices ///
 		this.tool = null
 		let brushes = [], patterns = []
-		for (let i=1; i<=8; i++) {
+		for (let i=1; i<=8; i++)
 			brushes.push(Brush.Circle(i))
-			brushes.push(Brush.Circle(i, true))
-		}
 		for (let i=0; i<16; i++)
 			patterns.push(dither_pattern(i, this.grp.c2d))
 		this.choices = {
 			tool: new Choices(
-				'tool', [Freehand, Slow, LineTool, Spray, Flood],
+				'tool', [Freehand, Slow, LineTool, Spray, Flood, Mover],
 				v=>this.tool = v,
 				v=>v.label
 			),
@@ -435,6 +455,11 @@ class ChatDraw extends HTMLElement {
 					'source-atop':"in",
 					'destination-out':"erase"
 				}[v])
+			),
+			diag: new Choices(
+				'diag', [false, true],
+				v=>this.grp.diag = v,
+				v=>v?"thin":"thick"
 			),
 		}
 		/// define button actions ///
@@ -475,6 +500,7 @@ class ChatDraw extends HTMLElement {
 			]},
 			{title:'Draw Mode', rows:4, items:this.choices.composite.bdef()},
 			{title:"Brushes", rows:8, size:1, items:this.choices.brush.bdef()},
+			{title:"Line", rows:4, items:this.choices.diag.bdef()},
 			{title:"Colors", cols:2, items:[
 				{name:'pick', type:'color', text:"edit"},
 				{name:'bg', text:"➙bg"},
