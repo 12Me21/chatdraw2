@@ -207,17 +207,14 @@ class Brush extends Path2D {
 			this.add_to(path, pos)
 		return [path, pos]
 	}
-}
-
-class CircleBrush extends Brush {
-	constructor(d) {
+	static Circle(d) {
 		const r = d/2, sr = r-0.5
 		const fills = []
 		for (let y=-sr; y<=sr; y++) {
 			const x = Math.ceil(Math.sqrt(r*r - y*y)+sr)
 			fills.push([x, y+sr, (r-x)*2, 1])
 		}
-		super(new Point(r, r), fills)
+		return new this(new Point(r, r), fills)
 	}
 }
 
@@ -370,12 +367,12 @@ class Undo {
 	reset() {
 		this.states = []
 		this.pos = 0
-		this.onchange(this)
+		this.onchange(false, false)
 	}
 	add() {
 		this.states.splice(this.pos, 9e9, this.get())
 		this.pos++
-		this.onchange(this)
+		this.onchange(true, false)
 	}
 	can(redo) {
 		return redo ? this.pos<this.states.length : this.pos>0
@@ -389,7 +386,7 @@ class Undo {
 		this.states[this.pos] = this.get()
 		if (redo) this.pos++
 		this.put(data)
-		this.onchange(this)
+		this.onchange(this.can(false), this.can(true))
 	}
 }
 
@@ -462,7 +459,7 @@ class ChatDraw extends HTMLElement {
 			),
 		}
 		for (let i=1; i<=8; i++)
-			this.choices.brush.values.push(new CircleBrush(i))
+			this.choices.brush.values.push(Brush.Circle(i))
 		for (let i=0; i<16; i++)
 			this.choices.pattern.values.push(dither_pattern(i, this.grp.c2d))
 		this.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00']) //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
@@ -522,9 +519,9 @@ class ChatDraw extends HTMLElement {
 				this.grp.put_data(data.data)
 				this.set_palette2(data.palette)
 			},
-			(h)=>{
-				this.form.undo.disabled = !h.can(false)
-				this.form.redo.disabled = !h.can(true)
+			(can_undo, can_redo)=>{
+				this.form.undo.disabled = !can_undo
+				this.form.redo.disabled = !can_redo
 			}
 		)
 		/// final preparations ///
