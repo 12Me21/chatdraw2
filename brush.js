@@ -359,22 +359,65 @@ class Grp {
 	}
 }
 
+class Undo {
+	constructor(max, get, put, onchange) {
+		this.max = max // todo: max
+		this.get = get
+		this.put = put
+		this.onchange = onchange
+		this.reset()
+	}
+	reset() {
+		this.states = []
+		this.pos = 0
+		this.onchange(this)
+	}
+	add() {
+		this.states.splice(this.pos, 9e9, this.get())
+		this.pos++
+		this.onchange(this)
+	}
+	can(redo) {
+		return redo ? this.pos<this.states.length : this.pos>0
+	}
+	do(redo) {
+		// 0 1 2 [3] 4 5 - 3+ are redos
+		if (!this.can(redo))
+			return
+		if (!redo) this.pos--
+		const data = this.states[this.pos]
+		this.states[this.pos] = this.get()
+		if (redo) this.pos++
+		this.put(data)
+		this.onchange(this)
+	}
+}
+
 class ChatDraw extends HTMLElement {
 	constructor() {
 		let width=200, height=100
 		super()
-		
+		/// create canvas ///
 		this.grp = new Grp(width, height)
 		let canvas = this.grp.canvas
-		
+		/// create form ///
 		this.form = document.createElement('form')
 		this.form.autocomplete = 'off'
 		this.form.method = 'dialog'
-		
-		this.history_max = 20
-		
+		this.form.onchange = ev=>{
+			let e = ev.target
+			if (e.type=='radio')
+				this.choices[e.name].change(e.value)
+			else if (e.type=='color')
+				this.actions[e.name](e.value)
+		}
+		this.form.onclick = ev=>{
+			let e = ev.target
+			if (e.type=='button')
+				this.actions[e.name]()
+		}
+		/// define choices ///
 		this.tool = null
-		
 		this.choices = {
 			// i kinda... these could be classes...
 			tool: new Choices(
@@ -418,66 +461,39 @@ class ChatDraw extends HTMLElement {
 				}
 			),
 		}
+		for (let i=1; i<=8; i++)
+			this.choices.brush.values.push(new CircleBrush(i))
+		for (let i=0; i<16; i++)
+			this.choices.pattern.values.push(dither_pattern(i, this.grp.c2d))
+		this.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00']) //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
+		/// define button actions ///
 		this.actions = {
 			pick: color=>{
 				let sel = this.sel_color()
 				let old = this.choices.color.get(sel)
-				this.history_add()
+				this.history.add()
 				this.grp.replace_color(old, color)
 				this.set_palette(sel, color)
 			},
-			
 			clear: ()=>{
-				this.history_add()
+				this.history.add()
 				this.grp.clear(true)
 			},
 			fill: ()=>{
-				this.history_add()
+				this.history.add()
 				this.grp.clear(false)
 			},
 			bg: ()=>{
 				// color here should this.c2d.shadowColor but just in case..
 				let sel = this.sel_color()
 				let color = this.choices.color.get(sel)
-				this.history_add()
+				this.history.add()
 				this.grp.replace_color(color)
 			},
-			undo: ()=>this.history_do(false),
-			redo: ()=>this.history_do(true),
+			undo: ()=>this.history.do(false),
+			redo: ()=>this.history.do(true),
 		}
-		this.form.onchange = ev=>{
-			let e = ev.target
-			if (e.type=='radio')
-				this.choices[e.name].change(e.value)
-			else if (e.type=='color')
-				this.actions[e.name](e.value)
-		}
-		this.form.onclick = ev=>{
-			let e = ev.target
-			if (e.type=='button')
-				this.actions[e.name]()
-		}
-		
-		// stroke handling:
-		canvas.onpointerdown = ev=>{
-			this.history_add()
-			this.tool.PointerDown(ev, this.grp)
-		}
-		canvas.onpointermove = canvas.onpointerup = ev=>{
-			Stroke.pointer_move(ev)
-		}
-		canvas.onlostpointercapture = ev=>{
-			Stroke.pointer_lost(ev)
-		}
-		
-		for (let i=1; i<=8; i++)
-			this.choices.brush.values.push(new CircleBrush(i))
-		
-		for (let i=0; i<16; i++)
-			this.choices.pattern.values.push(dither_pattern(i, this.grp.c2d))
-		
-		this.set_palette2(['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00']) //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
-		
+		/// draw form ///
 		draw_form(this.form, [
 			{title:'Tools', cols:3, items:[
 				{name:'clear', text:"reset!"},
@@ -495,6 +511,23 @@ class ChatDraw extends HTMLElement {
 			]},
 			{title:"Patterns", size:1, flow:'column', items:this.choices.pattern.bdef()},
 		])
+		/// undo buffer ///
+		this.history = new Undo(
+			20,
+			()=>({
+				data: this.grp.get_data(),
+				palette: [...this.choices.color.values],
+			}),
+			(data)=>{
+				this.grp.put_data(data.data)
+				this.set_palette2(data.palette)
+			},
+			(h)=>{
+				this.form.undo.disabled = !h.can(false)
+				this.form.redo.disabled = !h.can(true)
+			}
+		)
+		/// final preparations ///
 		super.attachShadow({mode: 'open'})
 		super.shadowRoot.append(document.importNode(ChatDraw.style, true), canvas, this.form)
 		
@@ -504,65 +537,28 @@ class ChatDraw extends HTMLElement {
 		this.choose('color', 0)
 		this.choose('pattern', 15)
 		
-		canvas.style.cursor = make_cursor(3)
-		
-		this.history_reset()
 		this.grp.clear(true)
+		
+		canvas.style.cursor = make_cursor(3)
+		/// stroke handling: ///
+		canvas.onpointerdown = ev=>{
+			this.history.add()
+			this.tool.PointerDown(ev, this.grp)
+		}
+		canvas.onpointermove = canvas.onpointerup = ev=>{
+			Stroke.pointer_move(ev)
+		}
+		canvas.onlostpointercapture = ev=>{
+			Stroke.pointer_lost(ev)
+		}
 	}
+	
 	set_scale(n) {
 		this.style.setProperty('--scale', n)
 	}
-	
-	/////////////////
-	/// undo/redo ///
-	/////////////////
-	
-	// TODO: save/restore the palette!!
-	history_get() {
-		return {
-			data: this.grp.get_data(),
-			palette: [...this.choices.color.values],
-		}
+	choose(name, item) {
+		this.form.elements[name][item].click()
 	}
-	history_put(data) {
-		this.grp.put_data(data.data)
-		this.set_palette2(data.palette)
-	}
-	// clear
-	history_reset() {
-		this.history = []
-		this.history_pos = 0
-		this.history_onchange()
-	}
-	// push state
-	history_add() {
-		this.history.splice(this.history_pos, 9e9, this.history_get())
-		this.history_pos++
-		this.history_onchange()
-	}
-	history_can(redo) {
-		return redo ? this.history_pos<this.history.length : this.history_pos>0
-		//return this.history_pos!=(redo?this.history.length:0)
-	}
-	// undo/redo
-	history_do(redo) {
-		// 0 1 2 [3] 4 5 - 3+ are redos
-		if (!this.history_can(redo))
-			return
-		if (!redo) this.history_pos--
-		const data = this.history[this.history_pos]
-		this.history[this.history_pos] = this.history_get()
-		if (redo) this.history_pos++
-		this.history_put(data)
-		this.history_onchange()
-	}
-	history_onchange() {
-		this.form.undo.disabled = !this.history_can(false)
-		this.form.redo.disabled = !this.history_can(true)
-	}
-	/////////////////////
-	/// setting state ///
-	/////////////////////
 	set_palette2(colors) {
 		colors.forEach((c,i)=>this.set_palette(i, c))
 	}
@@ -572,12 +568,10 @@ class ChatDraw extends HTMLElement {
 		if (i==this.sel_color())
 			this.choices.color.change(i)
 	}
+	// which color index is selected
 	sel_color() {
 		if (this.form.color)
 			return +this.form.color.value
-	}
-	choose(name, item) {
-		this.form.elements[name][item].click()
 	}
 }
 ChatDraw.style = document.createElement('link')
