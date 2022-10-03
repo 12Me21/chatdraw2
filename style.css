@@ -27,7 +27,7 @@ form {
 	-webkit-user-select: none; user-select: none;
 	justify-content: space-evenly;
 	border-top: #776 solid calc(var(--scale) * 2px);
-	font-family: monospace;
+	font-family: serif;
 }
 /* sections */
 div {
