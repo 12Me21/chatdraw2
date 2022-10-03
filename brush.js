@@ -641,8 +641,8 @@ class ChatDraw extends HTMLElement {
 				{name:'fill', text:"fill"},
 				...this.choices.tool.bdef(),
 			]},
-			{title:"Composite", rows:4, items:this.choices.composite.bdef()},
 			{title:"Brush", rows:8, size:1, items:this.choices.brush.bdef()},
+			{title:"Composite", rows:4, items:this.choices.composite.bdef()},
 			{title:"Color", cols:2, items:[
 				{name:'pick', type:'color', text:"edit"},
 				{name:'bg', text:"➙bg"},
@@ -749,3 +749,10 @@ customElements.define('chat-draw', ChatDraw)
 // right now we draw images using um
 // drawimage, and stroke color is the dither pattern (ignored)
 // but, we could use fillrect with the stroke pattern set to the clipboard image and repeat disabled... um what does that actually give us.. idk
+
+// idea: we dont need to keep the radio buttons grouped up like this
+// ex: we could put all the options for using the clipboard in one spot
+// or put the Erase composite mode along with the colors
+// etc.
+// note: i also generally think that the composite mode should go next to colors
+// ok just swapped it with brush. maybe good.
