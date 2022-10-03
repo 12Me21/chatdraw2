@@ -15,10 +15,14 @@
 	width: calc(var(--width) * 1px * var(--scale, 1));
 	cursor: crosshair;
 	touch-action: none;
+	pointer-events: none;
+}
+canvas.main {
+	background: repeating-linear-gradient(1.23deg, #F0E0AA, #D8D0A8 0.38291px);
+	pointer-events: unset;
 }
 canvas {
 	image-rendering: -moz-crisp-edges; image-rendering: pixelated;
-	background: repeating-linear-gradient(1.23deg, #F0E0AA, #D8D0A8 0.38291px);
 }
 
 form {

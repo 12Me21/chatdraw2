@@ -78,10 +78,10 @@ ideas here:
 }
 
 class Stroke {
-	static PointerDown(ev, context) {
+	static PointerDown(ev, ...context) {
 		const st = new this(ev, context)
 		Stroke.pointers.set(ev.pointerId, st)
-		st.down(st.context)
+		st.down(...st.context)
 		return st
 	}
 	static handle(canvas, down) {
@@ -90,7 +90,7 @@ class Stroke {
 			const st = this.pointers.get(ev.pointerId)
 			if (st) {
 				st.update(ev)
-				st[st.type](st.context)
+				st[st.type](...st.context)
 			}
 		}
 		canvas.onlostpointercapture = ev=>{
@@ -145,7 +145,16 @@ class Spray extends Stroke {
 }
 Spray.label = "spray"
 class LineTool extends Stroke {
-	up(d) {
+	down(d, v) {
+		v.copy_settings(d)
+		v.erase()
+	}
+	move(d, v) {
+		v.erase()
+		v.draw_line(this.start, this.pos)
+	}
+	up(d, v) {
+		v.erase()
 		d.draw_line(this.start, this.pos)
 	}
 }
@@ -245,6 +254,7 @@ class Grp {
 		const x = this.canvas = document.createElement('canvas')
 		x.width = width
 		x.height = height
+		// should these be on like, root elem?
 		x.style.setProperty('--width', width)
 		x.style.setProperty('--height', height)
 		x.style.imageRendering = '-moz-crisp-edges'
@@ -268,21 +278,25 @@ class Grp {
 		this.c2d.globalCompositeOperation = v
 	}
 	
+	copy_settings(source) {
+		this.brush = source.brush
+		this.color = source.c2d.shadowColor
+		this.pattern = source.c2d.fillStyle
+	}
 	get_data() {
 		return this.c2d.getImageData(0, 0, this.canvas.width, this.canvas.height)
 	}
 	put_data(data, x=0, y=0) {
 		this.c2d.putImageData(data, x, y)
 	}
-	clear(all) {
-		if (all) {
-			this.c2d.save()
-			this.c2d.globalCompositeOperation = 'destination-out'
-			this.c2d.fillStyle = 'black'
-		}
+	erase() {
+		this.c2d.save()
+		this.c2d.globalCompositeOperation = 'copy'
+		this.c2d.clearRect(1000, 0, this.canvas.width, this.canvas.height)
+		this.c2d.restore()
+	}
+	clear() {
 		this.c2d.fillRect(0, 0, this.canvas.width, this.canvas.height)
-		if (all)
-			this.c2d.restore()
 	}
 	draw(pos) {
 		this.c2d.fill(this.brush.point(pos))
@@ -326,14 +340,14 @@ class Grp {
 	
 	// technically speaking, this should be a  Brush? since it generates a path to fill (kinda)
 	// or we could use the current brush rather than fillrect here. which would allow implementing an.. erode-like operator? not sure how useful that would be tho.
-	flood_fill(pos, brush=false) {
+	flood_fill(pos) {
 		const {x, y} = pos.Floor()
 		const {width, height} = this.canvas
 		const data = this.get_data()
 		const pixels = new Uint32Array(data.data.buffer)
 		const old = pixels[x + y*width]
 		const queue = [[x+1, x, y, -1]]
-		const size = this.brush.fills.length-1
+		const size = this.brush.fills.length-2
 		// fills pixels in a horizontal line, starting from (x,y),
 		// until it hits a wall or reaches x=limit
 		const to_wall = (x, y, dx, limit)=>{
@@ -359,7 +373,14 @@ class Grp {
 			// expand span
 			const left = to_wall(x1-1, y, -1, 0)
 			const right = to_wall(x2+1, y, +1, width-1)
-			this.c2d.fillRect(left-size, y-size, right-left+1+size*2, 1+size*2)
+			if (size==-1)
+				this.c2d.fillRect(left, y, right-left+1, 1)
+			else if (size==0) {
+				this.c2d.fillRect(left, y-1, right-left+1, 3)
+				this.c2d.fillRect(left-1, y, 1, 1)
+				this.c2d.fillRect(right+1, y, 1, 1)
+			} else
+				this.c2d.fillRect(left-size, y-size, right-left+1+size*2, 1+size*2)
 			// check row backwards:
 			if (x2<x1) {
 				// (this only happens on the first iteration)
@@ -416,6 +437,8 @@ class ChatDraw extends HTMLElement {
 		const width=200, height=100
 		super()
 		this.grp = new Grp(width, height)
+		this.overlay = new Grp(width, height)
+		this.grp.canvas.classList.add('main')
 		/// define choices ///
 		this.tool = null
 		let brushes = [], patterns = []
@@ -475,11 +498,11 @@ class ChatDraw extends HTMLElement {
 			},
 			clear: ()=>{
 				this.history.add()
-				this.grp.clear(true)
+				this.grp.erase()
 			},
 			fill: ()=>{
 				this.history.add()
-				this.grp.clear(false)
+				this.grp.clear()
 			},
 			bg: ()=>{
 				// color here should this.c2d.shadowColor but just in case..
@@ -527,18 +550,20 @@ class ChatDraw extends HTMLElement {
 		)
 		/// final preparations ///
 		this.set_palette2(this.choices.color.values)
-		this.grp.clear(true)
+		this.grp.erase()
 		
 		Stroke.handle(this.grp.canvas, ev=>{
 			this.history.add()
-			this.tool.PointerDown(ev, this.grp)
+			this.tool.PointerDown(ev, this.grp, this.overlay)
 		})
 		
 		this.grp.canvas.style.cursor = make_cursor(3)
 		
 		super.attachShadow({mode: 'open'})
-		super.shadowRoot.append(document.importNode(ChatDraw.style, true), this.grp.canvas, this.form)
+		super.shadowRoot.append(document.importNode(ChatDraw.style, true), this.grp.canvas, this.overlay.canvas, this.form)
 	}
+	// idea: what if all tools just draw to the overlay, then we copy to main canvas at the end of the stroke? and update undo buffer..
+	// ugh but that would be slow maybe?
 	
 	connectedCallback() {
 		this.choose('tool', 0)
