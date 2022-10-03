@@ -44,26 +44,48 @@ class Point extends DOMPointReadOnly {
 	Floor() {
 		return new Point(Math.floor(this.x), Math.floor(this.y))
 	}	
+	Ceil() {
+		return new Point(Math.ceil(this.x), Math.ceil(this.y))
+	}	
 	Lerp(p, t) {
 		return new Point(this.x*(1-t)+p.x*t, this.y*(1-t)+p.y*t)
 	}
 	
 	c_dist(p) { return Math.max(Math.abs(this.x-p.x), Math.abs(this.y-p.y)) }
+	// area of a triangle with vertexes at (0,0), `this`, and `p2`
+	tri_area(p2) {
+		return Math.abs(p2.x*this.y - p2.y*this.x)/2
+	}
+	cardinals(diag) {
+		const sx = Math.sign(this.x), sy = Math.sign(this.y)
+		let dx = 0, dy = 0
+		if (diag) {
+			if (Math.abs(this.x) >= Math.abs(this.y))
+				dx = sx
+			else
+				dy = sy
+		}
+		return [new Point(sx, dy), new Point(dx, sy)]
+	}
 	
 	* follow_line(start, end, diag) {
+		if (this.c_dist(end)<=0.5)
+			return yield end
+		// decide on step sizes
 		const diff = end.Subtract(start)
-		const step_v = new Point(diag ? Math.sign(diff.x) : 0, Math.sign(diff.y))
-		const step_h = (diag && Math.abs(diff.x) < Math.abs(diff.y)) ? new Point(0, Math.sign(diff.y)) : new Point(Math.sign(diff.x), 0)
+		const [step_h, step_v] = diff.cardinals(diag)
+		// loop
 		let i=1000
 		for (let pos=this,step=step_v; pos.c_dist(end)>0.5; pos=pos.Add(step)) {
 			if (i--<0)
-				throw new Error(`infinite loop drawing line\nfrom ${start} to ${end} (diag: ${diag})`)
+				throw new Error(`infinite loop drawing line
+from ${start} to ${end} (diag: ${diag})`)
 			yield pos
 			// choose step that takes us closest to the ideal line
 			if (step_h.x || step_h.y) {
 				const c = pos.Subtract(start)
-				const horz = Math.abs(diff.x*(c.y+step_h.y) - diff.y*(c.x+step_h.x))
-				const vert = Math.abs(diff.x*(c.y+step_v.y) - diff.y*(c.x+step_v.x))
+				const horz = c.Add(step_h).tri_area(diff)
+				const vert = c.Add(step_v).tri_area(diff)
 				step = horz<=vert ? step_h : step_v
 			}
 		}
@@ -139,13 +161,16 @@ class Spray extends Stroke {
 		this.move(d)
 	}
 	move(d) {
-		for (let i=0;i<10;i++)
+		for (let i=0;i<50;i++)
 			d.random_in_brush(this.pos)
 	}
 }
 Spray.label = "spray"
 class LineTool extends Stroke {
 	down(d, v) {
+		// TODO: we need to "lock" the overlay, because 2 strokes can be drawn at the same time with a touchscreen
+		// or somehow support this properly?
+		// could use like, xor mode perhaps..
 		v.copy_settings(d)
 		v.erase()
 	}
@@ -200,18 +225,63 @@ class Mover extends Stroke {
 		this._data = null
 	}
 }
-Mover.label = "move"
-
+Mover.label = "⬚↭"
+class CopyTool extends Stroke {
+	down(d, v) {
+		// TODO: we need to "lock" the overlay, because 2 strokes can be drawn at the same time with a touchscreen
+		// or somehow support this properly?
+		// could use like, xor mode perhaps..
+		v.color = '#006BB7'
+		v.pattern = 'black'
+		v.erase()
+		this._start = this.start.Floor()
+	}
+	move(d, v) {
+		v.erase()
+		v.c2d.fillRect(...this._bounds())
+	}
+	_bounds() {
+		// todo: fix when dragging backwards
+		const diff = this.pos.Floor().Subtract(this._start).Ceil()
+		return [this._start.x, this._start.y, diff.x+1, diff.y+1]
+	}
+	up(d, v, c) {
+		let data = d.c2d.getImageData(...this._bounds())
+		c.when_copy(data)
+		v.erase()
+	}
+}
+CopyTool.label = "⬚copy"
+class PasteTool extends Stroke {
+	down(d, v, c) {
+		v.copy_settings(d)
+		v.erase()
+		this._offset = new Point(c.clipboard.width/2, c.clipboard.height/2)
+		v.put_image(c.clipboard, this.pos.Subtract(this._offset))
+	}
+	move(d, v, c) {
+		v.erase()
+		v.put_image(c.clipboard, this.pos.Subtract(this._offset))
+	}
+	// todo: bring back the overlay class
+	up(d, v, c) {
+		v.erase()
+		d.put_image(c.clipboard, this.pos.Subtract(this._offset))
+	}
+}
+PasteTool.label = "⬚paste"
 
 
+// idea: is it best to use rects to define the brush? or a path around the perimeter
 class Brush extends Path2D {
-	constructor(origin, fills, diag) {
+	constructor(origin, fills, name, diag=false) {
 		super()
 		for (const f of fills)
 			super.rect(...f)
 		this.origin = origin
 		this.fills = fills
 		this.diag = diag
+		this.label = name
 	}
 	add_to(path, pos) {
 		const {x, y} = pos.Subtract(this.origin).Round()
@@ -234,14 +304,14 @@ class Brush extends Path2D {
 			this.add_to(path, pos)
 		return [path, pos]
 	}
-	static Circle(d, diag) {
+	static Circle(d, name, diag) {
 		const r = d/2, sr = r-0.5
 		const fills = []
 		for (let y=-sr; y<=sr; y++) {
 			const x = Math.ceil(Math.sqrt(r*r - y*y)+sr)
 			fills.push([x, y+sr, (r-x)*2, 1])
 		}
-		return new this(new Point(r, r), fills, diag)
+		return new this(new Point(r, r), fills, name, diag)
 	}
 }
 
@@ -286,7 +356,7 @@ class Grp {
 	get_data() {
 		return this.c2d.getImageData(0, 0, this.canvas.width, this.canvas.height)
 	}
-	put_data(data, x=0, y=0) {
+	put_data(data, x=0, y=0) { // hm this takes x,y... nnnn
 		this.c2d.putImageData(data, x, y)
 	}
 	erase() {
@@ -306,19 +376,15 @@ class Grp {
 		this.c2d.fill(path)
 		return pos
 	}
-	// bad
+	// bad?
 	random_in_brush(pos) {
-		let r
-		let n = 0
-		do {
-			n++
-			if (n>30)
-				return
-			r = new Point(Math.random()*10-5, Math.random()*10-5)
-			r = this.brush.adjust_cursor(r).Add(this.brush.origin)
-		} while (!this.c2d.isPointInPath(this.brush, r.x+.5-1000, r.y+.5))
-		pos = pos.Add(r).Subtract(this.brush.origin)
-		this.c2d.fillRect(pos.x, pos.y, 1, 1)
+		let r = new Point(Math.random()*20-10, Math.random()*20-10)
+		r = this.brush.adjust_cursor(r).Add(this.brush.origin)
+		// use the brush like a stencil. this also corrects for density at different sizes
+		if (this.c2d.isPointInPath(this.brush, r.x+.5-1000, r.y+.5)) {
+			pos = pos.Add(r).Subtract(this.brush.origin)
+			this.c2d.fillRect(pos.x, pos.y, 1, 1)
+		}
 	}
 	// convert a hex color into a Uint32, in system endianness
 	color32(color=null) {
@@ -373,6 +439,7 @@ class Grp {
 			// expand span
 			const left = to_wall(x1-1, y, -1, 0)
 			const right = to_wall(x2+1, y, +1, width-1)
+			// this is broken by the different brush thickness settings..
 			if (size==-1)
 				this.c2d.fillRect(left, y, right-left+1, 1)
 			else if (size==0) {
@@ -392,6 +459,9 @@ class Grp {
 			// check row forwards:
 			find_spans(left, right, y, dir)
 		}
+	}
+	put_image(source, pos) {
+		this.c2d.drawImage(source, pos.x+1000, pos.y)
 	}
 }
 
@@ -438,23 +508,45 @@ class ChatDraw extends HTMLElement {
 		super()
 		this.grp = new Grp(width, height)
 		this.overlay = new Grp(width, height)
+		this.overlay.c2d.globalAlpha = 0.7
 		this.grp.canvas.classList.add('main')
 		/// define choices ///
 		this.tool = null
 		let brushes = [], patterns = []
-		brushes.push(Brush.Circle(1, true))
-		brushes.push(Brush.Circle(1, false))
-		brushes.push(Brush.Circle(2, true))
-		brushes.push(Brush.Circle(2, false))
-		brushes.push(Brush.Circle(3, true))
-		brushes.push(Brush.Circle(3, false))
+		brushes.push(Brush.Circle(1, "1", true))
+		brushes.push(Brush.Circle(1, "1", false))
+		brushes.push(Brush.Circle(2, "2", true))
+		brushes.push(Brush.Circle(2, "2", false))
+		brushes.push(Brush.Circle(3, "3", true))
+		brushes.push(Brush.Circle(3, "3", false))
 		for (let i=4; i<=8; i++)
-			brushes.push(Brush.Circle(i, true))
+			brushes.push(Brush.Circle(i, `●${i}`,true))
+		brushes.push(new Brush(new Point(2.5,2.5), [
+			[0,0,1,1],// wonder if we should store these as like, DOMRect?
+			[1,1,1,1],
+			[2,2,1,1],
+			[3,3,1,1],
+			[4,4,1,1],
+		], "\\5", false))
+		// we can't enable diagonal on this brush, since
+		// it's too thin. but technically, diagonal should work on some axes. would be nice to like, say, ok you're allowed to move in these directions:
+		// [][]  
+		// []()[]
+		//   [][]
+		// this would not be too hard to implement, either. we just pick the 2 points that straddle the line being drawn
+		// (we could even do like, a dashed line? by allowing only movements of 2px at a time?)
+		brushes.push(new Brush(new Point(0.5,2.5), [
+			[0,0,1,1],
+			[0,1,1,1],
+			[0,2,1,1],
+			[0,3,1,1],
+			[0,4,1,1],
+		], "|5", true))
 		for (let i=0; i<16; i++)
 			patterns.push(dither_pattern(i, this.grp.c2d))
 		this.choices = {
 			tool: new Choices(
-				'tool', [Freehand, Slow, LineTool, Spray, Flood, Mover],
+				'tool', [Freehand, Slow, LineTool, Spray, Flood, Mover, CopyTool, PasteTool],
 				v=>this.tool = v,
 				v=>v.label
 			),
@@ -469,7 +561,7 @@ class ChatDraw extends HTMLElement {
 			brush: new Choices(
 				'brush', brushes,
 				v=>this.grp.brush = v,
-				(v,i)=>`${i+1}`
+				v=>"\b"+v.label
 			),
 			pattern: new Choices(
 				'pattern', patterns,
@@ -483,7 +575,8 @@ class ChatDraw extends HTMLElement {
 					'source-over':"all",
 					'destination-over':"under",
 					'source-atop':"in",
-					'destination-out':"erase"
+					'destination-out':"erase",
+					'copy':"copy", // this is only useful when pasting
 				}[v])
 			),
 		}
@@ -554,7 +647,7 @@ class ChatDraw extends HTMLElement {
 		
 		Stroke.handle(this.grp.canvas, ev=>{
 			this.history.add()
-			this.tool.PointerDown(ev, this.grp, this.overlay)
+			this.tool.PointerDown(ev, this.grp, this.overlay, this)
 		})
 		
 		this.grp.canvas.style.cursor = make_cursor(3)
@@ -571,6 +664,16 @@ class ChatDraw extends HTMLElement {
 		this.choose('composite', 0)
 		this.choose('color', 0)
 		this.choose('pattern', 15)
+	}
+	
+	when_copy(data) {
+		let c = document.createElement('canvas')
+		c.width = data.width
+		c.height = data.height
+		let c2d = c.getContext('2d')
+		c2d.putImageData(data, 0, 0)
+		this.choices.pattern.values[0] = this.grp.c2d.createPattern(c, 'repeat')
+		this.clipboard = c
 	}
 	
 	set_scale(n) {
@@ -599,3 +702,8 @@ ChatDraw.style.rel = 'stylesheet'
 ChatDraw.style.href = 'style.css'
 
 customElements.define('chat-draw', ChatDraw)
+
+// idea: instead of a Paste tool, have a paste BRUSH
+// then, have a "place" tool or whatever
+// so you can select the clipboard "brush", and either draw with the pen etc. or use Place to place it more precisely
+// 
