@@ -51,18 +51,9 @@ class Point extends DOMPointReadOnly {
 	c_dist(p) { return Math.max(Math.abs(this.x-p.x), Math.abs(this.y-p.y)) }
 	
 	* follow_line(start, end, diag=true) {
-		let diff = end.Subtract(start)
-		let step_v, step_h
-		if (diag) {
-			step_v = new Point(Math.sign(diff.x), Math.sign(diff.y))
-			if (Math.abs(diff.x) >= Math.abs(diff.y))
-				step_h = new Point(Math.sign(diff.x), 0)
-			else
-				step_h = new Point(0, Math.sign(diff.y))
-		} else {
-			step_v = new Point(0, Math.sign(diff.y))
-			step_h = new Point(Math.sign(diff.x), 0)
-		}
+		const diff = end.Subtract(start)
+		const step_v = new Point(diag ? Math.sign(diff.x) : 0, Math.sign(diff.y))
+		const step_h = (diag && Math.abs(diff.x) < Math.abs(diff.y)) ? new Point(0, Math.sign(diff.y)) : new Point(Math.sign(diff.x), 0)
 		let i=1000
 		for (let pos=this,step=step_v; pos.c_dist(end)>0.5; pos=pos.Add(step)) {
 			if (i--<0)
@@ -70,8 +61,9 @@ class Point extends DOMPointReadOnly {
 			yield pos
 			// choose step that takes us closest to the ideal line
 			if (step_h.x || step_h.y) {
-				let horz = Math.abs(diff.x*(pos.y-start.y+step_h.y) - diff.y*(pos.x-start.x+step_h.x))
-				let vert = Math.abs(diff.x*(pos.y-start.y+step_v.y) - diff.y*(pos.x-start.x+step_v.x))
+				const c = pos.Subtract(start)
+				const horz = Math.abs(diff.x*(c.y+step_h.y) - diff.y*(c.x+step_h.x))
+				const vert = Math.abs(diff.x*(c.y+step_v.y) - diff.y*(c.x+step_v.x))
 				step = horz<=vert ? step_h : step_v
 			}
 		}
@@ -87,21 +79,23 @@ ideas here:
 
 class Stroke {
 	static PointerDown(ev, context) {
-		let st = new this(ev, context)
+		const st = new this(ev, context)
 		Stroke.pointers.set(ev.pointerId, st)
 		st.down(st.context)
 		return st
 	}
-	static pointer_move(ev) {
-		let st = Stroke.pointers.get(ev.pointerId)
-		if (st) {
-			st.update(ev)
-			st[st.type](st.context)
-			return st
+	static handle(canvas, down) {
+		canvas.onpointerdown = down
+		canvas.onpointermove = canvas.onpointerup = ev=>{
+			const st = this.pointers.get(ev.pointerId)
+			if (st) {
+				st.update(ev)
+				st[st.type](st.context)
+			}
 		}
-	}
-	static pointer_lost(ev) {
-		Stroke.pointers.delete(ev.pointerId)
+		canvas.onlostpointercapture = ev=>{
+			this.pointers.delete(ev.pointerId)
+		}
 	}
 	
 	constructor(ev, context) {
@@ -115,10 +109,10 @@ class Stroke {
 		this.old = this.pos
 		this.type = type.slice(7)
 		
-		let scale = Point.FromRect(target.getBoundingClientRect()).Divide(Point.FromRect(target))
+		const scale = Point.FromRect(target.getBoundingClientRect()).Divide(Point.FromRect(target))
 		
-		let ps = 1/window.devicePixelRatio/2
-		let adjust = new Point(ps, ps).Divide(scale)
+		const ps = 1/window.devicePixelRatio/2
+		const adjust = new Point(ps, ps).Divide(scale)
 		
 		this.pos = new Point(offsetX, offsetY).Add(adjust).Divide(scale)
 	}
@@ -160,7 +154,7 @@ class Slow extends Stroke {
 		this._avg = this.pos
 	}
 	move(d) {
-		let pos = this._avg.Lerp(this.pos, 0.15)
+		const pos = this._avg.Lerp(this.pos, 0.15)
 		d.draw_line(this._avg, pos)
 		this._avg = pos
 	}
@@ -392,24 +386,22 @@ class Undo {
 
 class ChatDraw extends HTMLElement {
 	constructor() {
-		let width=200, height=100
+		const width=200, height=100
 		super()
-		/// create canvas ///
 		this.grp = new Grp(width, height)
-		let canvas = this.grp.canvas
 		/// create form ///
 		this.form = document.createElement('form')
 		this.form.autocomplete = 'off'
 		this.form.method = 'dialog'
 		this.form.onchange = ev=>{
-			let e = ev.target
+			const e = ev.target
 			if (e.type=='radio')
 				this.choices[e.name].change(e.value)
 			else if (e.type=='color')
 				this.actions[e.name](e.value)
 		}
 		this.form.onclick = ev=>{
-			let e = ev.target
+			const e = ev.target
 			if (e.type=='button')
 				this.actions[e.name]()
 		}
@@ -466,8 +458,8 @@ class ChatDraw extends HTMLElement {
 		/// define button actions ///
 		this.actions = {
 			pick: color=>{
-				let sel = this.sel_color()
-				let old = this.choices.color.get(sel)
+				const sel = this.sel_color()
+				const old = this.choices.color.get(sel)
 				this.history.add()
 				this.grp.replace_color(old, color)
 				this.set_palette(sel, color)
@@ -482,8 +474,8 @@ class ChatDraw extends HTMLElement {
 			},
 			bg: ()=>{
 				// color here should this.c2d.shadowColor but just in case..
-				let sel = this.sel_color()
-				let color = this.choices.color.get(sel)
+				const sel = this.sel_color()
+				const color = this.choices.color.get(sel)
 				this.history.add()
 				this.grp.replace_color(color)
 			},
@@ -526,7 +518,7 @@ class ChatDraw extends HTMLElement {
 		)
 		/// final preparations ///
 		super.attachShadow({mode: 'open'})
-		super.shadowRoot.append(document.importNode(ChatDraw.style, true), canvas, this.form)
+		super.shadowRoot.append(document.importNode(ChatDraw.style, true), this.grp.canvas, this.form)
 		
 		this.choose('tool', 0)
 		this.choose('brush', 1)
@@ -536,18 +528,12 @@ class ChatDraw extends HTMLElement {
 		
 		this.grp.clear(true)
 		
-		canvas.style.cursor = make_cursor(3)
-		/// stroke handling: ///
-		canvas.onpointerdown = ev=>{
+		Stroke.handle(this.grp.canvas, ev=>{
 			this.history.add()
 			this.tool.PointerDown(ev, this.grp)
-		}
-		canvas.onpointermove = canvas.onpointerup = ev=>{
-			Stroke.pointer_move(ev)
-		}
-		canvas.onlostpointercapture = ev=>{
-			Stroke.pointer_lost(ev)
-		}
+		})
+		
+		this.grp.canvas.style.cursor = make_cursor(3)
 	}
 	
 	set_scale(n) {
