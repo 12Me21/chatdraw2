@@ -393,19 +393,20 @@ class ChatDraw extends HTMLElement {
 		super()
 		this.grp = new Grp(width, height)
 		/// define choices ///
-		this.form = document.createElement('form')
 		this.tool = null
+		let brushes = [], patterns = []
+		for (let i=1; i<=8; i++)
+			brushes.push(Brush.Circle(i))
+		for (let i=0; i<16; i++)
+			patterns.push(dither_pattern(i, this.grp.c2d))
 		this.choices = {
-			// i kinda... these could be classes...
 			tool: new Choices(
-				'tool',
-				[Freehand, Slow, LineTool, Spray, Flood/*, Flood2*/],
+				'tool', [Freehand, Slow, LineTool, Spray, Flood],
 				v=>this.tool = v,
 				v=>v.label
 			),
 			color: new Choices(
-				'color',
-				[],
+				'color', ['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'], //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
 				v=>{
 					this.form.pick.value = v
 					this.grp.color = v
@@ -413,36 +414,26 @@ class ChatDraw extends HTMLElement {
 				v=>""
 			),
 			brush: new Choices(
-				'brush',
-				[],
+				'brush', brushes,
 				v=>this.grp.brush = v,
 				(v,i)=>`${i+1}`
 			),
 			pattern: new Choices(
-				'pattern',
-				[],
+				'pattern', patterns,
 				v=>this.grp.pattern = v,
 				v=>v._canvas
 			),
-			comp: new Choices(
-				'comp',
-		 		['source-over', 'destination-over', 'source-atop', 'destination-out'],
+			composite: new Choices(
+				'composite', ['source-over', 'destination-over', 'source-atop', 'destination-out'],
 				v=>this.grp.composite = v,
-				v=>{
-					return {
-						'source-over':"all",
-						'destination-over':"under",
-						'source-atop':"in",
-						'destination-out':"erase"
-					}[v]
-				}
+				v=>({
+					'source-over':"all",
+					'destination-over':"under",
+					'source-atop':"in",
+					'destination-out':"erase"
+				}[v])
 			),
 		}
-		for (let i=1; i<=8; i++)
-			this.choices.brush.values.push(Brush.Circle(i))
-		for (let i=0; i<16; i++)
-			this.choices.pattern.values.push(dither_pattern(i, this.grp.c2d))
-		this.choices.color.values = ['#000000','#FFFFFF','#FF0000','#0000FF','#00FF00','#FFFF00'] //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
 		/// define button actions ///
 		let actions = {
 			pick: color=>{
@@ -479,7 +470,7 @@ class ChatDraw extends HTMLElement {
 				{name:'fill', text:"fill"},
 				...this.choices.tool.bdef(),
 			]},
-			{title:'Draw Mode', rows:4, items:this.choices.comp.bdef()},
+			{title:'Draw Mode', rows:4, items:this.choices.composite.bdef()},
 			{title:"Brushes", rows:8, size:1, items:this.choices.brush.bdef()},
 			{title:"Colors", cols:2, items:[
 				{name:'pick', type:'color', text:"edit"},
@@ -520,7 +511,7 @@ class ChatDraw extends HTMLElement {
 		
 		this.choose('tool', 0)
 		this.choose('brush', 1)
-		this.choose('comp', 0)
+		this.choose('composite', 0)
 		this.choose('color', 0)
 		this.choose('pattern', 15)
 	}
