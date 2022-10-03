@@ -133,6 +133,7 @@ class Freehand extends Stroke {
 	}
 }
 Freehand.label = "pen"
+// idea: spray that uses dither somehow? like, fills in based on ordered dithering? perhaps it umm.. like first fill in every pixel that lines up with pixel 0 in the pattern, then do pixel 1, etc..
 class Spray extends Stroke {
 	down(d) {
 		this.move(d)
@@ -195,12 +196,13 @@ Mover.label = "move"
 
 
 class Brush extends Path2D {
-	constructor(origin, fills) {
+	constructor(origin, fills, diag) {
 		super()
 		for (const f of fills)
 			super.rect(...f)
 		this.origin = origin
 		this.fills = fills
+		this.diag = diag
 	}
 	add_to(path, pos) {
 		const {x, y} = pos.Subtract(this.origin).Round()
@@ -214,23 +216,23 @@ class Brush extends Path2D {
 		this.add_to(path, pos)
 		return path
 	}
-	line(start, end, diag=false) {
+	line(start, end) {
 		const path = new Path2D()
 		start = this.adjust_cursor(start)
 		end = this.adjust_cursor(end)
 		let pos
-		for (pos of start.follow_line(start, end, diag))
+		for (pos of start.follow_line(start, end, this.diag))
 			this.add_to(path, pos)
 		return [path, pos]
 	}
-	static Circle(d) {
+	static Circle(d, diag) {
 		const r = d/2, sr = r-0.5
 		const fills = []
 		for (let y=-sr; y<=sr; y++) {
 			const x = Math.ceil(Math.sqrt(r*r - y*y)+sr)
 			fills.push([x, y+sr, (r-x)*2, 1])
 		}
-		return new this(new Point(r, r), fills)
+		return new this(new Point(r, r), fills, diag)
 	}
 }
 
@@ -254,7 +256,6 @@ class Grp {
 		c.shadowOffsetX = 1000
 		c.translate(-c.shadowOffsetX, 0)
 		
-		this.diag = false
 		this.brush = null
 	}
 	set color(v) {
@@ -287,7 +288,7 @@ class Grp {
 		this.c2d.fill(this.brush.point(pos))
 	}
 	draw_line(start, end) {
-		const [path, pos] = this.brush.line(start, end, this.diag)
+		const [path, pos] = this.brush.line(start, end)
 		this.c2d.fill(path)
 		return pos
 	}
@@ -418,8 +419,14 @@ class ChatDraw extends HTMLElement {
 		/// define choices ///
 		this.tool = null
 		let brushes = [], patterns = []
-		for (let i=1; i<=8; i++)
-			brushes.push(Brush.Circle(i))
+		brushes.push(Brush.Circle(1, true))
+		brushes.push(Brush.Circle(1, false))
+		brushes.push(Brush.Circle(2, true))
+		brushes.push(Brush.Circle(2, false))
+		brushes.push(Brush.Circle(3, true))
+		brushes.push(Brush.Circle(3, false))
+		for (let i=4; i<=8; i++)
+			brushes.push(Brush.Circle(i, true))
 		for (let i=0; i<16; i++)
 			patterns.push(dither_pattern(i, this.grp.c2d))
 		this.choices = {
@@ -456,11 +463,6 @@ class ChatDraw extends HTMLElement {
 					'destination-out':"erase"
 				}[v])
 			),
-			diag: new Choices(
-				'diag', [false, true],
-				v=>this.grp.diag = v,
-				v=>v?"thin":"thick"
-			),
 		}
 		/// define button actions ///
 		let actions = {
@@ -491,22 +493,21 @@ class ChatDraw extends HTMLElement {
 		}
 		/// draw form ///
 		this.form = draw_form(this.choices, actions, [
-			{title:'Tools', cols:3, items:[
+			{cols:3, items:[
 				{name:'clear', text:"reset!"},
 				{name:'undo', text:"↶", icon:true},
 				{name:'redo', text:"↷", icon:true},
 				{name:'fill', text:"fill"},
 				...this.choices.tool.bdef(),
 			]},
-			{title:'Draw Mode', rows:4, items:this.choices.composite.bdef()},
-			{title:"Brushes", rows:8, size:1, items:this.choices.brush.bdef()},
-			{title:"Line", rows:4, items:this.choices.diag.bdef()},
-			{title:"Colors", cols:2, items:[
+			{rows:4, items:this.choices.composite.bdef()},
+			{rows:8, size:1, items:this.choices.brush.bdef()},
+			{cols:2, items:[
 				{name:'pick', type:'color', text:"edit"},
 				{name:'bg', text:"➙bg"},
 				...this.choices.color.bdef(),
 			]},
-			{title:"Patterns", rows:8, size:1, items:this.choices.pattern.bdef()},
+			{rows:8, size:1, items:this.choices.pattern.bdef()},
 		])
 		/// undo buffer ///
 		this.history = new Undo(
