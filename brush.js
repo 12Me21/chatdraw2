@@ -50,7 +50,7 @@ class Point extends DOMPointReadOnly {
 	
 	c_dist(p) { return Math.max(Math.abs(this.x-p.x), Math.abs(this.y-p.y)) }
 	
-	* follow_line(start, end, diag=true) {
+	* follow_line(start, end, diag) {
 		const diff = end.Subtract(start)
 		const step_v = new Point(diag ? Math.sign(diff.x) : 0, Math.sign(diff.y))
 		const step_h = (diag && Math.abs(diff.x) < Math.abs(diff.y)) ? new Point(0, Math.sign(diff.y)) : new Point(Math.sign(diff.x), 0)
@@ -173,12 +173,13 @@ Flood.label = "flood"
 
 
 class Brush extends Path2D {
-	constructor(origin, fills) {
+	constructor(origin, fills, thin) {
 		super()
 		for (const f of fills)
 			super.rect(...f)
 		this.origin = origin
 		this.fills = fills
+		this.thin = thin
 	}
 	add_to(path, pos) {
 		const {x, y} = pos.Subtract(this.origin).Round()
@@ -197,18 +198,18 @@ class Brush extends Path2D {
 		start = this.adjust_cursor(start)
 		end = this.adjust_cursor(end)
 		let pos
-		for (pos of start.follow_line(start, end))
+		for (pos of start.follow_line(start, end, this.thin))
 			this.add_to(path, pos)
 		return [path, pos]
 	}
-	static Circle(d) {
+	static Circle(d, thin) {
 		const r = d/2, sr = r-0.5
 		const fills = []
 		for (let y=-sr; y<=sr; y++) {
 			const x = Math.ceil(Math.sqrt(r*r - y*y)+sr)
 			fills.push([x, y+sr, (r-x)*2, 1])
 		}
-		return new this(new Point(r, r), fills)
+		return new this(new Point(r, r), fills, thin)
 	}
 }
 
@@ -395,8 +396,10 @@ class ChatDraw extends HTMLElement {
 		/// define choices ///
 		this.tool = null
 		let brushes = [], patterns = []
-		for (let i=1; i<=8; i++)
+		for (let i=1; i<=8; i++) {
 			brushes.push(Brush.Circle(i))
+			brushes.push(Brush.Circle(i, true))
+		}
 		for (let i=0; i<16; i++)
 			patterns.push(dither_pattern(i, this.grp.c2d))
 		this.choices = {
@@ -508,7 +511,9 @@ class ChatDraw extends HTMLElement {
 		
 		super.attachShadow({mode: 'open'})
 		super.shadowRoot.append(document.importNode(ChatDraw.style, true), this.grp.canvas, this.form)
-		
+	}
+	
+	connectedCallback() {
 		this.choose('tool', 0)
 		this.choose('brush', 1)
 		this.choose('composite', 0)
