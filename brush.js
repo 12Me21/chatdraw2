@@ -290,19 +290,20 @@ class Brush extends Path2D {
 	adjust_cursor(pos) {
 		return pos.Subtract(this.origin).Round().Add(this.origin)
 	}
-	point(pos) {
+	point(c2d, pos) {
 		const path = new Path2D()
 		this.add_to(path, pos)
-		return path
+		c2d.fill(path)
 	}
-	line(start, end) {
+	line(c2d, start, end) {
 		const path = new Path2D()
 		start = this.adjust_cursor(start)
 		end = this.adjust_cursor(end)
 		let pos
 		for (pos of start.follow_line(start, end, this.diag))
 			this.add_to(path, pos)
-		return [path, pos]
+		c2d.fill(path)
+		return pos
 	}
 	static Circle(d, name, diag) {
 		const r = d/2, sr = r-0.5
@@ -312,6 +313,30 @@ class Brush extends Path2D {
 			fills.push([x, y+sr, (r-x)*2, 1])
 		}
 		return new this(new Point(r, r), fills, name, diag)
+	}
+}
+class ImageBrush {
+	constructor(origin, image, name, diag=false, color=false) {
+		this.origin = origin
+		this.source = image
+		this.diag = diag
+		this.label = name
+		this.color = color
+	}
+	adjust_cursor(pos) {
+		return pos.Subtract(this.origin).Round().Add(this.origin)
+	}
+	point(c2d, pos) {
+		pos = pos.Subtract(this.origin)
+		c2d.drawImage(this.source, this.color?pos.x:pos.x+1000, pos.y)
+	}
+	line(c2d, start, end) {
+		start = this.adjust_cursor(start)
+		end = this.adjust_cursor(end)
+		let pos
+		for (pos of start.follow_line(start, end, this.diag))
+			this.point(c2d, pos)
+		return pos
 	}
 }
 
@@ -369,12 +394,10 @@ class Grp {
 		this.c2d.fillRect(0, 0, this.canvas.width, this.canvas.height)
 	}
 	draw(pos) {
-		this.c2d.fill(this.brush.point(pos))
+		this.brush.point(this.c2d, pos)
 	}
 	draw_line(start, end) {
-		const [path, pos] = this.brush.line(start, end)
-		this.c2d.fill(path)
-		return pos
+		return this.brush.line(this.c2d, start, end)
 	}
 	// bad?
 	random_in_brush(pos) {
@@ -513,6 +536,7 @@ class ChatDraw extends HTMLElement {
 		/// define choices ///
 		this.tool = null
 		let brushes = [], patterns = []
+		brushes.push(new Brush(new Point(0,0), [], "CB", false))
 		brushes.push(Brush.Circle(1, "1", true))
 		brushes.push(Brush.Circle(1, "1.5", false))
 		brushes.push(Brush.Circle(2, "2", true))
@@ -672,8 +696,11 @@ class ChatDraw extends HTMLElement {
 		c.height = data.height
 		let c2d = c.getContext('2d')
 		c2d.putImageData(data, 0, 0)
-		this.choices.pattern.values[0] = this.grp.c2d.createPattern(c, 'repeat')
 		this.clipboard = c
+		// todo: setting values like this wont update the current value if its already selected
+		this.choices.pattern.values[0] = this.grp.c2d.createPattern(c, 'repeat')
+		this.choices.brush.values[0] = new ImageBrush(new Point(c.width/2, c.height/2), c, 'CB', false, false)
+		this.choices.brush.values[1] = new ImageBrush(new Point(c.width/2, c.height/2), c, 'CB', false, true)
 	}
 	
 	set_scale(n) {
@@ -706,4 +733,16 @@ customElements.define('chat-draw', ChatDraw)
 // idea: instead of a Paste tool, have a paste BRUSH
 // then, have a "place" tool or whatever
 // so you can select the clipboard "brush", and either draw with the pen etc. or use Place to place it more precisely
-// 
+// todo: clipboard color palette can desync..
+// can do color swap on it whenever the palette changes i guess?
+// but that can result in data loss.. ooh maybe um
+// store current palette when capturing clipboard, and then map the colors when loading ?
+// perhaps allow saving multiple clipboards depending on some unused menu field, (like, which color is selected)
+// actually yeah that would be good for uh, the clipboard brush that ignores current color...
+// though, not for the one which uses it (not sure if i'll keep this mode?)
+// perhaps use the selected dither pattern as the clipboard index then?
+
+// also, consider this:
+// right now we draw images using um
+// drawimage, and stroke color is the dither pattern (ignored)
+// but, we could use fillrect with the stroke pattern set to the clipboard image and repeat disabled... um what does that actually give us.. idk
