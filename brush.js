@@ -481,18 +481,16 @@ class Grp {
 			let start = left, x = left
 			let nf
 			let st=left
-			/*dbc.clearRect(0,y,width,1)*/
 			_span(left, right, y, '#AAA')
 			if (check(left, y)) {
 				while (start>0 && check(start-1, y))
 					start--
 				if (start<left-1)
-					fill(start, left-1, y, -dir) // wow all these fill() calls are like, almost the same..
+					fill(start, left-1, y, -dir)
 				st=start
 				nf=true
 			}
 			scan: while (1) {
-				// skip walls (todo: skip this if the first if statement passed)
 				if (!nf) {
 					while (!check(x, y)) {
 						x++
@@ -512,10 +510,11 @@ class Grp {
 					break
 			}
 			_span(st, left-1, y, '#08F')
-			if (x>start)
+			if (x>start) {
 				_span(right+1, x, y, 'red')
-			if (x>right+2 && x>start) // do we need both checks?
-				fill(right+2, x, y, -dir)
+				if (x>right+2)
+					fill(right+2, x, y, -dir)
+			}
 		}
 	}
 	put_image(source, pos) {
