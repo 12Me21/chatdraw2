@@ -432,28 +432,28 @@ class Grp {
 		
 		const old = pixels[x + y*width]
 		
+		dbc.clearRect(0,0,width,height)
+		let counts = new Int32Array(width*height).fill(0)
+		let cc = ['transparent','red','orange','yellow','green','cyan','purple']
+		let count=(x,y)=>{
+			//for (let i=0;i<w;i++) {
+				let c = ++counts[x+y*width]
+				dbc.fillStyle = cc[c]
+				dbc.fillRect(x,y,1,1)
+			//}
+		}
+		
 		const check = (x, y)=>{
+			//count(x,y)
 			if (pixels[x+y*width]==old) {
 				pixels[x+y*width] = 0x00229900
 				return true
 			}
 		}
 		
-		dbc.clearRect(0,0,width,height)
-		let counts = new Int32Array(width*height).fill(0)
-		let cc = ['transparent','red','orange','yellow','green','cyan','purple']
-		let count=(x,y,w)=>{
-			for (let i=0;i<w;i++) {
-				let c = ++counts[x+i+y*width]
-				dbc.fillStyle = cc[c]
-				dbc.fillRect(x+i,y,1,1)
-			}
-		}
-		
 		const queue = []
 		const fill = (x1,x2,y,dir,paint)=>{
 			if (paint) {
-				this.c2d.shadowColor=paint
 				this.c2d.fillRect(x1, y, x2-x1+1, 1)
 				count(x1, y, x2-x1+1)
 			}
@@ -465,20 +465,30 @@ class Grp {
 			left--
 		while (right<width-1 && check(right+1,y))
 			right++
-		fill(left, right, y, -1, 'gray')
-		fill(left, right, y, 1, false)
+		fill(left, right, y, -1, true)
+		fill(left, right, y, 1)
+		
+		let _span = (l,r,y,col)=>{
+			if (r>=l) {
+				dbc.fillRect(l,r-l+1,1,1)
+				dbc.fillStyle = col
+			}
+		}
 		
 		while (queue.length) {
 			const [left, right, y, dir] = queue.pop()
 			let start = left, x = left
 			let nf
+			//dbc.clearRect(0,0,width,height)
+			//_span(left, right, y, 'gray')
 			if (check(left, y)) {
 				while (start>0 && check(start-1, y))
 					start--
 				if (start<left-1)
-					fill(start, left-1, y, -dir, false) // wow all these fill() calls are like, almost the same..
+					fill(start, left-1, y, -dir) // wow all these fill() calls are like, almost the same..
 				nf=true
 			}
+			//_span(start, left, y, 'blue')
 			scan: while (1) {
 				// skip walls (todo: skip this if the first if statement passed)
 				if (!nf) {
@@ -493,12 +503,12 @@ class Grp {
 				// bg
 				while (x<width-1 && check(x+1, y))
 					x++
-				fill(start, x, y, dir, 'green')
+				fill(start, x, y, dir, true)
 				if (x>=right)
 					break
 			}
 			if (x>right+1 && x>start) {
-				fill(start, x, y, -dir, false)
+				fill(right+1, x, y, -dir)
 			}
 		}
 	}
