@@ -438,19 +438,36 @@ class Grp {
 				return true
 			}
 		}
-		let left = x, right=x
-		while (check(left-1,y))
-			left--
-		while (check(right+1,y))
-			right++
-		const queue = [[left, right, y, -1]]
 		
-		const fill = (x1,x2,y,dir,cc)=>{
-			this.c2d.shadowColor=cc
-			//console.log('a')
-			this.c2d.fillRect(x1, y, x2-x1+1, 1)
+		dbc.clearRect(0,0,width,height)
+		let counts = new Int32Array(width*height).fill(0)
+		let cc = ['transparent','red','orange','yellow','green','cyan','purple']
+		let count=(x,y,w)=>{
+			for (let i=0;i<w;i++) {
+				let c = ++counts[x+i+y*width]
+				dbc.fillStyle = cc[c]
+				dbc.fillRect(x+i,y,1,1)
+			}
+		}
+		
+		const queue = []
+		const fill = (x1,x2,y,dir,paint)=>{
+			if (paint) {
+				this.c2d.shadowColor=paint
+				this.c2d.fillRect(x1, y, x2-x1+1, 1)
+				count(x1, y, x2-x1+1)
+			}
 			queue.push([x1, x2, y+dir, dir])
 		}
+		check(x,y)
+		let left = x, right=x
+		while (left>0 && check(left-1,y))
+			left--
+		while (right<width-1 && check(right+1,y))
+			right++
+		fill(left, right, y, -1, 'gray')
+		fill(left, right, y, 1, false)
+		
 		while (queue.length) {
 			const [left, right, y, dir] = queue.pop()
 			let start = left, x = left
@@ -458,9 +475,8 @@ class Grp {
 			if (check(left, y)) {
 				while (start>0 && check(start-1, y))
 					start--
-				console.log(start, left)
 				if (start<left-1)
-					fill(start, left-1, y, -dir, 'red') // wow all these fill() calls are like, almost the same..
+					fill(start, left-1, y, -dir, false) // wow all these fill() calls are like, almost the same..
 				nf=true
 			}
 			scan: while (1) {
@@ -482,8 +498,7 @@ class Grp {
 					break
 			}
 			if (x>right+1 && x>start) {
-				fill(start, x, y, -dir, 'blue')
-				//console.log(start,x)
+				fill(start, x, y, -dir, false)
 			}
 		}
 	}

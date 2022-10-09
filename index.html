@@ -8,9 +8,10 @@ Scale:<input type=number min=1 max=10 value=2 onchange="$chatdraw.set_scale($sca
 <hr>
 <chat-draw id=$chatdraw></chat-draw>
 
-<script>$chatdraw.set_scale($scale.value)</script>
-
-
-
+<canvas style='width:400px;image-rendering: -moz-crisp-edges; image-rendering: pixelated;' width=200 height=100 id=$debug></canvas>
+<script>
+	$chatdraw.set_scale($scale.value)
+	let dbc = $debug.getContext('2d')
+</script>
 
 <pre id=$log></pre>
