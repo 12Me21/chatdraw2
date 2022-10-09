@@ -433,6 +433,7 @@ class Grp {
 		const old = pixels[x + y*width]
 		
 		dbc.clearRect(0,0,width,height)
+		dbc.putImageData(data, 0, 0)
 		let counts = new Int32Array(width*height).fill(0)
 		let cc = ['transparent','red','orange','yellow','green','cyan','purple']
 		let count=(x,y)=>{
@@ -455,7 +456,7 @@ class Grp {
 		const fill = (x1,x2,y,dir,paint)=>{
 			if (paint) {
 				this.c2d.fillRect(x1, y, x2-x1+1, 1)
-				count(x1, y, x2-x1+1)
+				//count(x1, y, x2-x1+1)
 			}
 			queue.push([x1, x2, y+dir, dir])
 		}
@@ -470,8 +471,8 @@ class Grp {
 		
 		let _span = (l,r,y,col)=>{
 			if (r>=l) {
-				dbc.fillRect(l,r-l+1,1,1)
 				dbc.fillStyle = col
+				dbc.fillRect(l,y,r-l+1,1)
 			}
 		}
 		
@@ -479,16 +480,17 @@ class Grp {
 			const [left, right, y, dir] = queue.pop()
 			let start = left, x = left
 			let nf
-			//dbc.clearRect(0,0,width,height)
-			//_span(left, right, y, 'gray')
+			let st=left
+			/*dbc.clearRect(0,y,width,1)*/
+			_span(left, right, y, '#AAA')
 			if (check(left, y)) {
 				while (start>0 && check(start-1, y))
 					start--
 				if (start<left-1)
 					fill(start, left-1, y, -dir) // wow all these fill() calls are like, almost the same..
+				st=start
 				nf=true
 			}
-			//_span(start, left, y, 'blue')
 			scan: while (1) {
 				// skip walls (todo: skip this if the first if statement passed)
 				if (!nf) {
@@ -499,17 +501,21 @@ class Grp {
 							break scan
 					}
 				}
-				nf=false
+				
 				// bg
 				while (x<width-1 && check(x+1, y))
 					x++
 				fill(start, x, y, dir, true)
+				_span(start, x, y, '#0C0')
+				nf=false
 				if (x>=right)
 					break
 			}
-			if (x>right+1 && x>start) {
-				fill(right+1, x, y, -dir)
-			}
+			_span(st, left-1, y, '#08F')
+			if (x>start)
+				_span(right+1, x, y, 'red')
+			if (x>right+2 && x>start) // do we need both checks?
+				fill(right+2, x, y, -dir)
 		}
 	}
 	put_image(source, pos) {
