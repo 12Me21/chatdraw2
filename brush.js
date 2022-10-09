@@ -436,16 +436,16 @@ class Grp {
 		dbc.putImageData(data, 0, 0)
 		let counts = new Int32Array(width*height).fill(0)
 		let cc = ['transparent','red','orange','yellow','green','cyan','purple']
-		let count=(x,y)=>{
-			//for (let i=0;i<w;i++) {
+		let count=(x,y,w=1)=>{
+			for (let i=0;i<w;i++) {
 				let c = ++counts[x+y*width]
 				dbc.fillStyle = cc[c]
 				dbc.fillRect(x,y,1,1)
-			//}
+			}
 		}
 		
 		const check = (x, y)=>{
-			//count(x,y)
+			count(x,y)
 			if (pixels[x+y*width]==old) {
 				pixels[x+y*width] = 0x00229900
 				return true
@@ -471,8 +471,8 @@ class Grp {
 		
 		let _span = (l,r,y,col)=>{
 			if (r>=l) {
-				dbc.fillStyle = col
-				dbc.fillRect(l,y,r-l+1,1)
+				//dbc.fillStyle = col
+				//dbc.fillRect(l,y,r-l+1,1)
 			}
 		}
 		
@@ -482,39 +482,35 @@ class Grp {
 			let nf
 			let st=left
 			_span(left, right, y, '#AAA')
-			if (check(left, y)) {
+			let state = check(left, y)
+			if (state) {
 				while (start>0 && check(start-1, y))
 					start--
-				if (start<left-1)
-					fill(start, left-1, y, -dir)
+				if (start<=left-2)
+					fill(start, left-2, y, -dir) //technically, we know that this span will not extend further right, because we know there is a wall at (left-1, y) so when this span is checked later, we should not check pixels past its right boundary. but eh
 				st=start
-				nf=true
 			}
-			scan: while (1) {
-				if (!nf) {
-					while (!check(x, y)) {
-						x++
+			while (1) {
+				x++
+				if (x<width && check(x,y)) {
+					if (!state) {
 						start = x
-						if (x>right)
-							break scan
+						state = true
 					}
+				} else {
+					if (state) {
+						fill(start, x-1, y, dir, true)
+						_span(start, x-1, y, '#0C0')
+						state = false
+					}
+					if (x>=right)
+						break
 				}
-				
-				// bg
-				while (x<width-1 && check(x+1, y))
-					x++
-				fill(start, x, y, dir, true)
-				_span(start, x, y, '#0C0')
-				nf=false
-				if (x>=right)
-					break
 			}
 			_span(st, left-1, y, '#08F')
-			if (x>start) {
-				_span(right+1, x, y, 'red')
-				if (x>right+2)
-					fill(right+2, x, y, -dir)
-			}
+			_span(right+1, x-1, y, 'red')
+			if (x-1>=right+2)
+				fill(right+2, x-1, y, -dir)
 		}
 	}
 	put_image(source, pos) {
