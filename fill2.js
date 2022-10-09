@@ -23,9 +23,10 @@ x={
 		const {width, height} = this.canvas
 		const data = this.get_data()
 		const pixels = new Uint32Array(data.data.buffer)
+		const size = this.brush.fills.length-2
+		
 		const old = pixels[x + y*width]
 		const queue = [[x+1, x, y, -1]]
-		const size = this.brush.fills.length-2
 		
 		const check = (x, y)=>{
 			if (pixels[x+y*width]==old) {
@@ -33,16 +34,19 @@ x={
 				return true
 			}
 		}
+		const fill = (x1,x2,y,dir)=>{
+			this.c2d.fillRect(x1, y, x2-x1+1, 1)
+			queue.push([x1, x2, y+dir, dir])
+		}
 		while (queue.length) {
 			const [left, right, y, dir] = queue.pop()
-			let start = left
-			if (check(left, y)) {
+			let start = left, x = left
+			if (check(x, y)) {
 				while (check(start-1, y))
 					start--
-				if (start<left-1)
-					queue.push([start, left-1, y-dir, -dir])
+				if (start<x-1)
+					fill(start, x-1, y, -dir) // wow all these fill() calls are like, almost the same..
 			}
-			let x = left
 			scan: while (1) {
 				// skip walls (todo: skip this if the first if statement passed)
 				while (!check(x, y)) {
@@ -54,12 +58,12 @@ x={
 				// bg
 				while (check(x+1, y))
 					x++
-				queue.push([start, x, y+dir, +dir])
+				fill(start, x, y, dir)
 				if (x>=right)
 					break
 			}
 			if (x>right+1)
-				queue.push([right+1, x, y-dir, -dir])
+				fill(start, x, y, -dir)
 		}
 	}
 }
