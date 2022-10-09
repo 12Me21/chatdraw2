@@ -423,61 +423,68 @@ class Grp {
 		})
 		this.put_data(data)
 	}
-	
-	// technically speaking, this should be a  Brush? since it generates a path to fill (kinda)
-	// or we could use the current brush rather than fillrect here. which would allow implementing an.. erode-like operator? not sure how useful that would be tho.
 	flood_fill(pos) {
 		const {x, y} = pos.Floor()
 		const {width, height} = this.canvas
 		const data = this.get_data()
 		const pixels = new Uint32Array(data.data.buffer)
-		const old = pixels[x + y*width]
-		const queue = [[x+1, x, y, -1]]
 		const size = this.brush.fills.length-2
-		// fills pixels in a horizontal line, starting from (x,y),
-		// until it hits a wall or reaches x=limit
-		const to_wall = (x, y, dx, limit)=>{
-			for (; x!=limit+dx && pixels[x+y*width]==old; x+=dx)
-				pixels[x+y*width] = 0x00229900 // arbitrary fill color
-			return x-dx
-		}
-		// find fillable areas in row y, between x=left and x=right
-		const find_spans = (left, right, y, dir)=>{
-			y += dir
-			if (y<0 || y>=height)
-				return
-			for (let x=left; x<=right; x++) {
-				const stop = to_wall(x, y, +1, right)
-				if (stop >= x) {
-					queue.push([x, stop, y, dir])
-					x = stop
-				}
+		
+		const old = pixels[x + y*width]
+		
+		const check = (x, y)=>{
+			if (pixels[x+y*width]==old) {
+				pixels[x+y*width] = 0x00229900
+				return true
 			}
+		}
+		let left = x, right=x
+		while (check(left-1,y))
+			left--
+		while (check(right+1,y))
+			right++
+		const queue = [[left, right, y, -1]]
+		
+		const fill = (x1,x2,y,dir,cc)=>{
+			this.c2d.shadowColor=cc
+			//console.log('a')
+			this.c2d.fillRect(x1, y, x2-x1+1, 1)
+			queue.push([x1, x2, y+dir, dir])
 		}
 		while (queue.length) {
-			const [x1, x2, y, dir] = queue.pop()
-			// expand span
-			const left = to_wall(x1-1, y, -1, 0)
-			const right = to_wall(x2+1, y, +1, width-1)
-			// this is broken by the different brush thickness settings..
-			if (size==-1)
-				this.c2d.fillRect(left, y, right-left+1, 1)
-			else if (size==0) {
-				this.c2d.fillRect(left, y-1, right-left+1, 3)
-				this.c2d.fillRect(left-1, y, 1, 1)
-				this.c2d.fillRect(right+1, y, 1, 1)
-			} else
-				this.c2d.fillRect(left-size, y-size, right-left+1+size*2, 1+size*2)
-			// check row backwards:
-			if (x2<x1) {
-				// (this only happens on the first iteration)
-				find_spans(left, right, y, -dir)
-			} else {
-				find_spans(left, x1-2, y, -dir)
-				find_spans(x2+2, right, y, -dir)
+			const [left, right, y, dir] = queue.pop()
+			let start = left, x = left
+			let nf
+			if (check(left, y)) {
+				while (start>0 && check(start-1, y))
+					start--
+				console.log(start, left)
+				if (start<left-1)
+					fill(start, left-1, y, -dir, 'red') // wow all these fill() calls are like, almost the same..
+				nf=true
 			}
-			// check row forwards:
-			find_spans(left, right, y, dir)
+			scan: while (1) {
+				// skip walls (todo: skip this if the first if statement passed)
+				if (!nf) {
+					while (!check(x, y)) {
+						x++
+						start = x
+						if (x>right)
+							break scan
+					}
+				}
+				nf=false
+				// bg
+				while (x<width-1 && check(x+1, y))
+					x++
+				fill(start, x, y, dir, 'green')
+				if (x>=right)
+					break
+			}
+			if (x>right+1 && x>start) {
+				fill(start, x, y, -dir, 'blue')
+				//console.log(start,x)
+			}
 		}
 	}
 	put_image(source, pos) {
