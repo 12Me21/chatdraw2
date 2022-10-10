@@ -79,6 +79,7 @@ b {
 	box-sizing: border-box;
 	width: 20em;
 	height: 14em;
+	touch-action: manipulation; /* reduces delay */
 	
 	display: grid;
 	align-content: center;
