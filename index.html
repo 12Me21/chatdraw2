@@ -11,5 +11,7 @@ Scale:<input type=number min=1 max=10 value=2 onchange="$chatdraw.set_scale($sca
 <script>
 	$chatdraw.set_scale($scale.value)
 </script>
-
+<hr>
+debug:
+<textarea id=$code>$chatdraw.form.color</textarea><button onclick="$log.textContent='';$log.textContent=eval($code.value)">run</button>
 <pre id=$log></pre>
