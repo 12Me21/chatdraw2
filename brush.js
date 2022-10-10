@@ -429,57 +429,62 @@ class Grp {
 		const data = this.get_data()
 		const pixels = new Uint32Array(data.data.buffer)
 		const size = this.brush.fills.length-2
-		
 		const old = pixels[x + y*width]
-		
 		const check = (x, y)=>{
 			if (pixels[x+y*width]==old) {
 				pixels[x+y*width] = 0x00229900
 				return true
 			}
 		}
-		
-		const queue = []
-		const fill = (x1,x2,y,dir,paint)=>{
-			if (paint)
-				this.c2d.fillRect(x1, y, x2-x1+1, 1)
-			if (x2>=x1)
-				queue.push([x1, x2, y+dir, dir])
-		}
-		check(x, y)
-		let left = x, right=x
-		while (left>0 && check(left-1, y))
-			left--
-		while (right<width-1 && check(right+1, y))
-			right++
-		fill(left, right, y, -1, true)
-		fill(left, right, y, 1)
-		
+		const queue = [
+			[x,x-1,y+1,1],
+			[x,x-1,y,-1],
+		]
 		while (queue.length) {
 			const [left, right, y, dir] = queue.pop()
-			let start=null
+			let start=null, x=left
 			if (check(left, y)) {
-				for (start=left; start>0 && check(start-1, y); start--)
-					;
-				fill(start, left-2, y, -dir)
+				start = left
+				while (start>0 && check(start-1, y))
+					start--
+				if (start<=left-2)
+					queue.push([start, left-2, y-dir, -dir])
 			}
-			for (let x=left+1; ;x++) {
+			while (1) {
+				x++
 				if (x>=width || !check(x, y)) {
 					if (start!=null) {
-						fill(start, x-1, y, dir, true)
+						this.c2d.fillRect(start, y, x-start, 1)
+						queue.push([start, x-1, y+dir, dir])
 						start = null
 					}
-					if (x>=right) {
-						fill(right+2, x-1, y, -dir)
+					if (x>=right)
 						break
-					}
 				} else if (start==null)
 					start = x
 			}
+			if (right+2<=x-1)
+				queue.push([right+2, x-1, y-dir, -dir])
 		}
 	}
 	put_image(source, pos) {
 		this.c2d.drawImage(source, pos.x+1000, pos.y)
+	}
+	export() {
+		let data = this.get_data()
+		this.c2d.save()
+		try {
+			this.c2d.globalCompositeOperation = 'destination-over'
+			this.c2d.fillStyle = '#E4D8A9'
+			this.c2d.fillRect(1000, 0, this.canvas.width, this.canvas.height)
+			let options = "-moz-parse-options:transparency=no"
+			if (CSS.supports('color-scheme:light')) // test for firefox version 96+
+				options += ";png-zlib-level=9"
+			return this.canvas.toDataURL('image/png', options)
+		} finally {			
+			this.c2d.restore()
+			this.put_data(data)
+		}
 	}
 }
 
@@ -612,6 +617,9 @@ class ChatDraw extends HTMLElement {
 				this.grp.replace_color(old, color)
 				this.set_palette(sel, color)
 			},
+			export: ()=>{
+				console.log(this.grp.export())
+			},
 			clear: ()=>{
 				this.history.add()
 				this.grp.erase()
@@ -634,6 +642,7 @@ class ChatDraw extends HTMLElement {
 		this.form = draw_form(this.choices, actions, [
 			{title:"Tool", cols:3, items:[
 				{name:'clear', text:"reset!"},
+				{name:'export', text:"export"},
 				{name:'undo', text:"↶", icon:true},
 				{name:'redo', text:"↷", icon:true},
 				{name:'fill', text:"fill"},
