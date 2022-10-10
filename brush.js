@@ -100,8 +100,8 @@ ideas here:
 }
 
 class Stroke {
-	static PointerDown(ev, ...context) {
-		const st = new this(ev, context)
+	static PointerDown(ev, target, ...context) {
+		const st = new this(ev, context, target)
 		Stroke.pointers.set(ev.pointerId, st)
 		st.down(...st.context)
 		return st
@@ -120,18 +120,21 @@ class Stroke {
 		}
 	}
 	
-	constructor(ev, context) {
+	constructor(ev, context, target) {
 		ev.target.setPointerCapture(ev.pointerId)
+		ev.preventDefault()
 		this.pos = null
+		this.target = target
 		this.update(ev)
 		this.start = this.pos
 		this.context = context
+		
 	}
 	update({target, offsetX, offsetY, type}) {
 		this.old = this.pos
 		this.type = type.slice(7)
 		
-		const scale = Point.FromRect(target.getBoundingClientRect()).Divide(Point.FromRect(target))
+		const scale = Point.FromRect(this.target.getBoundingClientRect()).Divide(Point.FromRect(this.target))
 		
 		const ps = 1/window.devicePixelRatio/2
 		const adjust = new Point(ps, ps).Divide(scale)
@@ -454,7 +457,14 @@ class Grp {
 				x++
 				if (x>=width || !check(x, y)) {
 					if (start!=null) {
-						this.c2d.fillRect(start, y, x-start, 1)
+						if (size==-1)
+							this.c2d.fillRect(start, y, x-start, 1)
+						else if (size==0) {
+							this.c2d.fillRect(start, y-1, x-start, 3)
+							this.c2d.fillRect(start-1, y, 1, 1)
+							this.c2d.fillRect(x, y, 1, 1)
+						} else
+							this.c2d.fillRect(start-size, y-size, x-start+size*2, 1+size*2)
 						queue.push([start, x-1, y+dir, dir])
 						start = null
 					}
@@ -617,9 +627,6 @@ class ChatDraw extends HTMLElement {
 				this.grp.replace_color(old, color)
 				this.set_palette(sel, color)
 			},
-			export: ()=>{
-				console.log(this.grp.export())
-			},
 			clear: ()=>{
 				this.history.add()
 				this.grp.erase()
@@ -642,7 +649,6 @@ class ChatDraw extends HTMLElement {
 		this.form = draw_form(this.choices, actions, [
 			{title:"Tool", cols:3, items:[
 				{name:'clear', text:"reset!"},
-				{name:'export', text:"export"},
 				{name:'undo', text:"↶", icon:true},
 				{name:'redo', text:"↷", icon:true},
 				{name:'fill', text:"fill"},
@@ -677,15 +683,22 @@ class ChatDraw extends HTMLElement {
 		this.set_palette2(this.choices.color.values)
 		this.grp.erase()
 		
-		Stroke.handle(this.grp.canvas, ev=>{
-			this.history.add()
-			this.tool.PointerDown(ev, this.grp, this.overlay, this)
-		})
+		let img = new Image(this.grp.canvas.width, this.grp.canvas.height)
+		this.img = img
+		this.img.oncontextmenu = ev=>{
+			this.img.src = this.grp.export()
+		}
 		
-		this.grp.canvas.style.cursor = make_cursor(3)
+		Stroke.handle(img, ev=>{
+			if (ev.button)
+				return
+			this.history.add()
+			this.tool.PointerDown(ev, this.grp.canvas, this.grp, this.overlay, this)
+		})
+		img.style.cursor = make_cursor(3)
 		
 		super.attachShadow({mode: 'open'})
-		super.shadowRoot.append(document.importNode(ChatDraw.style, true), this.grp.canvas, this.overlay.canvas, this.form)
+		super.shadowRoot.append(document.importNode(ChatDraw.style, true), img, this.grp.canvas, this.overlay.canvas, this.form)
 		
 		this.choose('tool', 2)
 		this.choose('brush', 4)

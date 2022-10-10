@@ -8,27 +8,8 @@ Scale:<input type=number min=1 max=10 value=2 onchange="$chatdraw.set_scale($sca
 <hr>
 <chat-draw id=$chatdraw></chat-draw>
 
-<style>
-	html {
-		display: flex;
-		background: #DBDFE2;
-	}
-	.grid {
-		display: grid;
-		background: 0 0 / 4px 4px url(data:image/webp;base64,UklGRhwAAABXRUJQVlA4TBAAAAAvA8AAEA8QEQMUYh8i+h8B);
-	}
-	.grid canvas {
-		position: relative;
-		z-index: -1;
-	}
-</style>
-
-<div class=grid>
-	<canvas style='width:800px;image-rendering: -moz-crisp-edges; image-rendering: pixelated;' width=200 height=100 id=$debug></canvas>
-</div>
 <script>
 	$chatdraw.set_scale($scale.value)
-	let dbc = $debug.getContext('2d')
 </script>
 
 <pre id=$log></pre>
