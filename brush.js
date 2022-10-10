@@ -8,7 +8,7 @@ class Choices {
 		this.label = label
 	}
 	change(value) {
-		this.onchange(this.values[value])
+		this.onchange(this.values[value], value)
 	}
 	get(key) {
 		return this.values[key]
@@ -545,6 +545,7 @@ class ChatDraw extends HTMLElement {
 		this.grp.canvas.classList.add('main')
 		/// define choices ///
 		this.tool = null
+		this.color = 0
 		let brushes = [], patterns = []
 		brushes.push(new Brush(new Point(0,0), [], "CB", false))
 		brushes.push(new Brush(new Point(0,0), [], "CB", false))
@@ -590,7 +591,8 @@ class ChatDraw extends HTMLElement {
 			),
 			color: new Choices(
 				'color', ['#000000','#FFFFFF','#FF0000','#2040EE','#00CC00','#FFFF00'], //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
-				v=>{
+				(v,i)=>{
+					this.color = i
 					this.form.pick.value = v
 					this.grp.color = v
 				},
@@ -624,6 +626,7 @@ class ChatDraw extends HTMLElement {
 				const sel = this.sel_color()
 				const old = this.choices.color.get(sel)
 				this.history.add()
+				console.log(old, color)
 				this.grp.replace_color(old, color)
 				this.set_palette(sel, color)
 			},
@@ -747,8 +750,9 @@ class ChatDraw extends HTMLElement {
 	}
 	// which color index is selected
 	sel_color() {
-		if (this.form.color)
-			return +this.form.color.value
+		return this.color
+		//if (this.form.color)
+		//	return +this.form.color.value
 	}
 }
 ChatDraw.style = document.createElement('link')

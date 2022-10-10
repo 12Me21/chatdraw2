@@ -66,6 +66,10 @@ label {
 	display: contents;
 }
 label > input {
+	display: none;
+}
+label > input[type="color"] { /*ios safari*/
+	display: unset;
 	appearance: none;
 	position: absolute;
 	clip: rect(0,0,0,0);
