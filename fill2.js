@@ -67,3 +67,121 @@ x={
 		}
 	}
 }
+
+	flood_fill(pos) {
+		const {x, y} = pos.Floor()
+		const {width, height} = this.canvas
+		const data = this.get_data()
+		const pixels = new Uint32Array(data.data.buffer)
+		const size = this.brush.fills.length-2
+		
+		const old = pixels[x + y*width]
+		
+		dbc.clearRect(0,0,width,height)
+		dbc.putImageData(data, 0, 0)
+		let counts = new Int32Array(width*height).fill(0)
+		let cc = ['transparent','red','orange','yellow','green','cyan','purple']
+		let count=(x,y,w=1)=>{
+			for (let i=0;i<w;i++) {
+				let c = ++counts[x+y*width]
+				dbc.fillStyle = cc[c]
+				dbc.fillRect(x,y,1,1)
+			}
+		}
+		
+		const check = (x, y)=>{
+			count(x,y)
+			if (pixels[x+y*width]==old) {
+				pixels[x+y*width] = 0x00229900
+				return true
+			}
+		}
+		
+		const queue = []
+		const fill = (x1,x2,y,dir,paint)=>{
+			if (paint) {
+				this.c2d.fillRect(x1, y, x2-x1+1, 1)
+				//count(x1, y, x2-x1+1)
+			}
+			queue.push([x1, x2, y+dir, dir])
+		}
+		check(x,y)
+		let left = x, right=x
+		while (left>0 && check(left-1,y))
+			left--
+		while (right<width-1 && check(right+1,y))
+			right++
+		fill(left, right, y, -1, true)
+		fill(left, right, y, 1)
+		
+		let _span = (l,r,y,col)=>{
+			if (r>=l) {
+				//dbc.fillStyle = col
+				//dbc.fillRect(l,y,r-l+1,1)
+			}
+		}
+		
+		while (queue.length) {
+			const [left, right, y, dir] = queue.pop()
+			let start = left, x = left
+			let nf
+			let st=left
+			_span(left, right, y, '#AAA')
+			let state = check(left, y)
+			if (state) {
+				while (start>0 && check(start-1, y))
+					start--
+				if (start<=left-2)
+					fill(start, left-2, y, -dir) //technically, we know that this span will not extend further right, because we know there is a wall at (left-1, y) so when this span is checked later, we should not check pixels past its right boundary. but eh
+				st=start
+			}
+			while (1) {
+				x++
+				if (x<width && check(x,y)) {
+					if (!state) {
+						start = x
+						state = true
+					}
+				} else {
+					if (state) {
+						fill(start, x-1, y, dir, true)
+						_span(start, x-1, y, '#0C0')
+						state = false
+					}
+					if (x>=right)
+						break
+				}
+			}
+			_span(st, left-1, y, '#08F')
+			_span(right+1, x-1, y, 'red')
+			if (x-1>=right+2)
+				fill(right+2, x-1, y, -dir)
+		}
+	}
+
+`
+<style>
+	html {
+		display: flex;
+		background: #DBDFE2;
+	}
+	.grid {
+		display: grid;
+		background: 0 0 / 4px 4px url(data:image/webp;base64,UklGRhwAAABXRUJQVlA4TBAAAAAvA8AAEA8QEQMUYh8i+h8B);
+	}
+	.grid canvas {
+		position: relative;
+		z-index: -1;
+	}
+</style>
+
+<div class=grid>
+	<canvas style='width:800px;image-rendering: -moz-crisp-edges; image-rendering: pixelated;' width=200 height=100 id=$debug></canvas>
+</div>
+<script>
+	$chatdraw.set_scale($scale.value)
+	let dbc = $debug.getContext('2d')
+</script>
+
+<pre id=$log></pre>
+`

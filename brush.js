@@ -432,20 +432,7 @@ class Grp {
 		
 		const old = pixels[x + y*width]
 		
-		dbc.clearRect(0,0,width,height)
-		dbc.putImageData(data, 0, 0)
-		let counts = new Int32Array(width*height).fill(0)
-		let cc = ['transparent','red','orange','yellow','green','cyan','purple']
-		let count=(x,y,w=1)=>{
-			for (let i=0;i<w;i++) {
-				let c = ++counts[x+y*width]
-				dbc.fillStyle = cc[c]
-				dbc.fillRect(x,y,1,1)
-			}
-		}
-		
 		const check = (x, y)=>{
-			count(x,y)
 			if (pixels[x+y*width]==old) {
 				pixels[x+y*width] = 0x00229900
 				return true
@@ -454,63 +441,41 @@ class Grp {
 		
 		const queue = []
 		const fill = (x1,x2,y,dir,paint)=>{
-			if (paint) {
+			if (paint)
 				this.c2d.fillRect(x1, y, x2-x1+1, 1)
-				//count(x1, y, x2-x1+1)
-			}
-			queue.push([x1, x2, y+dir, dir])
+			if (x2>=x1)
+				queue.push([x1, x2, y+dir, dir])
 		}
-		check(x,y)
+		check(x, y)
 		let left = x, right=x
-		while (left>0 && check(left-1,y))
+		while (left>0 && check(left-1, y))
 			left--
-		while (right<width-1 && check(right+1,y))
+		while (right<width-1 && check(right+1, y))
 			right++
 		fill(left, right, y, -1, true)
 		fill(left, right, y, 1)
 		
-		let _span = (l,r,y,col)=>{
-			if (r>=l) {
-				//dbc.fillStyle = col
-				//dbc.fillRect(l,y,r-l+1,1)
-			}
-		}
-		
 		while (queue.length) {
 			const [left, right, y, dir] = queue.pop()
-			let start = left, x = left
-			let nf
-			let st=left
-			_span(left, right, y, '#AAA')
-			let state = check(left, y)
-			if (state) {
-				while (start>0 && check(start-1, y))
-					start--
-				if (start<=left-2)
-					fill(start, left-2, y, -dir) //technically, we know that this span will not extend further right, because we know there is a wall at (left-1, y) so when this span is checked later, we should not check pixels past its right boundary. but eh
-				st=start
+			let start=null
+			if (check(left, y)) {
+				for (start=left; start>0 && check(start-1, y); start--)
+					;
+				fill(start, left-2, y, -dir)
 			}
-			while (1) {
-				x++
-				if (x<width && check(x,y)) {
-					if (!state) {
-						start = x
-						state = true
-					}
-				} else {
-					if (state) {
+			for (let x=left+1; ;x++) {
+				if (x>=width || !check(x, y)) {
+					if (start!=null) {
 						fill(start, x-1, y, dir, true)
-						_span(start, x-1, y, '#0C0')
-						state = false
+						start = null
 					}
-					if (x>=right)
+					if (x>=right) {
+						fill(right+2, x-1, y, -dir)
 						break
-				}
+					}
+				} else if (start==null)
+					start = x
 			}
-			_span(st, left-1, y, '#08F')
-			_span(right+1, x-1, y, 'red')
-			if (x-1>=right+2)
-				fill(right+2, x-1, y, -dir)
 		}
 	}
 	put_image(source, pos) {
