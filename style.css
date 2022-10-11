@@ -1,7 +1,6 @@
 /* TODO
 	split this into structural and decorative styles
 */
-
 :host {
 	display: inline-grid !important;
 	grid-template:
@@ -9,11 +8,7 @@
 		"controls" auto
 		/ min-content;
 	--scale: 2;
-	border: solid calc(var(--scale) * 2px);
-	border-color: #998 #887 #666 #887;
-	background: #B0B098;
 }
-
 :host > img {
 	grid-area: canvas;
 	width: 100%;
@@ -27,22 +22,15 @@
 	width: calc(var(--width) * 1px * var(--scale, 1));
 	pointer-events: none;
 }
-canvas.main {
-	background: repeating-linear-gradient(1.23deg, #F0E0AA, #D8D0A8 0.38291px);
-}
 canvas {
 	image-rendering: -moz-crisp-edges; image-rendering: pixelated;
 }
-
 form {
 	grid-area: controls;
 	display: flex;
 	-webkit-user-select: none; user-select: none;
 	justify-content: space-evenly;
-	border-top: #776 solid calc(var(--scale) * 2px);
-	font-family: serif;
 }
-/* sections */
 div {
 	display: grid;
 	grid-auto-flow: row;
@@ -58,8 +46,7 @@ div > div {
 hr {
 	all: unset;
 	margin: 0;
-	width: calc(1px);
-	background: linear-gradient(45deg, #AA9, #665, #AA8);
+	width: 1px;
 }
 /* button container */
 label {
@@ -74,7 +61,6 @@ label > input[type="color"] { /*ios safari*/
 	position: absolute;
 	clip: rect(0,0,0,0);
 }
-/* buttons */
 b {
 	box-sizing: border-box;
 	width: 20em;
@@ -86,8 +72,53 @@ b {
 	justify-content: center;
 	text-align: center;
 	overflow: hidden;
+}
+b span {
+	display: contents;
+	font-size: 5em;
+}
+/* larger text button */
+b.icon span {
+	font-weight: normal;
+	font-size: 10em;
+}
+/* color button */
+b.color > span {
+	display: block;
+	background: currentColor;
+	font-size: unset;
+	width: 16em;
+	height: 10em;
+}
+/* pattern button */
+b canvas {
+	width: calc(14em / 5);
+}	
+
+:host {
+	border: solid calc(var(--scale) * 2px);
+	border-color: #998 #887 #666 #887;
+	background: #B0B098;
+}
+canvas.main {
+	background: repeating-linear-gradient(1.23deg, #F0E0AA, #D8D0A8 0.38291px);
+}
+form {
+	justify-content: space-evenly;
+	border-top: #776 solid calc(var(--scale) * 2px);
+	font-family: serif;
+}
+/* sections */
+div {
+}
+div > div {
+}
+hr {
+	background: linear-gradient(45deg, #AA9, #665, #AA8);
+}
+/* buttons */
+b {
 	text-transform: uppercase;
-	
 	margin: 1em;
 	border: solid 1em;
 	border-color: #FFD #887 #666 #DDB;
@@ -99,10 +130,6 @@ b {
 }
 input[type="radio"] + b {
 	border-radius: 8em;
-}
-b span {
-	display: contents;
-	font-size: 5em;
 }
 /* button hovered */
 b:hover, :focus-visible > b {
@@ -127,18 +154,8 @@ b:hover, :focus-visible > b {
 	background: #887;
 	color: #666;
 }
-/* larger text button */
-b.icon span {
-	font-weight: normal;
-	font-size: 10em;
-}
 /* color button */
 b.color > span {
-	display: block;
-	background: currentColor;
-	font-size: unset;
-	width: 16em;
-	height: 10em;
 	border-radius: 4.5em;
 	box-shadow: 0 0 calc(10em/3) 0 inset black, 0 0 calc(10em/3) 0 inset white;
 }
@@ -147,6 +164,5 @@ b.color > span {
 }
 /* pattern button */
 b canvas {
-	width: calc(14em / 5);
 	border-radius: 3em;
 }
