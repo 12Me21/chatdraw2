@@ -451,28 +451,32 @@ class Grp {
 				return true
 			}
 		}
-		const queue = [
+		/*const queue = [
 			[x, x, y, -1],
 			[x, x, y+1, 1],
-		]
-		/* 
-		let left, right
+		]*/
+		/*let left, right
 		for (left=x; left>=0 && check(left,y); left--);
 		for (right=x; right<width && check(right,y); right++);
 		const queue = [
 			[left, right, y, -1],
 			[left, right, y, 1],
+			]*/
+		const queue = [
+			[x, x, y, -1, true],
+			[x, x, y, 1, true],
 		]
-		*/
 		while (queue.length) {
-			const [left, right, y, dy] = queue.pop()
+			let [left, right, y, dy, nf] = queue.pop()
 			//fill(left, right+1, y)
 			let x = left-1
 			span: while (1) {
-				do if (++x > right) break span; while (!check(x, y))
+				if (!nf)
+					do if (++x > right) break span; while (!check(x, y))
+				nf = 0
 				let start = x
 				do ++x; while (x<width && check(x,y))
-				if (start==left) {
+				if (start<=left) {
 					while (start-1>=0 && check(start-1, y))
 						--start
 					start<=left-2 && queue.push([start, left-2, y-dy, -dy])
