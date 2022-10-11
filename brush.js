@@ -427,11 +427,23 @@ class Grp {
 		this.put_data(data)
 	}
 	flood_fill(pos) {
+		
+		const size = this.brush.fills.length-2
+		let fill=(x1,x2,y)=>{ // fill from x1 to x2-1
+			if (size==-1)
+				this.c2d.fillRect(x1, y, x2-x1, 1)
+			else if (size==0) {
+				this.c2d.fillRect(x1, y-1, x2-x1, 3)
+				this.c2d.fillRect(x1-1, y, 1, 1)
+				this.c2d.fillRect(x2, y, 1, 1)
+			} else
+				this.c2d.fillRect(x1-size, y-size, x2-x1+size*2, 1+size*2)
+		}
+		
 		const {x, y} = pos.Floor()
 		const {width, height} = this.canvas
 		const data = this.get_data()
 		const pixels = new Uint32Array(data.data.buffer)
-		const size = this.brush.fills.length-2
 		const old = pixels[x + y*width]
 		const check = (x, y)=>{
 			if (pixels[x+y*width]==old) {
@@ -440,8 +452,8 @@ class Grp {
 			}
 		}
 		const queue = [
-			[x,x-1,y+1,1],
-			[x,x-1,y,-1],
+			[x, x-1, y+1, 1],
+			[x, x-1, y, -1],
 		]
 		while (queue.length) {
 			const [left, right, y, dir] = queue.pop()
@@ -450,21 +462,14 @@ class Grp {
 				start = left
 				while (start>0 && check(start-1, y))
 					start--
-				if (start<=left-2)
+				if (start <= left-2)
 					queue.push([start, left-2, y-dir, -dir])
 			}
 			while (1) {
 				x++
 				if (x>=width || !check(x, y)) {
 					if (start!=null) {
-						if (size==-1)
-							this.c2d.fillRect(start, y, x-start, 1)
-						else if (size==0) {
-							this.c2d.fillRect(start, y-1, x-start, 3)
-							this.c2d.fillRect(start-1, y, 1, 1)
-							this.c2d.fillRect(x, y, 1, 1)
-						} else
-							this.c2d.fillRect(start-size, y-size, x-start+size*2, 1+size*2)
+						fill(start, x, y)
 						queue.push([start, x-1, y+dir, dir])
 						start = null
 					}
@@ -473,7 +478,7 @@ class Grp {
 				} else if (start==null)
 					start = x
 			}
-			if (right+2<=x-1)
+			if (right+2 <= x-1)
 				queue.push([right+2, x-1, y-dir, -dir])
 		}
 	}
