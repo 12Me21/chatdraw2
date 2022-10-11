@@ -452,34 +452,35 @@ class Grp {
 			}
 		}
 		const queue = [
-			[x, x-1, y+1, 1],
-			[x, x-1, y, -1],
+			[x, x, y, -1],
+			[x, x, y+1, 1],
 		]
+		/* 
+		let left, right
+		for (left=x; left>=0 && check(left,y); left--);
+		for (right=x; right<width && check(right,y); right++);
+		const queue = [
+			[left, right, y, -1],
+			[left, right, y, 1],
+		]
+		*/
 		while (queue.length) {
-			const [left, right, y, dir] = queue.pop()
-			let start=null, x=left
-			if (check(left, y)) {
-				start = left
-				while (start>0 && check(start-1, y))
-					start--
-				if (start <= left-2)
-					queue.push([start, left-2, y-dir, -dir])
+			const [left, right, y, dy] = queue.pop()
+			//fill(left, right+1, y)
+			let x = left-1
+			span: while (1) {
+				do if (++x > right) break span; while (!check(x, y))
+				let start = x
+				do ++x; while (x<width && check(x,y))
+				if (start==left) {
+					while (start-1>=0 && check(start-1, y))
+						--start
+					start<=left-2 && queue.push([start, left-2, y-dy, -dy])
+				}
+				queue.push([start, x-1, y+dy, +dy])
+				fill(start, x, y)
 			}
-			while (1) {
-				x++
-				if (x>=width || !check(x, y)) {
-					if (start!=null) {
-						fill(start, x, y)
-						queue.push([start, x-1, y+dir, dir])
-						start = null
-					}
-					if (x>=right)
-						break
-				} else if (start==null)
-					start = x
-			}
-			if (right+2 <= x-1)
-				queue.push([right+2, x-1, y-dir, -dir])
+			right+2<=x-2 && queue.push([right+2, x-2, y-dy, -dy])
 		}
 	}
 	put_image(source, pos) {
