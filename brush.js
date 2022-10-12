@@ -157,7 +157,7 @@ class Freehand extends Stroke {
 		this._old = d.draw_line(this._old, this.pos)
 	}
 }
-Freehand.label = "pen"
+Freehand.label = "✏️"
 // idea: spray that uses dither somehow? like, fills in based on ordered dithering? perhaps it umm.. like first fill in every pixel that lines up with pixel 0 in the pattern, then do pixel 1, etc..
 class Spray extends Stroke {
 	down(d) {
@@ -168,7 +168,7 @@ class Spray extends Stroke {
 			d.random_in_brush(this.pos)
 	}
 }
-Spray.label = "spray"
+Spray.label = "🚿️"
 class LineTool extends Stroke {
 	down(d, v) {
 		// TODO: we need to "lock" the overlay, because 2 strokes can be drawn at the same time with a touchscreen
@@ -186,7 +186,7 @@ class LineTool extends Stroke {
 		d.draw_line(this.start, this.pos)
 	}
 }
-LineTool.label = "line"
+LineTool.label = "📏️"
 class PlaceTool extends Stroke {
 	down(d, v) {
 		v.copy_settings(d)
@@ -201,7 +201,7 @@ class PlaceTool extends Stroke {
 		d.draw(this.pos)
 	}
 }
-PlaceTool.label = "place"
+PlaceTool.label = "🥢" // 🎯?
 class Slow extends Stroke {
 	down(d) {
 		this._avg = this.pos
@@ -215,14 +215,14 @@ class Slow extends Stroke {
 		this.move(d)
 	}
 }
-Slow.label = "slow"
+Slow.label = "🖌️"
 
 class Flood extends Stroke {
 	down(d) {
 		d.flood_fill(this.pos)
 	}
 }
-Flood.label = "flood"
+Flood.label = "🌊"
 
 class Mover extends Stroke {
 	down(d) {
@@ -243,7 +243,7 @@ class Mover extends Stroke {
 		this._data = null
 	}
 }
-Mover.label = "move"
+Mover.label = "🤚️"
 class CopyTool extends Stroke {
 	down(d, v) {
 		// TODO: we need to "lock" the overlay, because 2 strokes can be drawn at the same time with a touchscreen
@@ -269,7 +269,8 @@ class CopyTool extends Stroke {
 		v.erase()
 	}
 }
-CopyTool.label = "copy"
+CopyTool.label = "✂️" 
+// idea: make copying erase copied pixels, select with the composite mode?
 
 
 // idea: is it best to use rects to define the brush? or a path around the perimeter
@@ -427,8 +428,8 @@ class Grp {
 		this.put_data(data)
 	}
 	flood_fill(pos) {
-		
 		const size = this.brush.fills.length-2
+		// todo: make this a method on Brush
 		let fill=(x1,x2,y)=>{ // fill from x1 to x2-1
 			if (size==-1)
 				this.c2d.fillRect(x1, y, x2-x1, 1)
@@ -543,23 +544,20 @@ class ChatDraw extends HTMLElement {
 		this.tool = null
 		this.color = 0
 		let brushes = [], patterns = []
-		brushes.push(new Brush(new Point(0,0), [], "CB", false))
-		brushes.push(new Brush(new Point(0,0), [], "CB", false))
-		brushes.push(Brush.Circle(1, "1", true))
-		brushes.push(Brush.Circle(1, "1.5", false))
-		brushes.push(Brush.Circle(2, "2", true))
-		brushes.push(Brush.Circle(2, "2.5", false))
-		brushes.push(Brush.Circle(3, "3", true))
-		brushes.push(Brush.Circle(3, "3.5", false))
+		for (let i=1; i<=3; i++)
+			brushes.push(Brush.Circle(i, `${i}▞`,true))
 		for (let i=4; i<=8; i++)
 			brushes.push(Brush.Circle(i, `●${i}`,true))
+		brushes.push(Brush.Circle(1, "1▛", false))
+		brushes.push(Brush.Circle(2, "2▛", false)) //◕ ⚼
+		brushes.push(Brush.Circle(3, "3▛", false))
 		brushes.push(new Brush(new Point(2.5,2.5), [
 			[0,0,1,1],// wonder if we should store these as like, DOMRect?
 			[1,1,1,1],
 			[2,2,1,1],
 			[3,3,1,1],
 			[4,4,1,1],
-		], "\\5", false))
+		], "╲5", false))
 		// we can't enable diagonal on this brush, since
 		// it's too thin. but technically, diagonal should work on some axes. would be nice to like, say, ok you're allowed to move in these directions:
 		// [][]  
@@ -573,17 +571,28 @@ class ChatDraw extends HTMLElement {
 			[0,2,1,1],
 			[0,3,1,1],
 			[0,4,1,1],
-		], "|5", true))
+		], "| 5", true))
+		brushes.push(new Brush(new Point(0,0), [], "🪞", false))
+		brushes.push(new Brush(new Point(0,0), [], "🪞", false))
 		let cb = dither_pattern(-1, this.grp.c2d)
-		cb._canvas = "\bCB"
-		patterns.push(cb)
-		for (let i=0; i<16; i++)
+		let x = new String('black')
+		x._canvas = "x"
+		patterns.push(x)
+		for (let i=0; i<=14; i++)
 			patterns.push(dither_pattern(i, this.grp.c2d))
+		cb._canvas = "🪞"
+		patterns.push(cb)
+		
 		this.choices = {
 			tool: new Choices(
-				'tool', [Mover, CopyTool, Freehand, Slow, LineTool, Spray, Flood, PlaceTool],
+				'tool', [
+					Freehand, Slow,
+					LineTool, Spray,
+					Flood, PlaceTool,
+					Mover, CopyTool,
+				],
 				v=>this.tool = v,
-				v=>v.label
+				v=>'\b'+v.label
 			),
 			color: new Choices(
 				'color', ['#000000','#FFFFFF','#FF0000','#2040EE','#00CC00','#FFFF00'], //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
@@ -597,7 +606,7 @@ class ChatDraw extends HTMLElement {
 			brush: new Choices(
 				'brush', brushes,
 				v=>this.grp.brush = v,
-				v=>"\b"+v.label
+				v=>v.label
 			),
 			pattern: new Choices(
 				'pattern', patterns,
@@ -646,14 +655,16 @@ class ChatDraw extends HTMLElement {
 		}
 		/// draw form ///
 		this.form = draw_form(this.choices, actions, [
-			{title:"Tool", cols:3, items:[
-				{name:'clear', text:"reset!"},
+			{title:"Action", rows:4, items:[
 				{name:'undo', text:"↶", icon:true},
 				{name:'redo', text:"↷", icon:true},
 				{name:'fill', text:"fill"},
+				{name:'clear', text:"reset!"},
+			]},
+			{title:"Tool", cols:2, items:[
 				...this.choices.tool.bdef(),
 			]},
-			{title:"Brush", rows:8, size:1, items:this.choices.brush.bdef()},
+			{title:"Shape", rows:8, size:1, items:this.choices.brush.bdef()},
 			{title:"Composite", rows:4, items:this.choices.composite.bdef()},
 			{title:"Color", cols:2, items:[
 				{name:'pick', type:'color', text:"edit"},
@@ -700,10 +711,10 @@ class ChatDraw extends HTMLElement {
 		super.shadowRoot.append(document.importNode(ChatDraw.style, true), img, this.grp.canvas, this.overlay.canvas, this.form)
 		
 		this.choose('tool', 2)
-		this.choose('brush', 4)
+		this.choose('brush', 1)
 		this.choose('composite', 0)
 		this.choose('color', 0)
-		this.choose('pattern', 16)
+		this.choose('pattern', 0)
 	}
 	// idea: what if all tools just draw to the overlay, then we copy to main canvas at the end of the stroke? and update undo buffer..
 	// ugh but that would be slow maybe?
@@ -719,11 +730,11 @@ class ChatDraw extends HTMLElement {
 		c2d.putImageData(data, 0, 0)
 		this.clipboard = c
 		// todo: setting values like this wont update the current value if its already selected
-		this.choices.pattern.values[0] = this.grp.c2d.createPattern(c, 'repeat')
-		this.choices.brush.values[0] = new ImageBrush(new Point(c.width/2, c.height/2), c, 'CB', false, false)
-		this.choices.brush.values[1] = new ImageBrush(new Point(c.width/2, c.height/2), c, 'CB', false, true)
+		this.choices.pattern.values[16] = this.grp.c2d.createPattern(c, 'repeat')
+		this.choices.brush.values[13] = new ImageBrush(new Point(c.width/2, c.height/2), c, '🪞', false, false)
+		this.choices.brush.values[14] = new ImageBrush(new Point(c.width/2, c.height/2), c, '🪞', false, true)
 		this.choose('tool', 7) // prevent accidental overwriting
-		this.choose('brush', 0)
+		this.choose('brush', 13)
 	}
 	
 	set_scale(n) {

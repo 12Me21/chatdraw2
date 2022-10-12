@@ -61,7 +61,8 @@ function draw_form(choices, actions, buttons) {
 		fs.style.gridTemplateRows = `auto repeat(${rows}, 1fr)`
 		if (rows)
 			fs.style.gridAutoFlow = 'column'
-		fs.style.fontSize = `calc(${size/2}px * var(--scale))`
+		fs.style.fontSize = `calc(1px * var(--scale))`
+		fs.style.setProperty('--bsize', size==2 ? '12' : '5')
 	}
 	form.lastChild.remove()
 	return form

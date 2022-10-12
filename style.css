@@ -8,6 +8,7 @@
 		"controls" auto
 		/ min-content;
 	--scale: 2;
+	border: 2px solid gray;
 }
 :host > img {
 	grid-area: canvas;
@@ -24,6 +25,9 @@
 }
 canvas {
 	image-rendering: -moz-crisp-edges; image-rendering: pixelated;
+}
+canvas.main {
+	background: repeating-linear-gradient(1.23deg, #F0E0AA, #D8D0A8 0.38291px);
 }
 form {
 	grid-area: controls;
@@ -62,9 +66,9 @@ label > input[type="color"] { /*ios safari*/
 	clip: rect(0,0,0,0);
 }
 b {
-	box-sizing: border-box;
-	width: 20em;
-	height: 14em;
+	box-sizing: content-box;
+	width: calc(1.5em * var(--bsize));
+	height: calc(1em * var(--bsize));
 	touch-action: manipulation; /* reduces delay */
 	
 	display: grid;
@@ -72,6 +76,11 @@ b {
 	justify-content: center;
 	text-align: center;
 	overflow: hidden;
+	
+	border: 1em solid gray;
+}
+:checked + b {
+	background: #CCC;
 }
 b span {
 	display: contents;
@@ -92,77 +101,10 @@ b.color > span {
 }
 /* pattern button */
 b canvas {
-	width: calc(14em / 5);
-}	
+	height: calc(5em / 5);
+}
+
 
-:host {
-	border: solid calc(var(--scale) * 2px);
-	border-color: #998 #887 #666 #887;
-	background: #B0B098;
-}
-canvas.main {
-	background: repeating-linear-gradient(1.23deg, #F0E0AA, #D8D0A8 0.38291px);
-}
-form {
-	justify-content: space-evenly;
-	border-top: #776 solid calc(var(--scale) * 2px);
-	font-family: serif;
-}
-/* sections */
-div {
-}
-div > div {
-}
-hr {
-	background: linear-gradient(45deg, #AA9, #665, #AA8);
-}
-/* buttons */
-b {
-	text-transform: uppercase;
-	margin: 1em;
-	border: solid 1em;
-	border-color: #FFD #887 #666 #DDB;
-	border-radius: 1em;
-	box-shadow: calc(1em/3) calc(1em/3) 1em black;
-	text-shadow: calc(1em/3) calc(1em/3) 0 #BBA, calc(-1em/3) calc(-1em/3) 0 #776;
-	background: #AAAA90;
-	color: #221;
-}
-input[type="radio"] + b {
-	border-radius: 8em;
-}
-/* button hovered */
-b:hover, :focus-visible > b {
-	background: #CCC;
-	box-shadow: calc(1em/3) calc(1em/3) calc(1em/3) black;
-}
-/* button checked/active */
-:checked + b, input:not([type="radio"]):not(:disabled):active + b {
-	color: #FFF078;
-	text-shadow: 0 0 calc(1em/3) red;
-	transition: none;
-}
-:checked + b, :active + b {
-	border-color: #776 #444 #444 #776;
-	box-shadow: 0 0 calc(10em/3) 0 inset black, 0 0 calc(10em/3) 0 inset white, 0 0 calc(1em/3) 0 #FF8;
-	background: #887;
-}
-/* button disabled */
-:disabled + b {
-	border-color: #776 #444 #444 #776;
-	box-shadow: 0 0 calc(10em/3) 0 inset black, 0 0 calc(10em/3) 0 inset white;
-	background: #887;
-	color: #666;
-}
-/* color button */
-b.color > span {
-	border-radius: 4.5em;
-	box-shadow: 0 0 calc(10em/3) 0 inset black, 0 0 calc(10em/3) 0 inset white;
-}
-:checked + b.color > span {
-	box-shadow: 0 0 calc(10em/3) 0 inset #0008, 0 0 calc(10em/3) 0 inset white, 0 0 calc(8em/3) calc(-2em/3) currentColor;
-}
-/* pattern button */
-b canvas {
-	border-radius: 3em;
+b.icon span {
+	text-shadow: 0 0 1px black;
 }
