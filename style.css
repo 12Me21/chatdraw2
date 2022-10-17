@@ -43,19 +43,22 @@ fieldset {
 	--bw: 20px;
 	--bh: 14px;
 	--rows: 4;
+	--gap: 2px;
 	grid-template-columns: repeat(var(--cols), calc(var(--bw) * var(--scale)));
 	grid-template-rows: auto repeat(var(--rows), calc(var(--bh) * var(--scale)));
-	gap: calc(2px * var(--scale));
+	gap: calc(var(--gap) * var(--scale));
 }
 fieldset.small {
 	--bw: 10px;
 	--bh: 7px;
 	--rows: 8;
-	gap: calc(1px * var(--scale));
+	--gap: 1px;
 }
 fieldset > div {
 	grid-column: 1 / -1;
+	justify-self: center;
 	font-size: calc(var(--scale) * 5px);
+	margin-bottom: calc(-1 * var(--gap) * var(--scale));
 }
 hr { /* todo this sucks */
 	all: unset;
@@ -109,10 +112,10 @@ b.color > span {
 /* pattern button */
 b canvas {
 	height: calc(var(--scale) * 4px);
+	background: #F0E0AA;
 }
 
 
-:checked + b.icon span {
-	/*text-shadow: 0 0 1px black;*/
-	color: black;
+:not(:checked) + b.icon span {
+	text-shadow: 0 0 calc(var(--scale) * 1px) black;
 }

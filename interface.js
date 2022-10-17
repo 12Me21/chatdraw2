@@ -1,11 +1,11 @@
-
-
+"use strict"
 
 // todo: can we just restyle the normal ones instead? why are we doing it this way?
-function draw_button({type='button', name, value="", text, icon}) {
+function draw_button({type='button', name, value="", text, icon, title}) {
 	const input = document.createElement('input')
 	Object.assign(input, {type, name, value})
 	const span = document.createElement('b')
+	span.title = title
 	if (text[0]=="\b") {
 		text = text.slice(1)
 		icon = true

@@ -3,11 +3,12 @@
 // todo: allow strokes to start in the border around the canvas too
 
 class Choices {
-	constructor(name, values, change, label) {
+	constructor(name, values, change, label, tooltip) {
 		this.name = name
 		this.values = values
 		this.onchange = change
 		this.label = label
+		this.tooltip = tooltip
 	}
 	change(value) {
 		this.onchange(this.values[value], value)
@@ -17,7 +18,13 @@ class Choices {
 	}
 	bdef() {
 		return this.values.map((x,i)=>{
-			return {type:'radio', name:this.name, text:this.label(x,i), value:i}
+			return {
+				type: 'radio',
+				name: this.name,
+				text: this.label(x,i),
+				value: i,
+				title: this.tooltip(x,i),
+			}
 		})
 	}
 }
@@ -159,7 +166,8 @@ class Freehand extends Stroke {
 		this._old = d.draw_line(this._old, this.pos)
 	}
 }
-Freehand.label = "✏️"
+Freehand.icon = "✏️"
+Freehand.label = "pen"
 // idea: spray that uses dither somehow? like, fills in based on ordered dithering? perhaps it umm.. like first fill in every pixel that lines up with pixel 0 in the pattern, then do pixel 1, etc..
 class Spray extends Stroke {
 	down(d) {
@@ -170,7 +178,8 @@ class Spray extends Stroke {
 			d.random_in_brush(this.pos)
 	}
 }
-Spray.label = "🚿️"
+Spray.icon = "🚿️"
+Spray.label = "spray"
 class LineTool extends Stroke {
 	down(d, v) {
 		// TODO: we need to "lock" the overlay, because 2 strokes can be drawn at the same time with a touchscreen
@@ -188,7 +197,8 @@ class LineTool extends Stroke {
 		d.draw_line(this.start, this.pos)
 	}
 }
-LineTool.label = "📏️"
+LineTool.icon = "📏️"
+LineTool.label = "line"
 class PlaceTool extends Stroke {
 	down(d, v) {
 		v.copy_settings(d)
@@ -203,7 +213,8 @@ class PlaceTool extends Stroke {
 		d.draw(this.pos)
 	}
 }
-PlaceTool.label = "🥢" // 🎯?
+PlaceTool.icon = "🥢" // 🎯?
+PlaceTool.label = "place"
 class Slow extends Stroke {
 	down(d) {
 		this._avg = this.pos
@@ -217,15 +228,15 @@ class Slow extends Stroke {
 		this.move(d)
 	}
 }
-Slow.label = "🖌️"
-
+Slow.icon = "🖌️"
+Slow.label = "slow"
 class Flood extends Stroke {
 	down(d) {
 		d.flood_fill(this.pos)
 	}
 }
-Flood.label = "🌊"
-
+Flood.icon = "🌊"
+Flood.label = "flood"
 class Mover extends Stroke {
 	down(d) {
 		this._data = d.get_data()
@@ -245,7 +256,8 @@ class Mover extends Stroke {
 		this._data = null
 	}
 }
-Mover.label = "🤚️"
+Mover.icon = "🤚️"
+Mover.label = "move"
 class CopyTool extends Stroke {
 	down(d, v) {
 		// TODO: we need to "lock" the overlay, because 2 strokes can be drawn at the same time with a touchscreen
@@ -271,20 +283,22 @@ class CopyTool extends Stroke {
 		v.erase()
 	}
 }
-CopyTool.label = "✂️" 
+CopyTool.icon = "✂️"
+CopyTool.label = "copy"
 // idea: make copying erase copied pixels, select with the composite mode?
 
 
 // idea: is it best to use rects to define the brush? or a path around the perimeter
 class Brush extends Path2D {
-	constructor(origin, fills, name, diag=false) {
+	constructor(origin, fills, icon, label, diag=false) {
 		super()
 		for (const f of fills)
 			super.rect(...f)
 		this.origin = origin
 		this.fills = fills
 		this.diag = diag
-		this.label = name
+		this.icon = icon
+		this.label = label
 	}
 	add_to(path, pos) {
 		const {x, y} = pos.Subtract(this.origin).Round()
@@ -308,22 +322,23 @@ class Brush extends Path2D {
 		c2d.fill(path)
 		return pos
 	}
-	static Circle(d, name, diag) {
+	static Circle(d, icon, label, diag) {
 		const r = d/2, sr = r-0.5
 		const fills = []
 		for (let y=-sr; y<=sr; y++) {
 			const x = Math.ceil(Math.sqrt(r*r - y*y)+sr)
 			fills.push([x, y+sr, (r-x)*2, 1])
 		}
-		return new this(new Point(r, r), fills, name, diag)
+		return new this(new Point(r, r), fills, icon, label, diag)
 	}
 }
 class ImageBrush {
-	constructor(origin, image, name, diag=false, color=false) {
+	constructor(origin, image, icon, label, diag=false, color=false) {
 		this.origin = origin
 		this.source = image
 		this.diag = diag
-		this.label = name
+		this.icon = icon
+		this.label = label
 		this.color = color
 	}
 	adjust_cursor(pos) {
@@ -547,19 +562,18 @@ class ChatDraw extends HTMLElement {
 		this.color = 0
 		let brushes = [], patterns = []
 		for (let i=1; i<=3; i++)
-			brushes.push(Brush.Circle(i, `${i}▞`,true))
+			brushes.push(Brush.Circle(i, `${i}▞`, `square ${i}×${i} thin`, true))
 		for (let i=4; i<=8; i++)
-			brushes.push(Brush.Circle(i, `●${i}`,true))
-		brushes.push(Brush.Circle(1, "1▛", false))
-		brushes.push(Brush.Circle(2, "2▛", false)) //◕ ⚼
-		brushes.push(Brush.Circle(3, "3▛", false))
+			brushes.push(Brush.Circle(i, `●${i}`, `round ${i}×${i}`, true))
+		for (let i=1; i<=3; i++)
+			brushes.push(Brush.Circle(1, `${i}▛`, `square ${i}×${i} thick`, false))
 		brushes.push(new Brush(new Point(2.5,2.5), [
 			[0,0,1,1],// wonder if we should store these as like, DOMRect?
 			[1,1,1,1],
 			[2,2,1,1],
 			[3,3,1,1],
 			[4,4,1,1],
-		], "╲5", false))
+		], "╲5", "a", false))
 		// we can't enable diagonal on this brush, since
 		// it's too thin. but technically, diagonal should work on some axes. would be nice to like, say, ok you're allowed to move in these directions:
 		// [][]  
@@ -573,12 +587,12 @@ class ChatDraw extends HTMLElement {
 			[0,2,1,1],
 			[0,3,1,1],
 			[0,4,1,1],
-		], "| 5", true))
-		brushes.push(new Brush(new Point(0,0), [], "📋", false))
-		brushes.push(new Brush(new Point(0,0), [], "📋", false))
+		], "| 5", "a", true))
+		brushes.push(new Brush(new Point(0,0), [], "📋", "clipboard", false))
+		brushes.push(new Brush(new Point(0,0), [], "📋", "clipboard (colorized)", false))
 		let cb = dither_pattern(-1, this.grp.c2d)
 		let x = new String('black')
-		x._canvas = "x"
+		x._canvas = "◼"
 		patterns.push(x)
 		for (let i=0; i<=14; i++)
 			patterns.push(dither_pattern(i, this.grp.c2d))
@@ -594,7 +608,8 @@ class ChatDraw extends HTMLElement {
 					Mover, CopyTool,
 				],
 				v=>this.tool = v,
-				v=>'\b'+v.label
+				v=>'\b'+v.icon,
+				v=>v.label
 			),
 			color: new Choices(
 				'color', ['#000000','#FFFFFF','#FF0000','#2040EE','#00CC00','#FFFF00'], //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
@@ -603,17 +618,20 @@ class ChatDraw extends HTMLElement {
 					this.form.pick.value = v
 					this.grp.color = v
 				},
-				v=>""
+				v=>"",
+				v=>"color"
 			),
 			brush: new Choices(
 				'brush', brushes,
 				v=>this.grp.brush = v,
-				v=>v.label
+				v=>v.icon,
+				v=>v.label,
 			),
 			pattern: new Choices(
 				'pattern', patterns,
 				v=>this.grp.pattern = v,
-				v=>v._canvas
+				v=>v._canvas,
+				v=>v._label,
 			),
 			composite: new Choices(
 				'composite', ['source-over', 'destination-over', 'source-atop', 'destination-out'],
@@ -624,7 +642,8 @@ class ChatDraw extends HTMLElement {
 					'source-atop':"in",
 					'destination-out':"erase",
 					'copy':"copy", // this is only useful when pasting
-				}[v])
+				}[v]),
+				v=>"composite: "+v
 			),
 		}
 		/// define button actions ///
@@ -658,10 +677,10 @@ class ChatDraw extends HTMLElement {
 		/// draw form ///
 		this.form = draw_form(this.choices, actions, [
 			{title:"Action", items:[
-				{name:'undo', text:"↶", icon:true},
-				{name:'redo', text:"↷", icon:true},
-				{name:'fill', text:"fill"},
-				{name:'clear', text:"reset!"},
+				{name:'undo', text:"↶", title:"undo", icon:true},
+				{name:'redo', text:"↷", title:"redo", icon:true},
+				{name:'fill', text:"fill", title:"fill"},
+				{name:'clear', text:"reset!", title:"reset"},
 			]},
 			{title:"Tool", cols: 2, items:[
 				...this.choices.tool.bdef(),
@@ -669,8 +688,8 @@ class ChatDraw extends HTMLElement {
 			{title:"Shape", size:1, items:this.choices.brush.bdef()},
 			{title:"Composite", items:this.choices.composite.bdef()},
 			{title:"Color", cols:2, items:[
-				{name:'pick', type:'color', text:"edit"},
-				{name:'bg', text:"➙bg"},
+				{name:'pick', type:'color', text:"edit", title:"edit color"},
+				{name:'bg', text:"➙bg", title:"replace color with background"},
 				...this.choices.color.bdef(),
 			]},
 			{title:"Pattern", size:1, items:this.choices.pattern.bdef()},
@@ -737,8 +756,8 @@ class ChatDraw extends HTMLElement {
 		this.clipboard = c
 		// todo: setting values like this wont update the current value if its already selected
 		this.choices.pattern.values[16] = this.grp.c2d.createPattern(c, 'repeat')
-		this.choices.brush.values[13] = new ImageBrush(new Point(c.width/2, c.height/2), c, '🪞', false, false)
-		this.choices.brush.values[14] = new ImageBrush(new Point(c.width/2, c.height/2), c, '🪞', false, true)
+		this.choices.brush.values[13] = new ImageBrush(new Point(c.width/2, c.height/2), c, "📋", "clipboard", false, false)
+		this.choices.brush.values[14] = new ImageBrush(new Point(c.width/2, c.height/2), c, "📋", "clipboard (colorized)", false, true)
 		this.choose('tool', 5) // prevent accidental overwriting
 		this.choose('brush', 13)
 	}
