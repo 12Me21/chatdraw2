@@ -572,15 +572,15 @@ class ChatDraw extends HTMLElement {
 			[0,3,1,1],
 			[0,4,1,1],
 		], "| 5", true))
-		brushes.push(new Brush(new Point(0,0), [], "🪞", false))
-		brushes.push(new Brush(new Point(0,0), [], "🪞", false))
+		brushes.push(new Brush(new Point(0,0), [], "📋", false))
+		brushes.push(new Brush(new Point(0,0), [], "📋", false))
 		let cb = dither_pattern(-1, this.grp.c2d)
 		let x = new String('black')
 		x._canvas = "x"
 		patterns.push(x)
 		for (let i=0; i<=14; i++)
 			patterns.push(dither_pattern(i, this.grp.c2d))
-		cb._canvas = "🪞"
+		cb._canvas = "📋"
 		patterns.push(cb)
 		
 		this.choices = {
@@ -655,23 +655,23 @@ class ChatDraw extends HTMLElement {
 		}
 		/// draw form ///
 		this.form = draw_form(this.choices, actions, [
-			{title:"Action", rows:4, items:[
+			{title:"Action", items:[
 				{name:'undo', text:"↶", icon:true},
 				{name:'redo', text:"↷", icon:true},
 				{name:'fill', text:"fill"},
 				{name:'clear', text:"reset!"},
 			]},
-			{title:"Tool", cols:2, items:[
+			{title:"Tool", items:[
 				...this.choices.tool.bdef(),
 			]},
-			{title:"Shape", rows:8, size:1, items:this.choices.brush.bdef()},
-			{title:"Composite", rows:4, items:this.choices.composite.bdef()},
+			{title:"Shape", size:1, items:this.choices.brush.bdef()},
+			{title:"Composite", items:this.choices.composite.bdef()},
 			{title:"Color", cols:2, items:[
 				{name:'pick', type:'color', text:"edit"},
 				{name:'bg', text:"➙bg"},
 				...this.choices.color.bdef(),
 			]},
-			{title:"Pattern", rows:8, size:1, items:this.choices.pattern.bdef()},
+			{title:"Pattern", size:1, items:this.choices.pattern.bdef()},
 		])
 		/// undo buffer ///
 		this.history = new Undo(
@@ -708,7 +708,11 @@ class ChatDraw extends HTMLElement {
 		img.style.cursor = make_cursor(3)
 		
 		super.attachShadow({mode: 'open'})
-		super.shadowRoot.append(document.importNode(ChatDraw.style, true), img, this.grp.canvas, this.overlay.canvas, this.form)
+		super.shadowRoot.append(
+			...ChatDraw.styles.map(x=>document.importNode(x, true)),
+			img, this.grp.canvas, this.overlay.canvas,
+			this.form
+		)
 		
 		this.choose('tool', 2)
 		this.choose('brush', 1)
@@ -762,9 +766,7 @@ class ChatDraw extends HTMLElement {
 		//	return +this.form.color.value
 	}
 }
-ChatDraw.style = document.createElement('link')
-ChatDraw.style.rel = 'stylesheet'
-ChatDraw.style.href = 'style.css'
+ChatDraw.styles = ['style.css', 'deco.css'].map(href=>Object.assign(document.createElement('link'), {rel:'stylesheet', href}))
 
 customElements.define('chat-draw', ChatDraw)
 

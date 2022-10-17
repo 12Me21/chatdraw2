@@ -35,19 +35,29 @@ form {
 	-webkit-user-select: none; user-select: none;
 	justify-content: space-evenly;
 }
-div {
+fieldset {
+	all: unset;
 	display: grid;
 	grid-auto-flow: row;
 	align-content: start;
-	justify-items: center;
-	padding-bottom: calc(var(--scale) * 2px);
+	--bw: 20px;
+	--bh: 14px;
+	--rows: 4;
+	grid-template-columns: repeat(var(--cols), calc(var(--bw) * var(--scale)));
+	grid-template-rows: auto repeat(var(--rows), calc(var(--bh) * var(--scale)));
+	gap: calc(2px * var(--scale));
 }
-div > div {
+fieldset.small {
+	--bw: 10px;
+	--bh: 7px;
+	--rows: 8;
+	gap: calc(1px * var(--scale));
+}
+fieldset > div {
 	grid-column: 1 / -1;
 	font-size: calc(var(--scale) * 5px);
-	height: 0.7em;
 }
-hr {
+hr { /* todo this sucks */
 	all: unset;
 	margin: 0;
 	width: 1px;
@@ -67,8 +77,6 @@ label > input[type="color"] { /*ios safari*/
 }
 b {
 	box-sizing: content-box;
-	width: calc(1.5em * var(--bsize));
-	height: calc(1em * var(--bsize));
 	touch-action: manipulation; /* reduces delay */
 	
 	display: grid;
@@ -77,31 +85,30 @@ b {
 	text-align: center;
 	overflow: hidden;
 	
-	border: 1em solid gray;
+	border: calc(var(--scale) * 1px) solid gray;
+	font-size: calc(var(--scale) * 5px);
 }
 :checked + b {
 	background: #CCC;
 }
 b span {
 	display: contents;
-	font-size: 5em;
 }
 /* larger text button */
 b.icon span {
 	font-weight: normal;
-	font-size: 10em;
+	font-size: 2em;
 }
 /* color button */
 b.color > span {
 	display: block;
 	background: currentColor;
-	font-size: unset;
-	width: 16em;
-	height: 10em;
+	width: calc(var(--scale) * 16px);
+	height: calc(var(--scale) * 10px);
 }
 /* pattern button */
 b canvas {
-	height: calc(5em / 5);
+	height: calc(var(--scale) * 4px);
 }
 
 

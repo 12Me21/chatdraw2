@@ -46,23 +46,21 @@ function draw_form(choices, actions, buttons) {
 			actions[e.name]()
 	}
 	//d.form.append(document.createElement('hr'))
-	for (let {title, items, size=2, rows=0, cols} of buttons) {
-		const fs = document.createElement('div')
-		let ti = document.createElement('div')
+	for (let {title, items, size=2, cols} of buttons) {
+		const fs = document.createElement('fieldset')
+		let ti = document.createElement('div') //legend
 		ti.append(title)
 		fs.append(ti)
 		for (const sb of items)
 			fs.append(draw_button(sb))
 		form.append(fs, document.createElement('hr'))
-		if (!cols)
+		if (!cols) {
 			cols = Math.ceil(items.length/(8/size))
-		if (cols)
-			fs.style.gridTemplateColumns = `repeat(${cols}, 1fr)`
-		fs.style.gridTemplateRows = `auto repeat(${rows}, 1fr)`
-		if (rows)
 			fs.style.gridAutoFlow = 'column'
-		fs.style.fontSize = `calc(1px * var(--scale))`
-		fs.style.setProperty('--bsize', size==2 ? '12' : '5')
+		}
+		if (size==1)
+			fs.classList.add('small')
+		fs.style.setProperty('--cols', cols)
 	}
 	form.lastChild.remove()
 	return form
@@ -100,14 +98,14 @@ function dither_pattern(level, context, offset=0) {
 	for (let x=0; x<16; x++)
 		if (od[x+offset & 15] <= level)
 			data.data[x<<2|3] = 0xFF
-	// hack: we want a larger canvas to use as a button label
 	c2d.putImageData(data, 0, 0)
 	const pattern = context.createPattern(canvas, 'repeat')
-	canvas.width = 7
+	// hack: we want a larger canvas to use as a button label
+	/*canvas.width = 7
 	canvas.height = 5
 	for (let y=0;y<5;y+=4)
 		for (let x=-3;x<8;x+=4)
-			c2d.putImageData(data, x, y)
+			c2d.putImageData(data, x, y)*/
 	pattern._canvas = canvas
 	return pattern
 }
