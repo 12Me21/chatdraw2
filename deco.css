@@ -1,6 +1,6 @@
 
 :host {
-	border: solid calc(var(--scale) * 2px);
+	border: solid calc(var(--S)*2px);
 	border-color: #998 #887 #666 #887;
 	background: #B0B098;
 }
@@ -9,12 +9,12 @@ canvas.main {
 }
 form {
 	justify-content: space-evenly;
-	border-top: #776 solid calc(var(--scale) * 2px);
+	border-top: #776 solid calc(var(--S)*2px);
 	font-family: serif;
 }
 /* sections */
 fieldset {
-	padding-bottom: calc(var(--scale) * 2px);
+	padding-bottom: calc(var(--S)*2px);
 }
 hr {
 	background: linear-gradient(45deg, #AA9, #665, #AA8);
@@ -23,47 +23,61 @@ hr {
 /* buttons */
 b {
 	text-transform: uppercase;
-	border: solid calc(1px * var(--scale));
+	border: solid calc(1px*var(--S));
 	border-color: #FFD #887 #666 #DDB;
-	border-radius: calc(1px * var(--scale));
-	box-shadow: calc(var(--scale) * 1px / 3) calc(var(--scale) * 1px / 3) calc(var(--scale) * 1px) black;
-	text-shadow: calc(var(--scale) * 1px / 3) calc(var(--scale) * 1px / 3) 0 #BBA, calc(var(--scale) * -1px / 3) calc(var(--scale) * -1px / 3) 0 #776;
+	border-radius: calc(1px*var(--S));
+	box-shadow:
+		black calc(var(--S)*1px/3) calc(var(--S)*1px/3) calc(var(--S)*1px);
+	text-shadow:
+		#BBA calc(var(--S)*1px/3) calc(var(--S)*1px/3),
+		#776 calc(var(--S)*-1px/3) calc(var(--S)*-1px/3);
 	background: #AAAA90;
 	color: #221;
 }
 input[type="radio"] + b {
-	border-radius: calc(var(--scale) * 8px);
+	border-radius: calc(var(--S)*8px);
 }
 /* button hovered */
 b:hover, :focus-visible > b {
 	background: #CCC;
-	box-shadow: calc(var(--scale) * 1px / 3) calc(var(--scale) * 1px / 3) calc(var(--scale) * 1px / 3) black;
+	box-shadow:
+		black calc(var(--S)*1px/3) calc(var(--S)*1px/3) calc(var(--S)*1px/3);
 }
 /* button checked/active */
 :checked + b, input:not([type="radio"]):not(:disabled):active + b {
 	color: #FFF078;
-	text-shadow: 0 0 calc(var(--scale) * 1px / 3) red;
+	text-shadow: red 0 0 calc(var(--S)*1px/3);
 	transition: none;
 }
 :checked + b, :active + b {
 	border-color: #665 #444 #444 #665;
-	box-shadow: 0 0 calc(var(--scale) * 10px / 3) 0 inset black, 0 0 calc(var(--scale) * 10px / 3) 0 inset white, 0 0 calc(var(--scale) * 1px / 3) 0 #FF8;
+	box-shadow:
+		inset black 0 0 calc(var(--S)*10px/3),
+		inset white 0 0 calc(var(--S)*10px/3),
+		#FF8 0 0 calc(var(--S)*1px/3);
 	background: #887;
 }
 /* button disabled */
 :disabled + b {
 	border-color: #665 #444 #444 #665;
-	box-shadow: 0 0 calc(var(--scale) * 10px / 3) 0 inset black, 0 0 calc(var(--scale) * 10px / 3) 0 inset white;
+	box-shadow:
+		inset black 0 0 calc(var(--S)*10px/3),
+		inset white 0 0 calc(var(--S)*10px/3);
 	background: #887;
 	color: #666;
 }
 /* color button */
-b.color > span {
-	border-radius: calc(var(--scale) * 4.5px);
-	box-shadow: 0 0 calc(var(--scale) * 10px / 3) 0 inset black, 0 0 calc(var(--scale) * 10px / 3) 0 inset white;
+b.color > div {
+	border-radius: calc(var(--S)*4.5px);
+	box-shadow:
+		inset black 0 0 calc(var(--S)*10px/3),
+		inset white 0 0 calc(var(--S)*10px/3);
 }
-:checked + b.color > span {
-	box-shadow: 0 0 calc(var(--scale) * 10px / 3) 0 inset #0008, 0 0 calc(var(--scale) * 10px / 3) 0 inset white, 0 0 calc(var(--scale) * 8px / 3) calc(var(--scale) * -2px / 3) currentColor;
+:checked + b.color > div {
+	box-shadow:
+		inset #0008 0 0 calc(var(--S)*10px/3),
+		inset white 0 0 calc(var(--S)*10px/3),
+		currentColor 0 0 calc(var(--S)*8px/3) calc(var(--S)*-2px/3);
 }
 /* pattern button */
 b canvas {

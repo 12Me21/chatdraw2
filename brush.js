@@ -26,7 +26,7 @@ class Choices {
 			return {
 				type: 'radio',
 				name: this.name,
-				text: this.label(x,i),
+				label: this.label(x,i),
 				value: i,
 				title: this.tooltip(x,i),
 			}
@@ -669,7 +669,7 @@ class ChatDraw extends HTMLElement {
 				this.grp.replace_color(old, color)
 				this.set_palette(sel, color)
 			},
-			clear: ()=>{
+			reset: ()=>{
 				this.history.add()
 				this.grp.erase()
 			},
@@ -690,10 +690,10 @@ class ChatDraw extends HTMLElement {
 		/// draw form ///
 		this.form = draw_form(this.choices, actions, [
 			{title:"Action", items:[
-				{name:'undo', text:"↶", title:"undo", icon:true},
-				{name:'redo', text:"↷", title:"redo", icon:true},
-				{name:'fill', text:"fill", title:"fill"},
-				{name:'clear', text:"reset!", title:"reset"},
+				{name:'undo', label:"↶", title:"undo", icon:true},
+				{name:'redo', label:"↷", title:"redo", icon:true},
+				{name:'fill', label:"fill", title:"fill"},
+				{name:'reset', label:"reset!", title:"reset"},
 			]},
 			{title:"Tool", cols: 2, items:[
 				...this.choices.tool.bdef(),
@@ -701,8 +701,8 @@ class ChatDraw extends HTMLElement {
 			{title:"Shape", size:1, items:this.choices.brush.bdef()},
 			{title:"Composite", items:this.choices.composite.bdef()},
 			{title:"Color", cols:2, items:[
-				{name:'pick', type:'color', text:"edit", title:"edit color"},
-				{name:'bg', text:"➙bg", title:"replace color with background"},
+				{name:'pick', type:'color', label:"edit", title:"edit color"},
+				{name:'bg', label:"➙bg", title:"replace color with background"},
 				...this.choices.color.bdef(),
 			]},
 			{title:"Pattern", size:1, items:this.choices.pattern.bdef()},

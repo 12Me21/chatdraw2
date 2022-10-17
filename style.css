@@ -37,6 +37,7 @@ form {
 	display: flex;
 	-webkit-user-select: none; user-select: none;
 	justify-content: space-evenly;
+	font-size: calc(var(--scale) * 5px);
 }
 fieldset {
 	all: unset;
@@ -60,7 +61,6 @@ fieldset.small {
 fieldset > div {
 	grid-column: 1 / -1;
 	justify-self: center;
-	font-size: calc(var(--scale) * 5px);
 	margin-bottom: calc(-1 * var(--gap) * var(--scale));
 }
 hr { /* todo this sucks */
@@ -92,21 +92,17 @@ b {
 	overflow: hidden;
 	
 	border: calc(var(--scale) * 1px) solid gray;
-	font-size: calc(var(--scale) * 5px);
 }
 :checked + b {
 	background: #CCC;
 }
-b span {
-	display: contents;
-}
 /* larger text button */
-b.icon span {
+b.icon {
 	font-weight: normal;
 	font-size: 2em;
 }
 /* color button */
-b.color > span {
+b.color > div {
 	display: block;
 	background: currentColor;
 	width: calc(var(--scale) * 16px);
@@ -119,6 +115,6 @@ b canvas {
 }
 
 
-:not(:checked) + b.icon span {
+:not(:checked) + b.icon {
 	text-shadow: 0 0 calc(var(--scale) * 1px) black;
 }

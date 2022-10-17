@@ -1,27 +1,30 @@
 "use strict"
 
 // todo: can we just restyle the normal ones instead? why are we doing it this way?
-function draw_button({type='button', name, value="", text, icon, title}) {
+function draw_button({type='button', name, value="", label, icon, title}) {
+	// hidden input element
 	const input = document.createElement('input')
 	Object.assign(input, {type, name, value})
-	const span = document.createElement('b')
-	span.title = title
-	if (text[0]=="\b") {
-		text = text.slice(1)
-		icon = true
+	// the visible button
+	const btn = document.createElement('b')
+	btn.title = title
+	if (name=='color') {
+		label = document.createElement('div')
+		btn.classList.add('color')
+		btn.style.color = `var(--color-${value})`
+	} else {
+		if (label[0]=="\b") {
+			label = label.slice(1)
+			icon = true
+		}
 	}
 	if (icon)
-		span.classList.add('icon')
-	if (name=='color') {
-		span.classList.add('color')
-		span.style.color = `var(--color-${value})`
-	}
-	const label = document.createElement('label')
-	label.append(input, span)
-	const s = document.createElement('span')
-	s.append(text)
-	span.append(s)
-	return label
+		btn.classList.add('icon')
+	btn.append(label)
+	// container element
+	const cont = document.createElement('label')
+	cont.append(input, btn)
+	return cont
 }
 /*
 <label>
