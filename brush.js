@@ -779,7 +779,7 @@ class ChatDraw extends HTMLElement {
 	}
 	
 	set_scale(n) {
-		this.style.setProperty('--scale', n)
+		this.style.setProperty('--S', n)
 	}
 	// todo: allow passing a more useful value here
 	choose(name, value) {

@@ -7,7 +7,7 @@
 		"canvas" max-content
 		"controls" auto
 		/ min-content;
-	--scale: 2;
+	--S: 2;
 	border: 2px solid gray;
 }
 :host > img {
@@ -20,7 +20,7 @@
 }
 :host > canvas {
 	grid-area: canvas;
-	width: calc(var(--width) * 1px * var(--scale, 1));
+	width: calc(var(--width)*1px*var(--S, 1));
 	pointer-events: none;
 }
 canvas {
@@ -37,7 +37,7 @@ form {
 	display: flex;
 	-webkit-user-select: none; user-select: none;
 	justify-content: space-evenly;
-	font-size: calc(var(--scale) * 5px);
+	font-size: calc(var(--S)*5px);
 }
 fieldset {
 	all: unset;
@@ -48,9 +48,9 @@ fieldset {
 	--bh: 14px;
 	--rows: 4;
 	--gap: 2px;
-	grid-template-columns: repeat(var(--cols), calc(var(--bw) * var(--scale)));
-	grid-template-rows: auto repeat(var(--rows), calc(var(--bh) * var(--scale)));
-	gap: calc(var(--gap) * var(--scale));
+	grid-template-columns: repeat(var(--cols), calc(var(--bw)*var(--S)));
+	grid-template-rows: auto repeat(var(--rows), calc(var(--bh)*var(--S)));
+	gap: calc(var(--gap)*var(--S));
 }
 fieldset.small {
 	--bw: 10px;
@@ -61,7 +61,7 @@ fieldset.small {
 fieldset > div {
 	grid-column: 1 / -1;
 	justify-self: center;
-	margin-bottom: calc(-1 * var(--gap) * var(--scale));
+	margin-bottom: calc(-1*var(--gap)*var(--S));
 }
 hr { /* todo this sucks */
 	all: unset;
@@ -82,7 +82,6 @@ label > input[type="color"] { /*ios safari*/
 	clip: rect(0,0,0,0);
 }
 b {
-	box-sizing: content-box;
 	touch-action: manipulation; /* reduces delay */
 	
 	display: grid;
@@ -90,8 +89,9 @@ b {
 	justify-content: center;
 	text-align: center;
 	overflow: hidden;
+	cursor: pointer;
 	
-	border: calc(var(--scale) * 1px) solid gray;
+	border: calc(var(--S)*1px) solid gray;
 }
 :checked + b {
 	background: #CCC;
@@ -105,16 +105,11 @@ b.icon {
 b.color > div {
 	display: block;
 	background: currentColor;
-	width: calc(var(--scale) * 16px);
-	height: calc(var(--scale) * 10px);
+	width: calc(var(--S)*16px);
+	height: calc(var(--S)*10px);
 }
 /* pattern button */
 b canvas {
-	height: calc(var(--scale) * 4px);
+	height: calc(var(--S)*4px);
 	background: #F0E0AA;
-}
-
-
-:not(:checked) + b.icon {
-	text-shadow: 0 0 calc(var(--scale) * 1px) black;
 }

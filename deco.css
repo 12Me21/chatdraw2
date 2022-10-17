@@ -82,3 +82,6 @@ b.color > div {
 /* pattern button */
 b canvas {
 }
+:not(:checked) + b.icon {
+	text-shadow: 0 0 calc(var(--S)*1px) black;
+}
