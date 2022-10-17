@@ -2,6 +2,11 @@
 
 // todo: allow strokes to start in the border around the canvas too
 
+// ugh we need to clean this system up.
+// 1: .values should be a list of objects, containing the value, button, etc.
+//  - thus: way to reference a choice by something other than index (i.e. this object)
+// 2: need a way to change the value of an item that also calls onchange if it is selected
+// 3: nicer way to handle drawing (pass label/tooltip together)
 class Choices {
 	constructor(name, values, change, label, tooltip) {
 		this.name = name
@@ -290,10 +295,11 @@ CopyTool.label = "copy"
 
 // idea: is it best to use rects to define the brush? or a path around the perimeter
 class Brush extends Path2D {
-	constructor(origin, fills, icon, label, diag=false) {
+	constructor(origin, fills, size, diag=false, icon, label) {
 		super()
 		for (const f of fills)
 			super.rect(...f)
+		this.size = size
 		this.origin = origin
 		this.fills = fills
 		this.diag = diag
@@ -322,33 +328,46 @@ class Brush extends Path2D {
 		c2d.fill(path)
 		return pos
 	}
-	static Circle(d, icon, label, diag) {
+	static Circle(d, ...etc) {
 		const r = d/2, sr = r-0.5
 		const fills = []
 		for (let y=-sr; y<=sr; y++) {
 			const x = Math.ceil(Math.sqrt(r*r - y*y)+sr)
 			fills.push([x, y+sr, (r-x)*2, 1])
 		}
-		return new this(new Point(r, r), fills, icon, label, diag)
+		return new this(new Point(r, r), fills, d, ...etc)
+	}
+	static Square(d, ...etc) {
+		const r = d/2
+		return new this(new Point(r, r), [[0, 0, d, d]], d, ...etc)
 	}
 }
 class ImageBrush {
-	constructor(origin, image, icon, label, diag=false, color=false) {
+	constructor(origin, image, color=false, diag=false, icon, label) {
 		this.origin = origin
 		this.source = image
 		this.diag = diag
 		this.icon = icon
 		this.label = label
 		this.color = color
+		this.size = 1
+	}
+	set_image(image, ox=image.width/2, oy=image.height/2) {
+		this.source = image
+		this.origin = new Point(ox, oy)
 	}
 	adjust_cursor(pos) {
 		return pos.Subtract(this.origin).Round().Add(this.origin)
 	}
 	point(c2d, pos) {
+		if (!this.source)
+			return
 		pos = pos.Subtract(this.origin)
 		c2d.drawImage(this.source, this.color?pos.x:pos.x+1000, pos.y)
 	}
 	line(c2d, start, end) {
+		if (!this.source)
+			return
 		start = this.adjust_cursor(start)
 		end = this.adjust_cursor(end)
 		let pos
@@ -358,9 +377,6 @@ class ImageBrush {
 	}
 }
 
-
-// todo: class for specifically the canvas (setting up, and drawing methods) and move everything else into the chatdraw class (incl. cursor handling) 
-// goal: main and overlay canvas should be instances of that class
 
 class Grp {
 	constructor(width, height) {
@@ -445,15 +461,15 @@ class Grp {
 		this.put_data(data)
 	}
 	flood_fill(pos) {
-		const size = this.brush.fills.length-2
+		const size = this.brush.size-2
 		// todo: make this a method on Brush
 		let fill=(x1,x2,y)=>{ // fill from x1 to x2-1
 			if (size==-1)
 				this.c2d.fillRect(x1, y, x2-x1, 1)
 			else if (size==0) {
-				this.c2d.fillRect(x1, y-1, x2-x1, 3)
-				this.c2d.fillRect(x1-1, y, 1, 1)
-				this.c2d.fillRect(x2, y, 1, 1)
+				this.c2d.fillRect(x1-1, y, x2-x1+2, 1) // main
+				this.c2d.fillRect(x1, y-1, x2-x1, 1) // above
+				this.c2d.fillRect(x1, y+1, x2-x1, 1) // below
 			} else
 				this.c2d.fillRect(x1-size, y-size, x2-x1+size*2, 1+size*2)
 		}
@@ -554,26 +570,27 @@ class ChatDraw extends HTMLElement {
 		const width=200, height=100
 		super()
 		this.grp = new Grp(width, height)
-		this.overlay = new Grp(width, height)
-		this.overlay.c2d.globalAlpha = 0.7
 		this.grp.canvas.classList.add('main')
+		this.overlay = new Grp(width, height)
+		this.overlay.canvas.classList.add('overlay')
 		/// define choices ///
 		this.tool = null
 		this.color = 0
-		let brushes = [], patterns = []
+		/// define brushes ///
+		const brushes = []
 		for (let i=1; i<=3; i++)
-			brushes.push(Brush.Circle(i, `${i}▞`, `square ${i}×${i} thin`, true))
+			brushes.push(Brush.Square(i, true, `${i}▞`, `square ${i}×${i} thin`))
 		for (let i=4; i<=8; i++)
-			brushes.push(Brush.Circle(i, `●${i}`, `round ${i}×${i}`, true))
+			brushes.push(Brush.Circle(i, true, `●${i}`, `round ${i}×${i}`))
 		for (let i=1; i<=3; i++)
-			brushes.push(Brush.Circle(1, `${i}▛`, `square ${i}×${i} thick`, false))
+			brushes.push(Brush.Square(i, false, `${i}▛`, `square ${i}×${i} thick`))
 		brushes.push(new Brush(new Point(2.5,2.5), [
 			[0,0,1,1],// wonder if we should store these as like, DOMRect?
 			[1,1,1,1],
 			[2,2,1,1],
 			[3,3,1,1],
 			[4,4,1,1],
-		], "╲5", "a", false))
+		], 5, false, "╲5", "a"))
 		// we can't enable diagonal on this brush, since
 		// it's too thin. but technically, diagonal should work on some axes. would be nice to like, say, ok you're allowed to move in these directions:
 		// [][]  
@@ -581,15 +598,11 @@ class ChatDraw extends HTMLElement {
 		//   [][]
 		// this would not be too hard to implement, either. we just pick the 2 points that straddle the line being drawn
 		// (we could even do like, a dashed line? by allowing only movements of 2px at a time?)
-		brushes.push(new Brush(new Point(0.5,2.5), [
-			[0,0,1,1],
-			[0,1,1,1],
-			[0,2,1,1],
-			[0,3,1,1],
-			[0,4,1,1],
-		], "| 5", "a", true))
-		brushes.push(new Brush(new Point(0,0), [], "📋", "clipboard", false))
-		brushes.push(new Brush(new Point(0,0), [], "📋", "clipboard (colorized)", false))
+		brushes.push(new Brush(new Point(0.5,2.5), [[0, 0, 1, 5]], 5, false, "| 5", "a"))
+		brushes.push(new ImageBrush(new Point(0,0), null, false, false, "📋", "clipboard"))
+		brushes.push(new ImageBrush(new Point(0,0), null, true, false, "📋", "clipboard (colorized)"))
+		/// define patterns ///
+		const patterns = []
 		let cb = dither_pattern(-1, this.grp.c2d)
 		let x = new String('black')
 		x._canvas = "◼"
@@ -735,7 +748,7 @@ class ChatDraw extends HTMLElement {
 			this.form
 		)
 		
-		this.choose('tool', 2)
+		this.choose('tool', 0)
 		this.choose('brush', 1)
 		this.choose('composite', 0)
 		this.choose('color', 0)
@@ -748,16 +761,19 @@ class ChatDraw extends HTMLElement {
 	}
 	
 	when_copy(data) {
+		
 		let c = document.createElement('canvas')
 		c.width = data.width
 		c.height = data.height
 		let c2d = c.getContext('2d')
 		c2d.putImageData(data, 0, 0)
 		this.clipboard = c
-		// todo: setting values like this wont update the current value if its already selected
+		
+		// URGENT TODO: setting values like this wont update the current value if its already selected
+		// todo: better way of setting these that doesnt rely on hardcoded button location index?
 		this.choices.pattern.values[16] = this.grp.c2d.createPattern(c, 'repeat')
-		this.choices.brush.values[13] = new ImageBrush(new Point(c.width/2, c.height/2), c, "📋", "clipboard", false, false)
-		this.choices.brush.values[14] = new ImageBrush(new Point(c.width/2, c.height/2), c, "📋", "clipboard (colorized)", false, true)
+		this.choices.brush.values[13].set_image(c)
+		this.choices.brush.values[14].set_image(c)
 		this.choose('tool', 5) // prevent accidental overwriting
 		this.choose('brush', 13)
 	}
@@ -765,7 +781,7 @@ class ChatDraw extends HTMLElement {
 	set_scale(n) {
 		this.style.setProperty('--scale', n)
 	}
-	// fsr .click doesn't work everywhere?
+	// todo: allow passing a more useful value here
 	choose(name, value) {
 		let elem = this.form.querySelector(`input[name="${name}"][value="${value}"]`)
 		elem.checked = true
@@ -791,9 +807,6 @@ ChatDraw.styles = ['style.css', 'deco.css'].map(href=>Object.assign(document.cre
 
 customElements.define('chat-draw', ChatDraw)
 
-// idea: instead of a Paste tool, have a paste BRUSH
-// then, have a "place" tool or whatever
-// so you can select the clipboard "brush", and either draw with the pen etc. or use Place to place it more precisely
 // todo: clipboard color palette can desync..
 // can do color swap on it whenever the palette changes i guess?
 // but that can result in data loss.. ooh maybe um

@@ -29,6 +29,9 @@ canvas {
 canvas.main {
 	background: repeating-linear-gradient(1.23deg, #F0E0AA, #D8D0A8 0.38291px);
 }
+canvas.overlay {
+	opacity: 0.7;
+}
 form {
 	grid-area: controls;
 	display: flex;
