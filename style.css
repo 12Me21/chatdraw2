@@ -112,6 +112,7 @@ b canvas {
 }
 
 
-b.icon span {
-	text-shadow: 0 0 1px black;
+:checked + b.icon span {
+	/*text-shadow: 0 0 1px black;*/
+	color: black;
 }

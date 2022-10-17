@@ -1,3 +1,6 @@
+
+
+
 // todo: can we just restyle the normal ones instead? why are we doing it this way?
 function draw_button({type='button', name, value="", text, icon}) {
 	const input = document.createElement('input')

@@ -1,5 +1,7 @@
 "use strict"
 
+// todo: allow strokes to start in the border around the canvas too
+
 class Choices {
 	constructor(name, values, change, label) {
 		this.name = name
@@ -661,7 +663,7 @@ class ChatDraw extends HTMLElement {
 				{name:'fill', text:"fill"},
 				{name:'clear', text:"reset!"},
 			]},
-			{title:"Tool", items:[
+			{title:"Tool", cols: 2, items:[
 				...this.choices.tool.bdef(),
 			]},
 			{title:"Shape", size:1, items:this.choices.brush.bdef()},
@@ -737,7 +739,7 @@ class ChatDraw extends HTMLElement {
 		this.choices.pattern.values[16] = this.grp.c2d.createPattern(c, 'repeat')
 		this.choices.brush.values[13] = new ImageBrush(new Point(c.width/2, c.height/2), c, '🪞', false, false)
 		this.choices.brush.values[14] = new ImageBrush(new Point(c.width/2, c.height/2), c, '🪞', false, true)
-		this.choose('tool', 7) // prevent accidental overwriting
+		this.choose('tool', 5) // prevent accidental overwriting
 		this.choose('brush', 13)
 	}
 	
