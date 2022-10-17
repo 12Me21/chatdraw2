@@ -1,18 +1,24 @@
-<!doctype html><html lang=en-QS><meta charset=utf-8><meta name=viewport content="width=device-width, height=device-height, initial-scale=1" id=$meta_viewport>
+<!doctype html><html lang=en-QS><meta charset=utf-8><meta name=viewport content="width=device-width,height=device-height,initial-scale=1">
 <title>CHATDRAW 2!!!</title>
-<link rel=icon sizes=16x16 href=favicon.png>
+<link rel=icon sizes=16x16 href=favicon.gif>
+
+<!-- preload to prevent flash of unstyled -->
+<link rel=preload href=style.css as=style>
+<link rel=preload href=deco.css as=style>
 
 <script src=brush.js></script>
 <script src=interface.js></script>
-
-Scale:<input type=number min=1 max=10 value=2 onchange="$chatdraw.set_scale($scale.value)" id=$scale></input>
+
+<label>Scale: <input type=number min=1 max=10 value=2 step=0.5 id=$scale size=3 onchange="chatdraw.set_scale(value)"></label>
 <hr>
-<chat-draw id=$chatdraw></chat-draw>
+<chat-draw></chat-draw>
 
 <script>
-	$chatdraw.set_scale($scale.value)
+	let chatdraw = document.querySelector('chat-draw')
+	$scale.onchange()
 </script>
 <hr>
 debug:
-<textarea id=$code>$chatdraw.form.color</textarea><button onclick="$log.textContent='';$log.textContent=eval($code.value)">run</button>
+<textarea id=$code></textarea>
+<button onclick="$log.textContent='...';$log.textContent=eval($code.value)">run</button>
 <pre id=$log></pre>

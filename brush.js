@@ -8,12 +8,11 @@
 // 2: need a way to change the value of an item that also calls onchange if it is selected
 // 3: nicer way to handle drawing (pass label/tooltip together)
 class Choices {
-	constructor(name, values, change, label, tooltip) {
+	constructor(name, values, change, label) {
 		this.name = name
 		this.values = values
 		this.onchange = change
 		this.label = label
-		this.tooltip = tooltip
 	}
 	change(value) {
 		this.onchange(this.values[value], value)
@@ -23,13 +22,7 @@ class Choices {
 	}
 	bdef() {
 		return this.values.map((x,i)=>{
-			return {
-				type: 'radio',
-				name: this.name,
-				label: this.label(x,i),
-				value: i,
-				title: this.tooltip(x,i),
-			}
+			return {type: 'radio', name: this.name, value: i, label:this.label(x,i)}
 		})
 	}
 }
@@ -160,8 +153,8 @@ class Stroke {
 	up(){}
 }
 Stroke.pointers = new Map()
-
-// or wait actually, tool should extend Stroke maybe!! yeah !
+
+//// Tools ////
 class Freehand extends Stroke {
 	down(d) {
 		this._old = this.pos
@@ -170,9 +163,8 @@ class Freehand extends Stroke {
 	move(d) {
 		this._old = d.draw_line(this._old, this.pos)
 	}
+	static get label() { return ["✏️", "pen"] }
 }
-Freehand.icon = "✏️"
-Freehand.label = "pen"
 // idea: spray that uses dither somehow? like, fills in based on ordered dithering? perhaps it umm.. like first fill in every pixel that lines up with pixel 0 in the pattern, then do pixel 1, etc..
 class Spray extends Stroke {
 	down(d) {
@@ -182,9 +174,8 @@ class Spray extends Stroke {
 		for (let i=0;i<50;i++)
 			d.random_in_brush(this.pos)
 	}
+	static get label() { return ["🚿️", "spray"] }
 }
-Spray.icon = "🚿️"
-Spray.label = "spray"
 class LineTool extends Stroke {
 	down(d, v) {
 		// TODO: we need to "lock" the overlay, because 2 strokes can be drawn at the same time with a touchscreen
@@ -201,9 +192,8 @@ class LineTool extends Stroke {
 		v.erase()
 		d.draw_line(this.start, this.pos)
 	}
+	static get label() { return ["📏️", "line"] }
 }
-LineTool.icon = "📏️"
-LineTool.label = "line"
 class PlaceTool extends Stroke {
 	down(d, v) {
 		v.copy_settings(d)
@@ -217,9 +207,8 @@ class PlaceTool extends Stroke {
 		v.erase()
 		d.draw(this.pos)
 	}
+	static get label() { return ["🥢", "place"] }  // 🎯?
 }
-PlaceTool.icon = "🥢" // 🎯?
-PlaceTool.label = "place"
 class Slow extends Stroke {
 	down(d) {
 		this._avg = this.pos
@@ -232,16 +221,14 @@ class Slow extends Stroke {
 	up(d) {
 		this.move(d)
 	}
+	static get label() { return ["🖌️", "slow"] }
 }
-Slow.icon = "🖌️"
-Slow.label = "slow"
 class Flood extends Stroke {
 	down(d) {
 		d.flood_fill(this.pos)
 	}
+	static get label() { return ["🌊️", "flood"] }
 }
-Flood.icon = "🌊"
-Flood.label = "flood"
 class Mover extends Stroke {
 	down(d) {
 		this._data = d.get_data()
@@ -260,9 +247,8 @@ class Mover extends Stroke {
 	up(d) {
 		this._data = null
 	}
+	static get label() { return ["🤚️", "move"] }
 }
-Mover.icon = "🤚️"
-Mover.label = "move"
 class CopyTool extends Stroke {
 	down(d, v) {
 		// TODO: we need to "lock" the overlay, because 2 strokes can be drawn at the same time with a touchscreen
@@ -287,23 +273,22 @@ class CopyTool extends Stroke {
 		c.when_copy(data)
 		v.erase()
 	}
+	static get label() { return ["✂️", "copy"] }
 }
-CopyTool.icon = "✂️"
-CopyTool.label = "copy"
 // idea: make copying erase copied pixels, select with the composite mode?
-
 
-// idea: is it best to use rects to define the brush? or a path around the perimeter
+//// Brushes ////
+// idea: is it best to use rects to define the brush? or a path around the perimeter?
 class Brush extends Path2D {
-	constructor(origin, fills, size, diag=false, icon, label) {
+	constructor(origin, fills, size, diag=false, label) {
 		super()
 		for (const f of fills)
 			super.rect(...f)
+		// todo: ok these fields are kinda unsafe to set? what if path2d uses them?
 		this.size = size
 		this.origin = origin
 		this.fills = fills
 		this.diag = diag
-		this.icon = icon
 		this.label = label
 	}
 	add_to(path, pos) {
@@ -343,11 +328,10 @@ class Brush extends Path2D {
 	}
 }
 class ImageBrush {
-	constructor(origin, image, color=false, diag=false, icon, label) {
+	constructor(origin, image, color=false, diag=false, label) {
 		this.origin = origin
 		this.source = image
 		this.diag = diag
-		this.icon = icon
 		this.label = label
 		this.color = color
 		this.size = 1
@@ -377,7 +361,6 @@ class ImageBrush {
 	}
 }
 
-
 class Grp {
 	constructor(width, height) {
 		const x = this.canvas = document.createElement('canvas')
@@ -527,7 +510,7 @@ class Grp {
 		}
 	}
 }
-
+// ehhh we can probably merge this back into chatdraw....
 class Undo {
 	constructor(max, get, put, onchange) {
 		this.max = max // todo: max
@@ -579,18 +562,18 @@ class ChatDraw extends HTMLElement {
 		/// define brushes ///
 		const brushes = []
 		for (let i=1; i<=3; i++)
-			brushes.push(Brush.Square(i, true, `${i}▞`, `square ${i}×${i} thin`))
+			brushes.push(Brush.Square(i, true, [`${i}▞`, `square ${i}×${i} thin`]))
 		for (let i=4; i<=8; i++)
-			brushes.push(Brush.Circle(i, true, `●${i}`, `round ${i}×${i}`))
+			brushes.push(Brush.Circle(i, true, [`●${i}`, `round ${i}×${i}`]))
 		for (let i=1; i<=3; i++)
-			brushes.push(Brush.Square(i, false, `${i}▛`, `square ${i}×${i} thick`))
+			brushes.push(Brush.Square(i, false, [`${i}▛`, `square ${i}×${i} thick`]))
 		brushes.push(new Brush(new Point(2.5,2.5), [
 			[0,0,1,1],// wonder if we should store these as like, DOMRect?
 			[1,1,1,1],
 			[2,2,1,1],
 			[3,3,1,1],
 			[4,4,1,1],
-		], 5, false, "╲5", "a"))
+		], 5, false, ["╲5", "a"]))
 		// we can't enable diagonal on this brush, since
 		// it's too thin. but technically, diagonal should work on some axes. would be nice to like, say, ok you're allowed to move in these directions:
 		// [][]  
@@ -598,18 +581,18 @@ class ChatDraw extends HTMLElement {
 		//   [][]
 		// this would not be too hard to implement, either. we just pick the 2 points that straddle the line being drawn
 		// (we could even do like, a dashed line? by allowing only movements of 2px at a time?)
-		brushes.push(new Brush(new Point(0.5,2.5), [[0, 0, 1, 5]], 5, false, "| 5", "a"))
-		brushes.push(new ImageBrush(new Point(0,0), null, false, false, "📋", "clipboard"))
-		brushes.push(new ImageBrush(new Point(0,0), null, true, false, "📋", "clipboard (colorized)"))
+		brushes.push(new Brush(new Point(0.5,2.5), [[0, 0, 1, 5]], 5, false, ["| 5", "a"]))
+		brushes.push(new ImageBrush(new Point(0,0), null, false, false, ["📋", "clipboard"]))
+		brushes.push(new ImageBrush(new Point(0,0), null, true, false, ["📋", "clipboard (colorized)"]))
 		/// define patterns ///
 		const patterns = []
 		let cb = dither_pattern(-1, this.grp.c2d)
 		let x = new String('black')
-		x._canvas = "◼"
+		x._label = ["◼", "solid"]
 		patterns.push(x)
 		for (let i=0; i<=14; i++)
 			patterns.push(dither_pattern(i, this.grp.c2d))
-		cb._canvas = "📋"
+		cb._label = ["📋", "clipboard"]
 		patterns.push(cb)
 		
 		this.choices = {
@@ -621,7 +604,6 @@ class ChatDraw extends HTMLElement {
 					Mover, CopyTool,
 				],
 				v=>this.tool = v,
-				v=>'\b'+v.icon,
 				v=>v.label
 			),
 			color: new Choices(
@@ -631,32 +613,28 @@ class ChatDraw extends HTMLElement {
 					this.form.pick.value = v
 					this.grp.color = v
 				},
-				v=>"",
-				v=>"color"
+				v=>[null, "color"]
 			),
 			brush: new Choices(
 				'brush', brushes,
 				v=>this.grp.brush = v,
-				v=>v.icon,
-				v=>v.label,
+				v=>v.label
 			),
 			pattern: new Choices(
 				'pattern', patterns,
 				v=>this.grp.pattern = v,
-				v=>v._canvas,
-				v=>v._label,
+				v=>v._label
 			),
 			composite: new Choices(
 				'composite', ['source-over', 'destination-over', 'source-atop', 'destination-out'],
 				v=>this.grp.composite = v,
 				v=>({
-					'source-over':"over",
-					'destination-over':"under",
-					'source-atop':"in",
-					'destination-out':"erase",
+					'source-over':["over"],
+					'destination-over':["under"],
+					'source-atop':["in"],
+					'destination-out':["erase"],
 					'copy':"copy", // this is only useful when pasting
-				}[v]),
-				v=>"composite: "+v
+				}[v])
 			),
 		}
 		/// define button actions ///
@@ -690,19 +668,17 @@ class ChatDraw extends HTMLElement {
 		/// draw form ///
 		this.form = draw_form(this.choices, actions, [
 			{title:"Action", items:[
-				{name:'undo', label:"↶", title:"undo", icon:true},
-				{name:'redo', label:"↷", title:"redo", icon:true},
-				{name:'fill', label:"fill", title:"fill"},
-				{name:'reset', label:"reset!", title:"reset"},
+				{name:'undo', label:["↶","undo"], icon:true},
+				{name:'redo', label:["↷","redo"], icon:true},
+				{name:'fill', label:["fill","fill"]},
+				{name:'reset', label:["reset!","reset"]},
 			]},
-			{title:"Tool", cols: 2, items:[
-				...this.choices.tool.bdef(),
-			]},
+			{title:"Tool", cols: 2, items:this.choices.tool.bdef()},
 			{title:"Shape", size:1, items:this.choices.brush.bdef()},
 			{title:"Composite", items:this.choices.composite.bdef()},
 			{title:"Color", cols:2, items:[
-				{name:'pick', type:'color', label:"edit", title:"edit color"},
-				{name:'bg', label:"➙bg", title:"replace color with background"},
+				{name:'pick', type:'color', label:["edit","edit color"]},
+				{name:'bg', label:["➙bg","replace color with background"]},
 				...this.choices.color.bdef(),
 			]},
 			{title:"Pattern", size:1, items:this.choices.pattern.bdef()},

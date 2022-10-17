@@ -1,13 +1,13 @@
 "use strict"
 
 // todo: can we just restyle the normal ones instead? why are we doing it this way?
-function draw_button({type='button', name, value="", label, icon, title}) {
+function draw_button({type='button', name, value="", label:[label, tooltip], title, icon=false}) {
 	// hidden input element
 	const input = document.createElement('input')
 	Object.assign(input, {type, name, value})
 	// the visible button
 	const btn = document.createElement('b')
-	btn.title = title
+	btn.title = tooltip
 	if (name=='color') {
 		label = document.createElement('div')
 		btn.classList.add('color')
@@ -112,7 +112,7 @@ function dither_pattern(level, context, offset=0) {
 	for (let y=0;y<5;y+=4)
 		for (let x=-3;x<8;x+=4)
 			c2d.putImageData(data, x, y)*/
-	pattern._canvas = canvas
+	pattern._label = [canvas, `dither ${level}`]
 	return pattern
 }
 
