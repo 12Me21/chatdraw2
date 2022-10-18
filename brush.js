@@ -789,7 +789,7 @@ class ChatDraw extends HTMLElement {
 		//	return +this.form.color.value
 	}
 }
-ChatDraw.styles = ['style.css', 'deco.css'].map(href=>Object.assign(document.createElement('link'), {rel:'stylesheet', href}))
+ChatDraw.styles = ['style.css?1', 'deco.css?1'].map(href=>Object.assign(document.createElement('link'), {rel:'stylesheet', href}))
 
 customElements.define('chat-draw', ChatDraw)
 
