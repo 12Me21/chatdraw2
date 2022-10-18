@@ -4,9 +4,6 @@
 	border-color: #998 #887 #666 #887;
 	background: #B0B098;
 }
-canvas.main {
-	background: repeating-linear-gradient(1.23deg, #F0E0AA, #D8D0A8 0.38291px);
-}
 form {
 	justify-content: space-evenly;
 	border-top: #776 solid calc(var(--S)*2px);
