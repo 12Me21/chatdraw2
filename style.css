@@ -43,29 +43,30 @@ fieldset {
 	all: unset;
 	display: grid;
 	grid-auto-flow: row;
-	align-content: start;
-	--bw: 20px;
-	--bh: 14px;
-	--rows: 4;
+	align-content: space-between;
+	--bw: 18px;
+	--rows: 5;
 	--gap: 2px;
-	grid-template-columns: repeat(var(--cols), calc(var(--bw)*var(--S)));
-	grid-template-rows: auto repeat(var(--rows), calc(var(--bh)*var(--S)));
-	gap: calc(var(--gap)*var(--S));
+	grid-template-columns: repeat(var(--cols), 1fr);
+	grid-template-rows: auto;
+	grid-auto-rows: 1fr;
+	margin: 0 calc(1px*var(--S));
+	margin-bottom: calc(var(--gap)*var(--S)*-1);
 }
 fieldset.small {
-	--bw: 10px;
-	--bh: 7px;
+	grid-template-rows: auto repeat(8, 1fr);
+	grid-auto-flow: column;
+	--bw: 8px;
+	--bh: 6px;
 	--rows: 8;
 	--gap: 1px;
 }
 fieldset > div {
 	grid-column: 1 / -1;
 	justify-self: center;
-	margin-bottom: calc(-1*var(--gap)*var(--S));
 }
 hr { /* todo this sucks */
 	all: unset;
-	margin: 0;
 	width: 1px;
 }
 /* button container */
@@ -84,6 +85,11 @@ label > input[type="color"] { /*ios safari*/
 b {
 	touch-action: manipulation; /* reduces delay */
 	
+	height: calc(var(--S)*var(--bh));
+	width: calc(var(--S)*var(--bw));
+	margin-bottom: calc(var(--gap)*var(--S));
+	margin-right: calc(1px*var(--S));
+	
 	display: grid;
 	align-content: center;
 	justify-content: center;
@@ -92,6 +98,7 @@ b {
 	cursor: pointer;
 	
 	border: calc(var(--S)*1px) solid gray;
+	line-height: 0;
 }
 :checked + b {
 	background: #CCC;
@@ -106,7 +113,7 @@ b.color > div {
 	display: block;
 	background: currentColor;
 	width: calc(var(--S)*16px);
-	height: calc(var(--S)*10px);
+	height: calc(var(--S)*12px);
 }
 /* pattern button */
 b canvas {

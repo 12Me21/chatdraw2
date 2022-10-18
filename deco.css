@@ -38,10 +38,12 @@ input[type="radio"] + b {
 	border-radius: calc(var(--S)*8px);
 }
 /* button hovered */
-b:hover, :focus-visible > b {
-	background: #CCC;
-	box-shadow:
-		black calc(var(--S)*1px/3) calc(var(--S)*1px/3) calc(var(--S)*1px/3);
+@media (any-hover: hover) {
+	b:hover {
+		background: #CCC;
+		box-shadow:
+			black calc(var(--S)*1px/3) calc(var(--S)*1px/3) calc(var(--S)*1px/3);
+	}
 }
 /* button checked/active */
 :checked + b, input:not([type="radio"]):not(:disabled):active + b {
@@ -68,7 +70,7 @@ b:hover, :focus-visible > b {
 }
 /* color button */
 b.color > div {
-	border-radius: calc(var(--S)*4.5px);
+	border-radius: calc(var(--S)*6px);
 	box-shadow:
 		inset black 0 0 calc(var(--S)*10px/3),
 		inset white 0 0 calc(var(--S)*10px/3);

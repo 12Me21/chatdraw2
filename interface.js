@@ -1,7 +1,10 @@
 "use strict"
 
+// this file just has a bunch of extra crap in it.
+
+
 // todo: can we just restyle the normal ones instead? why are we doing it this way?
-function draw_button({type='button', name, value="", label:[label, tooltip], title, icon=false}) {
+function draw_button({type='button', name, value="", label:[label, tooltip=null], title, icon=false}) {
 	// hidden input element
 	const input = document.createElement('input')
 	Object.assign(input, {type, name, value})
@@ -13,10 +16,8 @@ function draw_button({type='button', name, value="", label:[label, tooltip], tit
 		btn.classList.add('color')
 		btn.style.color = `var(--color-${value})`
 	} else {
-		if (label[0]=="\b") {
-			label = label.slice(1)
+		if (/^.\u{FE0F}$/u.test(label))
 			icon = true
-		}
 	}
 	if (icon)
 		btn.classList.add('icon')
@@ -62,7 +63,7 @@ function draw_form(choices, actions, buttons) {
 		form.append(fs, document.createElement('hr'))
 		if (!cols) {
 			cols = Math.ceil(items.length/(8/size))
-			fs.style.gridAutoFlow = 'column'
+			/*fs.style.gridAutoFlow = 'column'*/
 		}
 		if (size==1)
 			fs.classList.add('small')
@@ -119,3 +120,13 @@ function dither_pattern(level, context, offset=0) {
 // idea: mode where you can move the cursor 1px etc. at a time
 // by clicking the top/bottom/left/right quadrants of the canvas
 // useful for shift moving 1px for dither align?
+
+let download
+{
+	let link = document.createElement('a')
+	download = (url, filename)=>{
+		link.href = url
+		link.download = filename
+		link.click()
+	}
+}

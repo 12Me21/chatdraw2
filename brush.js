@@ -207,7 +207,7 @@ class PlaceTool extends Stroke {
 		v.erase()
 		d.draw(this.pos)
 	}
-	static get label() { return ["🥢", "place"] }  // 🎯?
+	static get label() { return ["🥢️", "place"] }  // 🎯?
 }
 class Slow extends Stroke {
 	down(d) {
@@ -626,18 +626,22 @@ class ChatDraw extends HTMLElement {
 				v=>v._label
 			),
 			composite: new Choices(
-				'composite', ['source-over', 'destination-over', 'source-atop', 'destination-out'],
+				'composite', ['source-over', 'destination-over', 'source-atop', 'destination-out', 'xor'],
 				v=>this.grp.composite = v,
 				v=>({
 					'source-over':["over"],
 					'destination-over':["under"],
 					'source-atop':["in"],
 					'destination-out':["erase"],
-					'copy':"copy", // this is only useful when pasting
+					'destination-atop':["??"],
+					'xor':["xor"],
+					'copy':["copy"], // this is only useful when pasting
 				}[v])
 			),
 		}
 		/// define button actions ///
+		
+		// this is kinda messy why do we have to define these in 2 places...
 		let actions = {
 			pick: color=>{
 				const sel = this.sel_color()
@@ -664,22 +668,27 @@ class ChatDraw extends HTMLElement {
 			},
 			undo: ()=>this.history.do(false),
 			redo: ()=>this.history.do(true),
+			save: ()=>{
+				let url = this.grp.export()
+				download(url, `chatdraw-${url.match(/[/](\w{5})/)[1]}.png`)
+			},
 		}
 		/// draw form ///
 		this.form = draw_form(this.choices, actions, [
-			{title:"Action", items:[
+			{title:"Action", cols: 1, items:[
 				{name:'undo', label:["↶","undo"], icon:true},
 				{name:'redo', label:["↷","redo"], icon:true},
-				{name:'fill', label:["fill","fill"]},
+				{name:'fill', label:["fill","fill screen"]},
 				{name:'reset', label:["reset!","reset"]},
+				{name:'save', label:["save"]},
 			]},
 			{title:"Tool", cols: 2, items:this.choices.tool.bdef()},
 			{title:"Shape", size:1, items:this.choices.brush.bdef()},
-			{title:"Composite", items:this.choices.composite.bdef()},
+			{title:"Composite", cols: 1, items:this.choices.composite.bdef()},
 			{title:"Color", cols:2, items:[
+				...this.choices.color.bdef(),
 				{name:'pick', type:'color', label:["edit","edit color"]},
 				{name:'bg', label:["➙bg","replace color with background"]},
-				...this.choices.color.bdef(),
 			]},
 			{title:"Pattern", size:1, items:this.choices.pattern.bdef()},
 		])
