@@ -22,12 +22,17 @@
 	let chatdraw = document.querySelector('chat-draw')
 	$scale.onchange()
 	async function load_image(file) {
-		let img = new Image()
-		img.src = URL.createObjectURL(file)
-		await img.decode()
-		chatdraw.history.add()
-		chatdraw.grp.put_image(img, new Point(0,0))
-		chatdraw.grp.replace_color('#E4D8A9', null)
+		let url = URL.createObjectURL(file)
+		try {
+			let img = new Image()
+			img.src = url
+			await img.decode()
+			chatdraw.history.add()
+			chatdraw.grp.put_image(img, new Point(0,0))
+			chatdraw.grp.replace_color('#E4D8A9', null)
+		} finally {
+			URL.revokeObjectURL(url)
+		}
 	}
 </script>
 
