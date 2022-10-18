@@ -82,11 +82,12 @@ class Point extends DOMPointReadOnly {
 		const diff = end.Subtract(start)
 		const [step_h, step_v] = diff.cardinals(diag)
 		// loop
-		let i=1000
+		let i = 1000
 		for (let pos=this,step=step_v; pos.c_dist(end)>0.5; pos=pos.Add(step)) {
-			if (i--<0)
-				throw new Error(`infinite loop drawing line
-from ${start} to ${end} (diag: ${diag})`)
+			if (--i < 0) {
+				alert(`infinite loop drawing line: from ${start} to ${end} (diag: ${diag})`)
+				throw new Error(`infinite loop drawing line: from ${start} to ${end} (diag: ${diag})`)
+			}
 			yield pos
 			// choose step that takes us closest to the ideal line
 			if (step_h.x || step_h.y) {
@@ -304,11 +305,11 @@ class Brush extends Path2D {
 		c2d.fill(path)
 	}
 	line(c2d, start, end) {
-		const path = new Path2D()
 		start = this.adjust_cursor(start)
 		end = this.adjust_cursor(end)
-		let pos
 		$stroke.textContent = `${start} – ${end}`
+		const path = new Path2D()
+		let pos
 		for (pos of start.follow_line(start, end, this.diag))
 			this.add_to(path, pos)
 		c2d.fill(path)
@@ -648,7 +649,6 @@ class ChatDraw extends HTMLElement {
 				const sel = this.sel_color()
 				const old = this.choices.color.get(sel)
 				this.history.add()
-				console.log(old, color)
 				this.grp.replace_color(old, color)
 				this.set_palette(sel, color)
 			},

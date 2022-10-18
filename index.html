@@ -1,6 +1,17 @@
-<!doctype html><html lang=en-QS><meta charset=utf-8><meta name=viewport content="width=device-width,height=device-height,initial-scale=1">
+<!doctype html><html lang=en-QS><meta charset=utf-8><meta name=viewport content="width=device-width, height=device-height, initial-scale=1" id=$meta_viewport>
 <title>CHATDRAW 2!!!</title>
 <link rel=icon sizes=16x16 href=favicon.gif>
+<style>
+	html, body {
+		position: fixed;
+		overflow: clip; overflow: hidden;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+	}
+</style>
+
 
 <!-- preload to prevent flash of unstyled -->
 <link rel=preload href=style.css as=style>
@@ -10,7 +21,7 @@
 <script src=interface.js></script>
 
 <div>
-	<label>Scale: <input type=number min=1 max=10 value=2 step=0.5 id=$scale size=3 onchange="chatdraw.set_scale(value)"></label>
+	<label>Scale: <input type=number min=1 max=10 value=2 id=$scale size=3 onchange="chatdraw.set_scale(value/devicePixelRatio)"></label>
 	<label>Load file: <input type=file onchange=load_image(files[0]) accept=image/png></label>
 	<label style=color:goldenrod>Last stroke: <i id=$stroke></i></label>
 </div>
@@ -19,6 +30,13 @@
 <hr>
 
 <script>
+	let IOS_SAFARI = CSS.supports('-webkit-touch-callout', 'none')
+	// disable the automatic zoom when focusing text inputs in safari
+	if (IOS_SAFARI)
+		$meta_viewport.content += ", user-scalable=no"
+	
+	let $stroke = window.$stroke
+	
 	let chatdraw = document.querySelector('chat-draw')
 	$scale.onchange()
 	async function load_image(file) {
