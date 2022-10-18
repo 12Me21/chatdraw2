@@ -9,16 +9,30 @@
 <script src=brush.js></script>
 <script src=interface.js></script>
 
-<label>Scale: <input type=number min=1 max=10 value=2 step=0.5 id=$scale size=3 onchange="chatdraw.set_scale(value)"></label>
+<div>
+	<label>Scale: <input type=number min=1 max=10 value=2 step=0.5 id=$scale size=3 onchange="chatdraw.set_scale(value)"></label>
+	<label>Load file: <input type=file onchange=load_image(files[0]) accept=image/png></label>
+	<label style=color:goldenrod>Last stroke: <i id=$stroke></i></label>
+</div>
 <hr>
 <chat-draw></chat-draw>
-
+<hr>
+
 <script>
 	let chatdraw = document.querySelector('chat-draw')
 	$scale.onchange()
+	async function load_image(file) {
+		let img = new Image()
+		img.src = URL.createObjectURL(file)
+		await img.decode()
+		chatdraw.history.add()
+		chatdraw.grp.put_image(img, new Point(0,0))
+		chatdraw.grp.replace_color('#E4D8A9', null)
+	}
 </script>
+
 <hr>
-debug:
+testing:
 <textarea id=$code></textarea>
 <button onclick="$log.textContent='...';$log.textContent=eval($code.value)">run</button>
 <pre id=$log></pre>

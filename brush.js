@@ -308,6 +308,7 @@ class Brush extends Path2D {
 		start = this.adjust_cursor(start)
 		end = this.adjust_cursor(end)
 		let pos
+		$stroke.textContent = `${start} – ${end}`
 		for (pos of start.follow_line(start, end, this.diag))
 			this.add_to(path, pos)
 		c2d.fill(path)
