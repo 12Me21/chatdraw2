@@ -9,7 +9,7 @@ function draw_button({type='button', name, value="", label:[label, tooltip=null]
 	const input = document.createElement('input')
 	Object.assign(input, {type, name, value})
 	// the visible button
-	const btn = document.createElement('b')
+	const btn = document.createElement('button')
 	btn.title = tooltip
 	if (name=='color') {
 		label = document.createElement('div')
@@ -128,5 +128,70 @@ let download
 		link.href = url
 		link.download = filename
 		link.click()
+	}
+}
+
+class TimerPool {
+	constructor(name) {
+		let row = document.createElement('tr')
+		let th = document.createElement('th')
+		let tavg = document.createElement('td')
+		let tlast = document.createElement('td')
+		row.append(th, tavg, tlast)
+		th.append(name)
+		this.times = []
+		this.$row = th
+		this.$avg = tavg
+		this.$last = tlast
+		TimerPool.pools.set(name, this)
+	}
+	start() {
+		let m = {start: performance.now()}
+		this.times.push(m)
+		return m
+	}
+	avg() {
+		let sum = 0
+		let count = 0
+		for (let m of this.times) {
+			if (m.time != null) {
+				sum += m.time
+				count++
+			}
+		}
+		return sum / ceount
+	}
+}
+
+class TimerTime {
+	constructor(pool) {
+		this.end = null
+		this.time = null
+		this.start = null
+		pool.times.push(this)
+	}
+	begin() {
+		this.start = performance.now()
+	}
+	stop() {
+		this.end = performance.now()
+		this.time = this.end-this.start
+	}
+}
+
+let Timer = {
+	pools: new Map(),
+	create_pool(name) {
+	},
+	start(pool) {
+		let m = {start: performance.now()}
+		pool.times.push(m)
+		return m
+	},
+	stop(m) {
+		m.end = performance.now()
+		m.time = m.end-m.start
+	},
+	avg(pool) {
 	}
 }

@@ -18,7 +18,7 @@ hr {
 }
 
 /* buttons */
-b {
+button {
 	text-transform: uppercase;
 	border: solid calc(1px*var(--S));
 	border-color: #FFD #887 #666 #DDB;
@@ -31,24 +31,24 @@ b {
 	background: #AAAA90;
 	color: #221;
 }
-input[type="radio"] + b {
+input[type="radio"] + button {
 	border-radius: calc(var(--S)*8px);
 }
 /* button hovered */
 @media (any-hover: hover) {
-	b:hover {
+	:hover + button {
 		background: #CCC;
 		box-shadow:
 			black calc(var(--S)*1px/3) calc(var(--S)*1px/3) calc(var(--S)*1px/3);
 	}
 }
 /* button checked/active */
-:checked + b, input:not([type="radio"]):not(:disabled):active + b {
+:checked + button, input:not([type="radio"]):not(:disabled):active + button {
 	color: #FFF078;
 	text-shadow: red 0 0 calc(var(--S)*1px/3);
 	transition: none;
 }
-:checked + b, :active + b {
+:checked + button, :active + button {
 	border-color: #665 #444 #444 #665;
 	box-shadow:
 		inset black 0 0 calc(var(--S)*10px/3),
@@ -57,7 +57,7 @@ input[type="radio"] + b {
 	background: #887;
 }
 /* button disabled */
-:disabled + b {
+:disabled + button {
 	border-color: #665 #444 #444 #665;
 	box-shadow:
 		inset black 0 0 calc(var(--S)*10px/3),
@@ -66,21 +66,21 @@ input[type="radio"] + b {
 	color: #666;
 }
 /* color button */
-b.color > div {
+button.color > div {
 	border-radius: calc(var(--S)*6px);
 	box-shadow:
 		inset black 0 0 calc(var(--S)*10px/3),
 		inset white 0 0 calc(var(--S)*10px/3);
 }
-:checked + b.color > div {
+:checked + button.color > div {
 	box-shadow:
 		inset #0008 0 0 calc(var(--S)*10px/3),
 		inset white 0 0 calc(var(--S)*10px/3),
 		currentColor 0 0 calc(var(--S)*8px/3) calc(var(--S)*-2px/3);
 }
 /* pattern button */
-b canvas {
+button canvas {
 }
-:not(:checked) + b.icon {
+:not(:checked) + button.icon {
 	text-shadow: 0 0 calc(var(--S)*1px) black;
 }
