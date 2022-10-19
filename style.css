@@ -98,7 +98,6 @@ button {
 	align-items: center;
 	justify-content: center;
 	pointer-events: none;
-	vertical-align: top;
 	line-height: 1;
 	border: calc(var(--S)*1px) solid gray;
 }

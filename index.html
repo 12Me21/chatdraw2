@@ -27,11 +27,11 @@
 <script src=brush.js?2></script>
 <script src=interface.js?2></script>
 
-<div>
-	<label>Scale: <input type=number min=1 max=10 value=2 id=$scale size=3 onchange="chatdraw.set_scale(value/devicePixelRatio)"></label>
+<form>
+	<label>Scale: <input name=scale type=number min=1 max=10 value=2 id=$scale size=3 onchange="chatdraw.set_scale(value/devicePixelRatio)"></label>
 	<label>Load file: <input type=file onchange=load_image(files[0]) accept=image/png></label>
 	<label style=color:goldenrod>Last stroke: <i id=$stroke></i></label>
-</div>
+</form>
 <hr>
 <chat-draw></chat-draw>
 <hr>
