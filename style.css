@@ -46,7 +46,7 @@ fieldset {
 	grid-auto-flow: row;
 	align-content: space-between;
 	--bw: 21px;
-	--gap: 2px;
+	--gap: 1px;
 	grid-template-columns: repeat(var(--cols), calc(var(--S)*var(--bw)));
 	grid-template-rows: auto;
 	grid-auto-rows: 1fr;
@@ -54,11 +54,11 @@ fieldset {
 	margin-bottom: calc(var(--gap)*var(--S)*-1);
 }
 fieldset.small {
-	grid-template-rows: auto repeat(8, 1fr);
+	grid-template-rows: auto repeat(8, calc(var(--S)*var(--bh)));
 	grid-auto-flow: column;
 	grid-auto-columns: calc(var(--S)*var(--bw));
 	--bw: 10px;
-	--bh: 9px;
+	--bh: 8px;
 	--gap: 1px;
 }
 fieldset > div {
@@ -71,17 +71,18 @@ hr { /* todo this sucks */
 }
 /* button container */
 label {
-	display: grid;
+	position: relative;
 	margin-bottom: calc(var(--gap)*var(--S));
 	margin-right: calc(1px*var(--S));
 }
 label > * {
 	all: unset;
 	box-sizing: border-box;
-	grid-area: 1 / 1 / 2 / 2;
+	position: absolute;
+	left: 0;
+	top: 0;
 	width: 100%;
-	height: calc(var(--S) * ( var(--bh) - var(--gap) ) );
-	appearance: none;
+	height: 100%;
 }
 label > input {
 	opacity: 0;
@@ -96,7 +97,6 @@ button {
 	pointer-events: none;
 	
 	border: calc(var(--S)*1px) solid gray;
-	line-height: 1;
 }
 :checked + button {
 	background: #CCC;
