@@ -101,6 +101,7 @@ button {
 	justify-content: center;
 	pointer-events: none;
 	line-height: 1;
+	white-space: pre;
 	border: calc(var(--S)*1px) solid gray;
 }
 :checked + button {
