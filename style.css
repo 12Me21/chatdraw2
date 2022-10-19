@@ -45,10 +45,9 @@ fieldset {
 	display: grid;
 	grid-auto-flow: row;
 	align-content: space-between;
-	--bw: 20px;
-	--rows: 5;
+	--bw: 21px;
 	--gap: 2px;
-	grid-template-columns: repeat(var(--cols), 1fr);
+	grid-template-columns: repeat(var(--cols), calc(var(--S)*var(--bw)));
 	grid-template-rows: auto;
 	grid-auto-rows: 1fr;
 	margin: 0 calc(1px*var(--S));
@@ -57,9 +56,9 @@ fieldset {
 fieldset.small {
 	grid-template-rows: auto repeat(8, 1fr);
 	grid-auto-flow: column;
+	grid-auto-columns: calc(var(--S)*var(--bw));
 	--bw: 10px;
-	--bh: 8px;
-	--rows: 8;
+	--bh: 9px;
 	--gap: 1px;
 }
 fieldset > div {
@@ -72,40 +71,32 @@ hr { /* todo this sucks */
 }
 /* button container */
 label {
-	display: block;
-	
-	height: calc(var(--S)*var(--bh));
-	width: calc(var(--S)*var(--bw));
+	display: grid;
 	margin-bottom: calc(var(--gap)*var(--S));
 	margin-right: calc(1px*var(--S));
-	
-	position: relative;
 }
 label > * {
-	position: absolute;
-	appearance: none;
-	margin: 0;
-	left: 0;
-	top: 0;
+	all: unset;
+	box-sizing: border-box;
+	grid-area: 1 / 1 / 2 / 2;
 	width: 100%;
-	height: 100%;
+	height: calc(var(--S) * ( var(--bh) - var(--gap) ) );
+	appearance: none;
 }
 label > input {
 	opacity: 0;
 	cursor: pointer;
+	touch-action: manipulation;
 }
 button {
-	font: unset;
 	font-weight: bold;
-	display: grid;
-	align-content: center;
+	display: flex;
+	align-items: center;
 	justify-content: center;
-	text-align: center;
-	overflow: hidden;
 	pointer-events: none;
 	
 	border: calc(var(--S)*1px) solid gray;
-	line-height: 0;
+	line-height: 1;
 }
 :checked + button {
 	background: #CCC;

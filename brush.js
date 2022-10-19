@@ -680,7 +680,7 @@ class ChatDraw extends HTMLElement {
 				{name:'undo', label:["↶","undo"], icon:true},
 				{name:'redo', label:["↷","redo"], icon:true},
 				{name:'fill', label:["fill","fill screen"]},
-				{name:'reset', label:["reset!","reset"]},
+				{name:'reset', label:["reset","reset"]},
 				{name:'save', label:["save"]},
 			]},
 			{title:"Tool", cols: 2, items:this.choices.tool.bdef()},
