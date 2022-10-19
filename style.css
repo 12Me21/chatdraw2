@@ -90,13 +90,15 @@ label > input {
 	touch-action: manipulation;
 }
 button {
+	font-size: 1em;
 	font-weight: bold;
-	display: flex;
-	align-items: center;
+	display: grid;
+	align-content: center;
 	justify-content: center;
 	pointer-events: none;
 	
 	border: calc(var(--S)*1px) solid gray;
+	line-height: 1;
 }
 :checked + button {
 	background: #CCC;
