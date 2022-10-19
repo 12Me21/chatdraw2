@@ -9,6 +9,10 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
+		word-break: break-word;
+	}
+	pre {
+		white-space: pre-wrap;
 	}
 	/*body {
 		display: flex;
@@ -61,8 +65,9 @@
 	}
 </script>
 
-<hr>
-testing:
-<textarea id=$code></textarea>
-<button onclick="$log.textContent='...';$log.textContent=eval($code.value)">run</button>
-<pre id=$log></pre>
+<div>
+	testing:
+	<textarea id=$code></textarea>
+	<button onclick="$log.textContent='...';$log.textContent=String(eval($code.value))">run</button>
+	<pre id=$log></pre>
+</div>

@@ -65,6 +65,8 @@ fieldset.small {
 fieldset > div {
 	grid-column: 1 / -1;
 	justify-self: center;
+	white-space: pre;
+	margin-bottom: calc(1px*var(--S));
 }
 hr { /* todo this sucks */
 	all: unset;
