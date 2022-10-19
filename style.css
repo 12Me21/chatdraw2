@@ -10,6 +10,7 @@
 	--S: 2;
 	border: 2px solid gray;
 	-webkit-user-select: none; user-select: none;
+	-webkit-text-size-adjust: none;
 }
 :host > img {
 	grid-area: canvas;
@@ -77,6 +78,7 @@ label {
 }
 label > * {
 	all: unset;
+	-webkit-text-size-adjust: none;
 	box-sizing: border-box;
 	position: absolute;
 	left: 0;
@@ -92,13 +94,13 @@ label > input {
 button {
 	font-size: 1em;
 	font-weight: bold;
-	display: grid;
-	align-content: center;
+	display: flex;
+	align-items: center;
 	justify-content: center;
 	pointer-events: none;
-	
-	border: calc(var(--S)*1px) solid gray;
+	vertical-align: top;
 	line-height: 1;
+	border: calc(var(--S)*1px) solid gray;
 }
 :checked + button {
 	background: #CCC;
