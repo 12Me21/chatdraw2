@@ -36,6 +36,8 @@ function draw_button({type='button', name, value="", label:[label, tooltip=null]
 </label>
 */
 
+// todo: merge in that change from the failed branch where we pass actual button elements here instead of descriptors. that way we can draw the 3 types of buttons where needed and not need to deal with like  
+
 function draw_form(choices, actions, buttons) {
 	let form = document.createElement('form')
 	form.autocomplete = 'off'
@@ -95,31 +97,13 @@ const make_cursor=(size=1)=>{
 // and show the patterns on the buttons in their absolute positions?
 // also we should show a preview of the current brush on the overlay layer.
 // actually we can just shift the entire drawing to "choose" which offset ww..
-function dither_pattern(level, context, offset=0) {
-	const od = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]
-	const canvas = document.createElement('canvas')
-	canvas.width = 4
-	canvas.height = 4
-	const c2d = canvas.getContext('2d')
-	const data = c2d.createImageData(4, 4)
-	for (let x=0; x<16; x++)
-		if (od[x+offset & 15] <= level)
-			data.data[x<<2|3] = 0xFF
-	c2d.putImageData(data, 0, 0)
-	const pattern = context.createPattern(canvas, 'repeat')
-	// hack: we want a larger canvas to use as a button label
-	/*canvas.width = 7
-	canvas.height = 5
-	for (let y=0;y<5;y+=4)
-		for (let x=-3;x<8;x+=4)
-			c2d.putImageData(data, x, y)*/
-	pattern._label = [canvas, `dither ${level}`]
-	return pattern
-}
 
 // idea: mode where you can move the cursor 1px etc. at a time
 // by clicking the top/bottom/left/right quadrants of the canvas
 // useful for shift moving 1px for dither align?
+
+// todo: better version of this. interface for moving a cursor with directional buttons, and buttons to send either a move/down/up event
+
 
 let download
 {
@@ -194,4 +178,34 @@ let Timer = {
 	},
 	avg(pool) {
 	}
+}
+
+function make_pattern(str, name, context) {
+	let rows = str.split("/")
+	let w = rows[0].length
+	let h = rows.length
+	const canvas = document.createElement('canvas')
+	canvas.width = w
+	canvas.height = h
+	const c2d = canvas.getContext('2d')
+	const data = c2d.createImageData(w, h)
+	for (let y=0; y<h; y++)
+		for (let x=0; x<w; x++)
+			if (rows[y][x]=="#")
+				data.data[x+y*w<<2|3] = 0xFF
+	c2d.putImageData(data, 0, 0)
+	const pattern = context.createPattern(canvas, 'repeat')
+	c2d.globalCompositeOperation = 'destination-over'
+	c2d.fillStyle = '#F0E0AA'
+	c2d.fillRect(0, 0, w, h)
+	// hack: we want a larger canvas to use as a button label
+	/*canvas.width = 7
+	canvas.height = 5
+	for (let y=0;y<5;y+=4)
+		for (let x=-3;x<8;x+=4)
+			c2d.putImageData(data, x, y)*/
+	pattern._label = [canvas, name]
+	canvas.style.setProperty('--pw', w)
+	canvas.style.setProperty('--ph', h)
+	return pattern
 }

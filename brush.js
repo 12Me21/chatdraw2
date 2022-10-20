@@ -1,5 +1,7 @@
 "use strict"
 
+/* todo: prevent assigning duplicate palette colors (incl background) */
+
 // todo: allow strokes to start in the border around the canvas too
 
 // ugh we need to clean this system up.
@@ -588,14 +590,44 @@ class ChatDraw extends HTMLElement {
 		brushes.push(new ImageBrush(new Point(0,0), null, true, false, ["📋", "clipboard (colorized)"]))
 		/// define patterns ///
 		const patterns = []
-		let cb = dither_pattern(-1, this.grp.c2d)
-		let x = new String('black')
-		x._label = ["◼", "solid"]
-		patterns.push(x)
-		for (let i=0; i<=14; i++)
-			patterns.push(dither_pattern(i, this.grp.c2d))
+		let solid = new String('black')
+		solid._label = ["◼", "solid"]
+		patterns.push(solid)
+		// todo: ooh we can just have a text input for this format!
+		for (let str of [
+			"#.", "#..", "#...", // vertical lines
+			"#.../..#.", // honeycomb
+			"#../.#./..#", // diagonal lines
+			"#.../.#../..#./...#", // diagonal lines
+			"##../##../..##/..##", // big checkerboard
+			// ordered dithering:
+			"#.../..../..../....",
+			"#.../..../..#./....",
+			"#.#./..../..#./....",
+			"#.#./..../#.#./....", // grid
+			"#.#./.#../#.#./....",
+			"#.#./.#../#.#./...#",
+			"#.#./.#.#/#.#./...#",
+			"#.#./.#.#/#.#./.#.#", //checker
+			"###./.#.#/#.#./.#.#",
+			"###./.#.#/#.##/.#.#",
+			"####/.#.#/#.##/.#.#",
+			"####/.#.#/####/.#.#", // grid
+			"####/##.#/####/.#.#",
+			"####/##.#/####/.###",
+			"####/####/####/.###",
+		]) {
+			patterns.push(make_pattern(str, 'dither?', this.grp.c2d))
+		}
+		let cb = make_pattern('.', 'clipboard', this.grp.c2d)
 		cb._label = ["📋", "clipboard"]
 		patterns.push(cb)
+
+		// todo: texture brush mode. this would be implemented as a COLOR option
+		// i.e. if this is set, we draw directly rather than with shadows
+		// that way, the dither pattern can have color in it
+		// or if an image brush is used, it will have color.
+		// this solves our 2 clipboard brushes problem too
 		
 		this.choices = {
 			tool: new Choices(

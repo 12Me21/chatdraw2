@@ -121,6 +121,7 @@ button.color > div {
 }
 /* pattern button */
 button canvas {
-	height: calc(var(--S)*4px);
-	background: #F0E0AA;
+	object-fit: contain;
+	height: calc(var(--S)*var(--ph)*1px);
+	width: calc(var(--S)*var(--pw)*1px);
 }
