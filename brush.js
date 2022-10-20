@@ -3,6 +3,8 @@
 // todo: instead of the extra color, what if we just 
 // have a checkbox that controls whether clipboard/dither are colorized..
 // ughh
+// constant for the serialization of css color 'transparent'
+// https://html.spec.whatwg.org/multipage/canvas.html#serialisation-of-a-color
 const COLORIZE = "rgba(0, 0, 0, 0)"
 
 /* todo: prevent assigning duplicate palette colors (incl background) */
@@ -218,8 +220,8 @@ class Mover extends Stroke {
 	}
 	move(d) {
 		const ofs = this.pos.Subtract(this.start).Round() // todo: round better
+		const {width, height} = d.canvas
 		let {x, y} = ofs
-		let {width, height} = d.canvas
 		x = (x+width*100) % width
 		y = (y+height*100) % height
 		d.put_data(this._data, x, y)
@@ -252,7 +254,7 @@ class CopyTool extends Stroke {
 		return [this._start.x, this._start.y, diff.x+1, diff.y+1]
 	}
 	up(d, v, c) {
-		let data = d.c2d.getImageData(...this._bounds())
+		const data = d.c2d.getImageData(...this._bounds())
 		c.when_copy(data)
 		v.erase()
 	}
@@ -434,7 +436,7 @@ class Grp {
 	flood_fill(pos) {
 		const size = this.brush.size-2
 		// todo: make this a method on Brush
-		let fill=(x1,x2,y)=>{ // fill from x1 to x2-1
+		const fill=(x1,x2,y)=>{ // fill from x1 to x2-1
 			if (size==-1)
 				this.c2d.fillRect(x1, y, x2-x1, 1)
 			else if (size==0) {
@@ -482,7 +484,7 @@ class Grp {
 		this.c2d.drawImage(source, pos.x+1000, pos.y)
 	}
 	export() {
-		let data = this.get_data()
+		const data = this.get_data()
 		this.c2d.save()
 		try {
 			this.c2d.globalCompositeOperation = 'destination-over'

@@ -15,7 +15,7 @@ const make_cursor=(size=1)=>{
 
 let download
 {
-	let link = document.createElement('a')
+	const link = document.createElement('a')
 	download = (url, filename)=>{
 		link.href = url
 		link.download = filename
@@ -24,9 +24,9 @@ let download
 }
 
 function make_pattern(str, name, context) {
-	let rows = str.split("/")
-	let w = rows[0].length
-	let h = rows.length
+	const rows = str.split("/")
+	const w = rows[0].length
+	const h = rows.length
 	const canvas = document.createElement('canvas')
 	canvas.width = w
 	canvas.height = h
@@ -81,7 +81,7 @@ function draw_button({type='button', name, value="", label:[label, tooltip=""], 
 
 // also: i would like to put the "actions" block horizontally, either above or below the tools (and maybe patterns too?) idk. do feel like the FILL button doesnt belong there. technically it should be a brush but thats silly. could probably just remove reset though, idk. nice to have. for like, need a blank canvas temporarily, reset then undo>
 function draw_form(choices, actions, sections) {
-	let form = document.createElement('form')
+	const form = document.createElement('form')
 	form.autocomplete = 'off'
 	form.method = 'dialog'
 	form.onchange = ev=>{
@@ -162,6 +162,7 @@ class ChatDraw extends HTMLElement {
 	
 	constructor() {
 		super()
+		Object.seal(this)
 		
 		this.grp.canvas.classList.add('main')
 		this.overlay.canvas.classList.add('overlay')
@@ -191,11 +192,11 @@ class ChatDraw extends HTMLElement {
 		brushes.push(new ImageBrush(new Point(0,0), null, false, ["📋", "clipboard"]))
 		/// define patterns ///
 		const patterns = []
-		let solid = new String('black')
+		const solid = new String('black')
 		solid._label = ["◼", "solid"]
 		patterns.push(solid)
 		// todo: ooh we can just have a text input for this format!
-		for (let str of [
+		for (const str of [
 			"#.", "#..", "#...", // vertical lines
 			"#.../..#.", // honeycomb
 			"#../.#./..#", // diagonal lines
@@ -220,7 +221,7 @@ class ChatDraw extends HTMLElement {
 		]) {
 			patterns.push(make_pattern(str, "(dither)", this.grp.c2d))
 		}
-		let cb = make_pattern('.', 'clipboard', this.grp.c2d)
+		const cb = make_pattern('.', 'clipboard', this.grp.c2d)
 		cb._label = ["📋", "clipboard"]
 		patterns.push(cb)
 		
@@ -236,7 +237,7 @@ class ChatDraw extends HTMLElement {
 				v=>v.label
 			),
 			color: new Choices(
-				'color', ['#000000','#FFFFFF','#FF0000','#2040EE','#00CC00','#FFFF00',COLORIZE], //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
+				'color', ['#000000','#FFFFFF','#FF0000','#2040EE','#00CC00','#FFFF00',COLORIZE], //"#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"
 				(v,i)=>{
 					this.color = i
 					this.grp.color = v
@@ -276,7 +277,7 @@ class ChatDraw extends HTMLElement {
 		/// define button actions ///
 		
 		// this is kinda messy why do we have to define these in 2 places...
-		let actions = {
+		const actions = {
 			color: i=>{
 				if (this.color==i && i<this.palsize) {
 					this.picker.value = this.choices.color.get(i)
@@ -312,7 +313,7 @@ class ChatDraw extends HTMLElement {
 			undo: ()=>this.history.do(false),
 			redo: ()=>this.history.do(true),
 			save: ()=>{
-				let url = this.grp.export()
+				const url = this.grp.export()
 				download(url, `chatdraw-${url.match(/[/](\w{5})/)[1]}.png`)
 			},
 		}
@@ -385,8 +386,6 @@ class ChatDraw extends HTMLElement {
 		this.choose('composite', 0)
 		this.choose('color', 0)
 		this.choose('pattern', 0)
-		
-		Object.seal(this)
 	}
 	// idea: what if all tools just draw to the overlay, then we copy to main canvas at the end of the stroke? and update undo buffer..
 	// ugh but that would be slow maybe?
@@ -397,10 +396,10 @@ class ChatDraw extends HTMLElement {
 	}
 	
 	when_copy(data) {
-		let c = document.createElement('canvas')
+		const c = document.createElement('canvas')
 		c.width = data.width
 		c.height = data.height
-		let c2d = c.getContext('2d')
+		const c2d = c.getContext('2d')
 		c2d.putImageData(data, 0, 0)
 		this.clipboard = c
 		
@@ -408,10 +407,10 @@ class ChatDraw extends HTMLElement {
 		
 		// URGENT TODO: setting values like this wont update the current value if its already selected
 		// todo: better way of setting these that doesnt rely on hardcoded button location index?
-		let pv = this.choices.pattern.values
+		const pv = this.choices.pattern.values
 		pv[pv.length-1] = this.grp.c2d.createPattern(c, 'repeat')
 		
-		let bv = this.choices.brush.values, bl = bv.length-1
+		const bv = this.choices.brush.values, bl = bv.length-1
 		bv[bl].set_image(c)
 		this.choose('brush', bl)
 	}
@@ -421,7 +420,7 @@ class ChatDraw extends HTMLElement {
 	}
 	// todo: allow passing a more useful value here
 	choose(name, value) {
-		let elem = this.form.querySelector(`input[name="${name}"][value="${value}"]`)
+		const elem = this.form.querySelector(`input[name="${name}"][value="${value}"]`)
 		elem.checked = true
 		elem.dispatchEvent(new Event('change', {bubbles:true}))
 	}
@@ -437,7 +436,7 @@ class ChatDraw extends HTMLElement {
 		if (i==this.sel_color())
 			this.choices.color.change(i)
 		// hack
-		let btn = this.form?.querySelector(`input[name="color"][value="${i}"]`)
+		const btn = this.form?.querySelector(`input[name="color"][value="${i}"]`)
 		if (btn)
 			btn.title = color
 	}
