@@ -30,6 +30,7 @@ button {
 		#776 calc(var(--S)*-1px/3) calc(var(--S)*-1px/3);
 	background: #AAAA90;
 	color: #221;
+	/*transition: color 1s linear;*/
 }
 input[type="radio"] + button {
 	border-radius: calc(var(--S)*8px);
@@ -46,7 +47,6 @@ input[type="radio"] + button {
 :checked + button, input:not([type="radio"]):not(:disabled):active + button {
 	color: #FFF078;
 	text-shadow: red 0 0 calc(var(--S)*1px/3);
-	transition: none;
 }
 :checked + button, :active + button {
 	border-color: #665 #444 #444 #665;

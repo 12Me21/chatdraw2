@@ -125,3 +125,7 @@ button canvas {
 	height: calc(var(--S)*var(--ph)*1px);
 	width: calc(var(--S)*var(--pw)*1px);
 }
+.picker {
+	position: absolute;
+	clip: rect(0, 0, 0, 0);
+}

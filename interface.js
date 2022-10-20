@@ -4,13 +4,13 @@
 
 
 // todo: can we just restyle the normal ones instead? why are we doing it this way?
-function draw_button({type='button', name, value="", label:[label, tooltip=null], title, icon=false}) {
+function draw_button({type='button', name, value="", label:[label, tooltip=""], title, icon=false}) {
 	// hidden input element
 	const input = document.createElement('input')
 	Object.assign(input, {type, name, value})
 	// the visible button
 	const btn = document.createElement('button')
-	btn.title = tooltip
+	input.title = tooltip
 	if (label===true) {
 		label = document.createElement('div')
 		btn.classList.add('color')
@@ -44,15 +44,14 @@ function draw_form(choices, actions, buttons) {
 	form.method = 'dialog'
 	form.onchange = ev=>{
 		const e = ev.target
+		if (e.isTrusted)
+			actions[e.name]?.(e.value)
 		if (e.type=='radio')
 			choices[e.name].change(e.value)
-		else if (e.type=='color')
-			actions[e.name](e.value)
 	}
 	form.onclick = ev=>{
 		const e = ev.target
-		if (e.type=='button')
-			actions[e.name]()
+		actions[e.name]?.(e.value)
 	}
 	//d.form.append(document.createElement('hr'))
 	for (let {title, items, size=2, cols} of buttons) {

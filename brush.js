@@ -1,5 +1,7 @@
 "use strict"
 
+const COLORIZE = "rgba(0, 0, 0, 0)"
+
 /* todo: prevent assigning duplicate palette colors (incl background) */
 
 // todo: allow strokes to start in the border around the canvas too
@@ -15,6 +17,7 @@ class Choices {
 		this.values = values
 		this.onchange = change
 		this.label = label
+		this.buttons = null
 	}
 	change(value) {
 		this.onchange(this.values[value], value)
@@ -23,7 +26,7 @@ class Choices {
 		return this.values[key]
 	}
 	bdef() {
-		return this.values.map((x,i)=>{
+		return this.buttons = this.values.map((x,i)=>{
 			return {type: 'radio', name: this.name, value: i, label:this.label(x,i)}
 		})
 	}
@@ -332,12 +335,11 @@ class Brush extends Path2D {
 	}
 }
 class ImageBrush {
-	constructor(origin, image, color=false, diag=false, label) {
+	constructor(origin, image, diag=false, label) {
 		this.origin = origin
 		this.source = image
 		this.diag = diag
 		this.label = label
-		this.color = color
 		this.size = 1
 	}
 	set_image(image, ox=image.width/2, oy=image.height/2) {
@@ -351,7 +353,7 @@ class ImageBrush {
 		if (!this.source)
 			return
 		pos = pos.Subtract(this.origin)
-		c2d.drawImage(this.source, this.color?pos.x:pos.x+1000, pos.y)
+		c2d.drawImage(this.source, pos.x, pos.y)
 	}
 	line(c2d, start, end) {
 		if (!this.source)
@@ -385,7 +387,7 @@ class Grp {
 		this.brush = null
 	}
 	set color(v) {
-		if (v=="rgba(0, 0, 0, 0)")
+		if (v==COLORIZE)
 			this.c2d.resetTransform()
 		else
 			this.c2d.setTransform(1, 0, 0, 1, -1000, 0)
@@ -591,7 +593,7 @@ class ChatDraw extends HTMLElement {
 		// this would not be too hard to implement, either. we just pick the 2 points that straddle the line being drawn
 		// (we could even do like, a dashed line? by allowing only movements of 2px at a time?)
 		brushes.push(new Brush(new Point(0.5,2.5), [[0, 0, 1, 5]], 5, false, ["| 5", "a"]))
-		brushes.push(new ImageBrush(new Point(0,0), null, true, false, ["📋", "clipboard (colorized)"]))
+		brushes.push(new ImageBrush(new Point(0,0), null, false, ["📋", "clipboard"]))
 		/// define patterns ///
 		const patterns = []
 		let solid = new String('black')
@@ -626,12 +628,6 @@ class ChatDraw extends HTMLElement {
 		let cb = make_pattern('.', 'clipboard', this.grp.c2d)
 		cb._label = ["📋", "clipboard"]
 		patterns.push(cb)
-
-		// todo: texture brush mode. this would be implemented as a COLOR option
-		// i.e. if this is set, we draw directly rather than with shadows
-		// that way, the dither pattern can have color in it
-		// or if an image brush is used, it will have color.
-		// this solves our 2 clipboard brushes problem too
 		
 		this.choices = {
 			tool: new Choices(
@@ -645,18 +641,16 @@ class ChatDraw extends HTMLElement {
 				v=>v.label
 			),
 			color: new Choices(
-				'color', ['#000000','#FFFFFF','#FF0000','#2040EE','#00CC00','#FFFF00',"rgba(0, 0, 0, 0)"], //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
+				'color', ['#000000','#FFFFFF','#FF0000','#2040EE','#00CC00','#FFFF00',COLORIZE], //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
 				(v,i)=>{
 					this.color = i
 					this.grp.color = v
-					if (v!="rgba(0, 0, 0, 0)")
-						this.form.pick.value = v
 				},
 				v=>{
-					if (v=="rgba(0, 0, 0, 0)")
-						return ["📋", "source color"]
+					if (v==COLORIZE)
+						return ["📋", "source color\n(for clipboard shape/pattern)"]
 					else
-						return [true, "color"]
+						return [true, v]
 				}
 			),
 			brush: new Choices(
@@ -687,6 +681,13 @@ class ChatDraw extends HTMLElement {
 		
 		// this is kinda messy why do we have to define these in 2 places...
 		let actions = {
+			color: i=>{
+				console.log('click', i, this.color)
+				if (this.color==i && i<6) {
+					this.picker.value = this.choices.color.get(i)
+					this.picker.click()
+				}
+			},
 			pick: color=>{
 				const sel = this.sel_color()
 				if (sel < 6) {
@@ -734,11 +735,18 @@ class ChatDraw extends HTMLElement {
 			{title:"Composite", cols: 1, items:this.choices.composite.bdef()},
 			{title:"Color", cols:2, items:[
 				...this.choices.color.bdef(),
-				{name:'pick', type:'color', label:["edit","edit color"]},
+				/*{name:'pick', type:'color', label:["edit","edit color"]},*/
 				{name:'bg', label:["➙bg","replace color with background"]},
 			]},
 			{title:"Pattern", size:1, items:this.choices.pattern.bdef()},
 		])
+		
+		this.picker = document.createElement('input')
+		this.picker.type = 'color'
+		this.picker.className = 'picker'
+		this.picker.name = 'pick'
+		this.form.append(this.picker)
+		
 		/// undo buffer ///
 		this.history = new Undo(
 			50,
@@ -830,13 +838,17 @@ class ChatDraw extends HTMLElement {
 		this.choices.color.values[i] = color
 		if (i==this.sel_color())
 			this.choices.color.change(i)
+		// hack
+		let btn = i<6 && this.form?.querySelector(`input[name="color"][value="${i}"]`)
+		if (btn)
+			btn.title = color
 	}
 	// which color index is selected
 	sel_color() {
 		return this.color
 	}
 }
-ChatDraw.styles = ['style.css?2', 'deco.css?2'].map(href=>Object.assign(document.createElement('link'), {rel:'stylesheet', href}))
+ChatDraw.styles = ['style.css', 'deco.css'].map(href=>Object.assign(document.createElement('link'), {rel:'stylesheet', href}))
 
 customElements.define('chat-draw', ChatDraw)
 
