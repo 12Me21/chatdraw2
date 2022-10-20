@@ -117,7 +117,7 @@ button.color > div {
 	display: block;
 	background: currentColor;
 	width: calc(var(--S)*16px);
-	height: calc(var(--S)*12px);
+	height: calc(var(--S)*11px);
 }
 /* pattern button */
 button canvas {
