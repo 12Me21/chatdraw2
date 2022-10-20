@@ -54,6 +54,7 @@ fieldset {
 	margin: 0 calc(1px*var(--S));
 	margin-bottom: calc(var(--gap)*var(--S)*-1);
 }
+/* todo: we really ought to just, set the size on the <button> instead. just not sure how to make it work nice with overlapping. but might just need to set size on both it AND the <input> */
 fieldset.small {
 	grid-template-rows: auto repeat(8, calc(var(--S)*var(--bh)));
 	grid-auto-flow: column;

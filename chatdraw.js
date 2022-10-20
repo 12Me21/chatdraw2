@@ -78,13 +78,15 @@ function draw_button({type='button', name, value="", label:[label, tooltip=""], 
 }
 
 // todo: merge in that change from the failed branch where we pass actual button elements here instead of descriptors. that way we can draw the 3 types of buttons where needed and not need to deal with like  
-function draw_form(choices, actions, buttons) {
+
+// also: i would like to put the "actions" block horizontally, either above or below the tools (and maybe patterns too?) idk. do feel like the FILL button doesnt belong there. technically it should be a brush but thats silly. could probably just remove reset though, idk. nice to have. for like, need a blank canvas temporarily, reset then undo>
+function draw_form(choices, actions, sections) {
 	let form = document.createElement('form')
 	form.autocomplete = 'off'
 	form.method = 'dialog'
 	form.onchange = ev=>{
 		const e = ev.target
-		if (e.isTrusted)
+		if (ev.isTrusted)
 			actions[e.name]?.(e.value)
 		if (e.type=='radio')
 			choices[e.name].change(e.value)
@@ -93,24 +95,29 @@ function draw_form(choices, actions, buttons) {
 		const e = ev.target
 		actions[e.name]?.(e.value)
 	}
-	//d.form.append(document.createElement('hr'))
-	for (let {title, items, size=2, cols} of buttons) {
-		const fs = document.createElement('fieldset')
-		let ti = document.createElement('div') //legend
-		ti.append(title)
-		fs.append(ti)
+	//
+	for (let {title, items, size=2, cols} of sections) {
+		const sect = document.createElement('fieldset')
+		// legend
+		const label = document.createElement('div')
+		label.append(title)
+		sect.append(label)
+		// buttons
 		for (const sb of items)
-			fs.append(draw_button(sb))
-		form.append(fs, document.createElement('hr'))
+			sect.append(draw_button(sb))
+		// grid
+		// todo: clean up the rows cols thing
 		if (!cols) {
 			cols = Math.ceil(items.length/(8/size))
-			/*fs.style.gridAutoFlow = 'column'*/
+			/*sect.style.gridAutoFlow = 'column'*/
 		}
 		if (size==1)
-			fs.classList.add('small')
-		fs.style.setProperty('--cols', cols)
+			sect.classList.add('small')
+		sect.style.setProperty('--cols', cols)
+		
+		form.append(sect, document.createElement('hr'))
 	}
-	form.lastChild.remove()
+	form.lastChild.remove() // last hr
 	return form
 }
 
@@ -125,7 +132,9 @@ class Choices {
 		this.values = values
 		this.onchange = change
 		this.label = label
-		this.buttons = null
+		this.buttons = this.values.map((x,i)=>{
+			return {type: 'radio', name: this.name, value: i, label:this.label(x,i)}
+		})
 	}
 	change(value) {
 		this.onchange(this.values[value], value)
@@ -133,26 +142,29 @@ class Choices {
 	get(key) {
 		return this.values[key]
 	}
-	bdef() {
-		return this.buttons = this.values.map((x,i)=>{
-			return {type: 'radio', name: this.name, value: i, label:this.label(x,i)}
-		})
-	}
 }
 
 class ChatDraw extends HTMLElement {
+	width = 200
+	height = 100
+	palsize = 6
+	
+	grp = new Grp(this.width, this.height)
+	overlay = new Grp(this.width, this.height)
+	img = new Image(this.width, this.height)
+	picker = null
+	form = null
+	
+	history = null
+	tool = null
+	color = 0
+	choices = null
+	
 	constructor() {
-		const width=200, height=100
 		super()
-		this.width = 200
-		this.height = 100
-		this.grp = new Grp(width, height)
+		
 		this.grp.canvas.classList.add('main')
-		this.overlay = new Grp(width, height)
 		this.overlay.canvas.classList.add('overlay')
-		/// define choices ///
-		this.tool = null
-		this.color = 0
 		/// define brushes ///
 		const brushes = []
 		for (let i=1; i<=3; i++)
@@ -248,6 +260,7 @@ class ChatDraw extends HTMLElement {
 			),
 			composite: new Choices(
 				'composite', ['source-over', 'destination-over', 'source-atop', 'destination-out', 'xor'],
+				// messy, we need to have a nicer way to like, keep track of the labels idk.. associate with values etc,
 				v=>this.grp.composite = v,
 				v=>({
 					'source-over':["over"],
@@ -265,15 +278,14 @@ class ChatDraw extends HTMLElement {
 		// this is kinda messy why do we have to define these in 2 places...
 		let actions = {
 			color: i=>{
-				console.log('click', i, this.color)
-				if (this.color==i && i<6) {
+				if (this.color==i && i<this.palsize) {
 					this.picker.value = this.choices.color.get(i)
 					this.picker.click()
 				}
 			},
 			pick: color=>{
 				const sel = this.sel_color()
-				if (sel < 6) {
+				if (sel < this.palsize) {
 					const old = this.choices.color.get(sel)
 					this.history.add()
 					this.grp.replace_color(old, color)
@@ -291,11 +303,11 @@ class ChatDraw extends HTMLElement {
 			bg: ()=>{
 				// color here should this.c2d.shadowColor but just in case..
 				const sel = this.sel_color()
-				if (sel>=6)
-					return
-				const color = this.choices.color.get(sel)
-				this.history.add()
-				this.grp.replace_color(color)
+				if (sel<this.palsize) {
+					const color = this.choices.color.get(sel)
+					this.history.add()
+					this.grp.replace_color(color)
+				}
 			},
 			undo: ()=>this.history.do(false),
 			redo: ()=>this.history.do(true),
@@ -313,15 +325,15 @@ class ChatDraw extends HTMLElement {
 				{name:'reset', label:["reset","reset"]},
 				{name:'save', label:["save"]},
 			]},
-			{title:"Tool", cols: 2, items:this.choices.tool.bdef()},
-			{title:"Shape", size:1, items:this.choices.brush.bdef()},
-			{title:"Composite", cols: 1, items:this.choices.composite.bdef()},
+			{title:"Tool", cols: 2, items:this.choices.tool.buttons},
+			{title:"Shape", size:1, items:this.choices.brush.buttons},
+			{title:"Composite", cols: 1, items:this.choices.composite.buttons},
 			{title:"Color", cols:2, items:[
-				...this.choices.color.bdef(),
+				...this.choices.color.buttons,
 				/*{name:'pick', type:'color', label:["edit","edit color"]},*/
 				{name:'bg', label:["➙bg","replace color with background"]},
 			]},
-			{title:"Pattern", size:1, items:this.choices.pattern.bdef()},
+			{title:"Pattern", size:1, items:this.choices.pattern.buttons},
 		])
 		
 		this.picker = document.createElement('input')
@@ -335,7 +347,7 @@ class ChatDraw extends HTMLElement {
 			50,
 			()=>({
 				data: this.grp.get_data(),
-				palette: this.choices.color.values.slice(0, 6),
+				palette: this.choices.color.values.slice(0, this.palsize),
 			}),
 			(data)=>{
 				this.grp.put_data(data.data)
@@ -350,24 +362,21 @@ class ChatDraw extends HTMLElement {
 		this.set_palette2(this.choices.color.values)
 		this.grp.erase()
 		
-		let img = new Image(this.grp.canvas.width, this.grp.canvas.height)
-		this.img = img
 		this.img.oncontextmenu = ev=>{
 			this.img.src = this.grp.export()
 		}
+		this.img.style.cursor = make_cursor(3)
 		
-		Stroke.handle(img, ev=>{
+		Stroke.handle(this.img, ev=>{
 			if (ev.button)
 				return
 			this.history.add()
 			this.tool.PointerDown(ev, this.grp.canvas, this.grp, this.overlay, this)
 		})
-		img.style.cursor = make_cursor(3)
 		
-		super.attachShadow({mode: 'open'})
-		super.shadowRoot.append(
+		super.attachShadow({mode: 'open'}).append(
 			...ChatDraw.styles.map(x=>document.importNode(x, true)),
-			img, this.grp.canvas, this.overlay.canvas,
+			this.img, this.grp.canvas, this.overlay.canvas,
 			this.form
 		)
 		
@@ -376,6 +385,8 @@ class ChatDraw extends HTMLElement {
 		this.choose('composite', 0)
 		this.choose('color', 0)
 		this.choose('pattern', 0)
+		
+		Object.seal(this)
 	}
 	// idea: what if all tools just draw to the overlay, then we copy to main canvas at the end of the stroke? and update undo buffer..
 	// ugh but that would be slow maybe?
@@ -415,16 +426,18 @@ class ChatDraw extends HTMLElement {
 		elem.dispatchEvent(new Event('change', {bubbles:true}))
 	}
 	set_palette2(colors) {
-		for (let i=0; i<6; i++)
+		for (let i=0; i<this.palsize; i++)
 			this.set_palette(i, colors[i])
 	}
 	set_palette(i, color) {
+		if (i>=this.palsize)
+			return
 		this.form.style.setProperty(`--color-${i}`, color)
 		this.choices.color.values[i] = color
 		if (i==this.sel_color())
 			this.choices.color.change(i)
 		// hack
-		let btn = i<6 && this.form?.querySelector(`input[name="color"][value="${i}"]`)
+		let btn = this.form?.querySelector(`input[name="color"][value="${i}"]`)
 		if (btn)
 			btn.title = color
 	}
