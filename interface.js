@@ -11,7 +11,7 @@ function draw_button({type='button', name, value="", label:[label, tooltip=null]
 	// the visible button
 	const btn = document.createElement('button')
 	btn.title = tooltip
-	if (name=='color') {
+	if (label===true) {
 		label = document.createElement('div')
 		btn.classList.add('color')
 		btn.style.color = `var(--color-${value})`

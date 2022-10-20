@@ -385,6 +385,10 @@ class Grp {
 		this.brush = null
 	}
 	set color(v) {
+		if (v=="rgba(0, 0, 0, 0)")
+			this.c2d.resetTransform()
+		else
+			this.c2d.setTransform(1, 0, 0, 1, -1000, 0)
 		this.c2d.shadowColor = v
 	}
 	set pattern(v) {
@@ -408,7 +412,8 @@ class Grp {
 	erase() {
 		this.c2d.save()
 		this.c2d.globalCompositeOperation = 'copy'
-		this.c2d.clearRect(1000, 0, this.canvas.width, this.canvas.height)
+		this.c2d.resetTransform()
+		this.c2d.clearRect(0, 0, this.canvas.width, this.canvas.height)
 		this.c2d.restore()
 	}
 	clear() {
@@ -586,7 +591,6 @@ class ChatDraw extends HTMLElement {
 		// this would not be too hard to implement, either. we just pick the 2 points that straddle the line being drawn
 		// (we could even do like, a dashed line? by allowing only movements of 2px at a time?)
 		brushes.push(new Brush(new Point(0.5,2.5), [[0, 0, 1, 5]], 5, false, ["| 5", "a"]))
-		brushes.push(new ImageBrush(new Point(0,0), null, false, false, ["📋", "clipboard"]))
 		brushes.push(new ImageBrush(new Point(0,0), null, true, false, ["📋", "clipboard (colorized)"]))
 		/// define patterns ///
 		const patterns = []
@@ -641,13 +645,19 @@ class ChatDraw extends HTMLElement {
 				v=>v.label
 			),
 			color: new Choices(
-				'color', ['#000000','#FFFFFF','#FF0000','#2040EE','#00CC00','#FFFF00'], //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
+				'color', ['#000000','#FFFFFF','#FF0000','#2040EE','#00CC00','#FFFF00',"rgba(0, 0, 0, 0)"], //["#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"])
 				(v,i)=>{
 					this.color = i
-					this.form.pick.value = v
 					this.grp.color = v
+					if (v!="rgba(0, 0, 0, 0)")
+						this.form.pick.value = v
 				},
-				v=>[null, "color"]
+				v=>{
+					if (v=="rgba(0, 0, 0, 0)")
+						return ["📋", "source color"]
+					else
+						return [true, "color"]
+				}
 			),
 			brush: new Choices(
 				'brush', brushes,
@@ -679,10 +689,12 @@ class ChatDraw extends HTMLElement {
 		let actions = {
 			pick: color=>{
 				const sel = this.sel_color()
-				const old = this.choices.color.get(sel)
-				this.history.add()
-				this.grp.replace_color(old, color)
-				this.set_palette(sel, color)
+				if (sel < 6) {
+					const old = this.choices.color.get(sel)
+					this.history.add()
+					this.grp.replace_color(old, color)
+					this.set_palette(sel, color)
+				}
 			},
 			reset: ()=>{
 				this.history.add()
@@ -695,6 +707,8 @@ class ChatDraw extends HTMLElement {
 			bg: ()=>{
 				// color here should this.c2d.shadowColor but just in case..
 				const sel = this.sel_color()
+				if (sel>=6)
+					return
 				const color = this.choices.color.get(sel)
 				this.history.add()
 				this.grp.replace_color(color)
@@ -730,7 +744,7 @@ class ChatDraw extends HTMLElement {
 			50,
 			()=>({
 				data: this.grp.get_data(),
-				palette: [...this.choices.color.values],
+				palette: this.choices.color.values.slice(0, 6),
 			}),
 			(data)=>{
 				this.grp.put_data(data.data)
@@ -779,7 +793,6 @@ class ChatDraw extends HTMLElement {
 	}
 	
 	when_copy(data) {
-		
 		let c = document.createElement('canvas')
 		c.width = data.width
 		c.height = data.height
@@ -787,13 +800,16 @@ class ChatDraw extends HTMLElement {
 		c2d.putImageData(data, 0, 0)
 		this.clipboard = c
 		
+		this.choose('tool', 5) // prevent accidental overwriting
+		
 		// URGENT TODO: setting values like this wont update the current value if its already selected
 		// todo: better way of setting these that doesnt rely on hardcoded button location index?
-		this.choices.pattern.values[16] = this.grp.c2d.createPattern(c, 'repeat')
-		this.choices.brush.values[13].set_image(c)
-		this.choices.brush.values[14].set_image(c)
-		this.choose('tool', 5) // prevent accidental overwriting
-		this.choose('brush', 13)
+		let pv = this.choices.pattern.values
+		pv[pv.length-1] = this.grp.c2d.createPattern(c, 'repeat')
+		
+		let bv = this.choices.brush.values, bl = bv.length-1
+		bv[bl].set_image(c)
+		this.choose('brush', bl)
 	}
 	
 	set_scale(n) {
@@ -806,7 +822,8 @@ class ChatDraw extends HTMLElement {
 		elem.dispatchEvent(new Event('change', {bubbles:true}))
 	}
 	set_palette2(colors) {
-		colors.forEach((c,i)=>this.set_palette(i, c))
+		for (let i=0; i<6; i++)
+			this.set_palette(i, colors[i])
 	}
 	set_palette(i, color) {
 		this.form.style.setProperty(`--color-${i}`, color)
@@ -817,8 +834,6 @@ class ChatDraw extends HTMLElement {
 	// which color index is selected
 	sel_color() {
 		return this.color
-		//if (this.form.color)
-		//	return +this.form.color.value
 	}
 }
 ChatDraw.styles = ['style.css?2', 'deco.css?2'].map(href=>Object.assign(document.createElement('link'), {rel:'stylesheet', href}))
