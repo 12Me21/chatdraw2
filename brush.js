@@ -1,5 +1,9 @@
 "use strict"
 
+// todo: instead of the extra color, what if we just 
+// have a checkbox that controls whether clipboard/dither are colorized..
+// ughh
+
 const COLORIZE = "rgba(0, 0, 0, 0)"
 
 /* todo: prevent assigning duplicate palette colors (incl background) */
@@ -623,7 +627,7 @@ class ChatDraw extends HTMLElement {
 			"####/##.#/####/.###",
 			"####/####/####/.###",
 		]) {
-			patterns.push(make_pattern(str, 'dither?', this.grp.c2d))
+			patterns.push(make_pattern(str, "(dither)", this.grp.c2d))
 		}
 		let cb = make_pattern('.', 'clipboard', this.grp.c2d)
 		cb._label = ["📋", "clipboard"]
