@@ -39,7 +39,7 @@ function make_pattern(str, name, context) {
 	c2d.putImageData(data, 0, 0)
 	const pattern = context.createPattern(canvas, 'repeat')
 	c2d.globalCompositeOperation = 'destination-over'
-	c2d.fillStyle = '#F0E0AA'
+	c2d.fillStyle = '#f0e0aa'
 	c2d.fillRect(0, 0, w, h)
 	// hack: we want a larger canvas to use as a button label
 	/*canvas.width = 7
@@ -238,7 +238,7 @@ class ChatDraw extends HTMLElement {
 				v=>v.label
 			),
 			color: new Choices(
-				'color', ['#000000','#FFFFFF','#FF0000','#2040EE','#00CC00','#FFFF00',COLORIZE], //"#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"
+				'color', ['#000000','#ffffff','#ff0000','#2040ee','#00cc00','#ffff00',COLORIZE], //"#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"
 				(v,i)=>{
 					this.color = i
 					this.grp.color = v
@@ -429,7 +429,7 @@ class ChatDraw extends HTMLElement {
 	}
 	set_palette2(colors) {
 		for (let i=0; i<this.palsize; i++)
-			this.set_palette(i, colors[i])
+			this.set_palette(i, colors[i]??"#b4b4b4")
 	}
 	set_palette(i, color) {
 		if (i>=this.palsize)
@@ -446,6 +446,12 @@ class ChatDraw extends HTMLElement {
 	// which color index is selected
 	sel_color() {
 		return this.color
+	}
+	
+	import(img) {
+		this.grp.c2d.drawImage(img, 1000, 0, this.width, this.height)
+		this.grp.replace_color('#e4d8a9', null)
+		this.set_palette2(this.grp.get_palette(this.palsize))
 	}
 }
 ChatDraw.styles = ['style.css', 'deco.css'].map(href=>Object.assign(document.createElement('link'), {rel:'stylesheet', href}))

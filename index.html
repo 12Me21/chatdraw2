@@ -57,8 +57,7 @@
 			img.src = url
 			await img.decode()
 			chatdraw.history.add()
-			chatdraw.grp.put_image(img, new Point(0,0))
-			chatdraw.grp.replace_color('#E4D8A9', null)
+			chatdraw.import(img)
 		} finally {
 			URL.revokeObjectURL(url)
 		}

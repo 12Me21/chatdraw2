@@ -3,6 +3,10 @@
 // todo: instead of the extra color, what if we just 
 // have a checkbox that controls whether clipboard/dither are colorized..
 // ughh
+
+// all color strings should be in canonical format:
+// lowercase #rrggbb, or rgba(r, g, b, 0.a) for transparent colors
+
 // constant for the serialization of css color 'transparent'
 // https://html.spec.whatwg.org/multipage/canvas.html#serialisation-of-a-color
 const COLORIZE = "rgba(0, 0, 0, 0)"
@@ -236,7 +240,7 @@ class CopyTool extends Stroke {
 		// or somehow support this properly?
 		// could use like, xor mode perhaps..
 		this.overlay()
-		v.color = '#006BB7'
+		v.color = '#006bb7'
 		v.pattern = 'black'
 		this._start = this.start.Floor()
 	}
@@ -478,12 +482,13 @@ class Grp {
 	put_image(source, pos) {
 		this.c2d.drawImage(source, pos.x+1000, pos.y)
 	}
+	// export as data url
 	export() {
 		const data = this.get_data()
 		this.c2d.save()
 		try {
 			this.c2d.globalCompositeOperation = 'destination-over'
-			this.c2d.fillStyle = '#E4D8A9'
+			this.c2d.fillStyle = '#e4d8a9'
 			this.c2d.fillRect(1000, 0, this.canvas.width, this.canvas.height)
 			let options = "-moz-parse-options:transparency=no"
 			if (CSS.supports('color-scheme:light')) // test for firefox version 96+
@@ -493,6 +498,17 @@ class Grp {
 			this.c2d.restore()
 			this.put_data(data)
 		}
+	}
+	get_palette(lim) {
+		let colors = new Set()
+		const d = this.get_data().data
+		for (let i=0; i<d.length; i+=4)
+			if (d[i+3]) {
+				colors.add(d[i]<<16|d[i+1]<<8|d[i+2])
+				if (colors.size >= lim)
+					break
+			}
+		return [...colors].map(x=>"#"+x.toString(16).padStart(6,"0"))
 	}
 }
 // ehhh we can probably merge this back into chatdraw....
