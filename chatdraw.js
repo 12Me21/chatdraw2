@@ -366,9 +366,12 @@ class ChatDraw extends HTMLElement {
 		this.img.oncontextmenu = ev=>{
 			this.img.src = this.grp.export()
 		}
-		this.img.style.cursor = make_cursor(3)
 		
-		Stroke.handle(this.img, ev=>{
+		let c = document.createElement('div')
+		c.append(this.img, this.grp.canvas, this.overlay.canvas)
+		c.style.cursor = make_cursor(3)
+		
+		Stroke.handle(c, ev=>{
 			if (ev.button)
 				return
 			this.history.add()
@@ -377,8 +380,7 @@ class ChatDraw extends HTMLElement {
 		
 		super.attachShadow({mode: 'open'}).append(
 			...ChatDraw.styles.map(x=>document.importNode(x, true)),
-			this.img, this.grp.canvas, this.overlay.canvas,
-			this.form
+			c, this.form
 		)
 		
 		this.choose('tool', 0)

@@ -1,12 +1,15 @@
 
 :host {
-	border: solid calc(var(--S)*2px);
-	border-color: #998 #887 #666 #887;
 	background: #B0B098;
+}
+:host > div {
+	border-color: #998 #887 #776 #887;
 }
 form {
 	justify-content: space-evenly;
-	border-top: #776 solid calc(var(--S)*2px);
+	border: solid calc(var(--S)*2px);
+	border-top: none;
+	border-color: #998 #887 #666 #887;
 	font-family: serif;
 }
 /* sections */

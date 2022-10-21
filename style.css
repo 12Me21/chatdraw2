@@ -7,21 +7,28 @@
 		"canvas"
 		"controls";
 	--S: 2;
-	border: 2px solid gray;
 	-webkit-user-select: none; user-select: none;
 	-webkit-text-size-adjust: none;
 }
-:host > canvas, :host > img {
-	grid-area: canvas;
-	width: calc(var(--width)*var(--S, 1)*1px);
-	height: calc(var(--height)*var(--S, 1)*1px);
+:host > div {
 	cursor: crosshair;
 	touch-action: none;
+	grid-area: canvas;
+	border: solid gray calc(var(--S)*2px);
+	width: calc(var(--width)*var(--S)*1px);
+	height: calc(var(--height)*var(--S)*1px);
+	box-sizing: content-box;
+	position: relative;
 }
-:host > canvas {
+:host > div > * {
 	pointer-events: none;
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
 }
-:host > img {
+:host > div > img {
 	opacity: 0;
 }
 canvas {

@@ -92,46 +92,47 @@ ideas here:
 }
 
 class Stroke {
-	static PointerDown(ev, target, ...context) {
-		const st = new this(ev, context, target)
+	static PointerDown(ev, canvas, ...context) {
+		const st = new this(ev, context, canvas)
 		Stroke.pointers.set(ev.pointerId, st)
 		st.down(...st.context)
 		return st
 	}
-	static handle(canvas, down) {
-		canvas.onpointerdown = down
-		canvas.onpointermove = canvas.onpointerup = ev=>{
+	static handle(target, down) {
+		target.onpointerdown = down
+		target.onpointermove = target.onpointerup = ev=>{
 			const st = this.pointers.get(ev.pointerId)
 			if (st) {
 				st.update(ev)
 				st[st.type](...st.context)
 			}
 		}
-		canvas.onlostpointercapture = ev=>{
+		target.onlostpointercapture = ev=>{
 			this.pointers.delete(ev.pointerId)
 		}
 	}
 	
-	constructor(ev, context, target) {
+	constructor(ev, context, canvas) {
 		ev.target.setPointerCapture(ev.pointerId)
 		ev.preventDefault()
 		this.pos = null
-		this.target = target
+		this.canvas = canvas
 		this.update(ev)
 		this.start = this.pos
 		this.context = context
 		
 	}
-	update({target, offsetX, offsetY, type}) {
+	update({clientX, clientY, type}) {
 		this.old = this.pos
 		this.type = type.slice(7)
 		
-		const scale = Point.FromRect(this.target.getBoundingClientRect()).Divide(Point.FromRect(this.target))
+		let rect = this.canvas.getBoundingClientRect()
+		const scale = Point.FromRect(rect).Divide(Point.FromRect(this.canvas))
 		
 		const ps = 1/window.devicePixelRatio/2
 		const adjust = new Point(ps, ps).Divide(scale)
 		
-		this.pos = new Point(offsetX, offsetY).Add(adjust).Divide(scale)
+		this.pos = new Point(clientX, clientY).Subtract(rect).Add(adjust).Divide(scale)
 	}
 	down(){}
 	move(){}
