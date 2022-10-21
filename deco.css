@@ -4,11 +4,11 @@
 }
 :host > div {
 	border-color: #998 #887 #776 #887;
+	border-color: #b844;
 }
 form {
 	justify-content: space-evenly;
 	border: solid calc(var(--S)*2px);
-	border-top: none;
 	border-color: #998 #887 #666 #887;
 	font-family: serif;
 }

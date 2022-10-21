@@ -410,6 +410,7 @@ class Grp {
 		let r = new Point(Math.random()*20-10, Math.random()*20-10)
 		r = this.brush.adjust_cursor(r).Add(this.brush.origin)
 		// use the brush like a stencil. this also corrects for density at different sizes
+		// todo: this breaks in colorize mode.
 		if (this.c2d.isPointInPath(this.brush, r.x+.5-1000, r.y+.5)) {
 			pos = pos.Add(r).Subtract(this.brush.origin)
 			this.c2d.fillRect(pos.x, pos.y, 1, 1)
@@ -479,9 +480,6 @@ class Grp {
 			right+2<=x-2 && queue.push([right+2, x-2, y-dy, -dy])
 		}
 	}
-	put_image(source, pos) {
-		this.c2d.drawImage(source, pos.x+1000, pos.y)
-	}
 	// export as data url
 	export() {
 		const data = this.get_data()
@@ -489,7 +487,8 @@ class Grp {
 		try {
 			this.c2d.globalCompositeOperation = 'destination-over'
 			this.c2d.fillStyle = '#e4d8a9'
-			this.c2d.fillRect(1000, 0, this.canvas.width, this.canvas.height)
+			this.c2d.resetTransform()
+			this.c2d.fillRect(0, 0, this.canvas.width, this.canvas.height)
 			let options = "-moz-parse-options:transparency=no"
 			if (CSS.supports('color-scheme:light')) // test for firefox version 96+
 				options += ";png-zlib-level=9"
