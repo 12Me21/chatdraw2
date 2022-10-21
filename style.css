@@ -120,7 +120,7 @@ button.icon {
 	font-size: 2em;
 }
 /* color button */
-button.color > div {
+button > div {
 	display: block;
 	background: currentColor;
 	width: calc(var(--S)*16px);

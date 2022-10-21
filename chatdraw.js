@@ -53,25 +53,15 @@ function make_pattern(str, name, context) {
 	return pattern
 }
 
-function draw_button({type='button', name, value="", label:[label, tooltip=""], title, icon=false}) {
+function draw_button({type, name, value, label:[label, title="", icon=false]}) {
 	// hidden input element
 	const input = document.createElement('input')
-	Object.assign(input, {type, name, value})
+	Object.assign(input, {type, name, value, title})
 	// the visible button
 	const btn = document.createElement('button')
-	input.title = tooltip
-	if (label===true) {
-		label = document.createElement('div')
-		btn.classList.add('color')
-		btn.style.color = `var(--color-${value})`
-	} else {
-		if (/^.\u{FE0F}$/u.test(label))
-			icon = true
-	}
 	if (icon)
 		btn.classList.add('icon')
 	btn.append(label)
-	// container element
 	const cont = document.createElement('chatdraw-button')
 	cont.append(input, btn)
 	return cont
@@ -133,7 +123,7 @@ class Choices {
 		this.onchange = change
 		this.label = label
 		this.buttons = this.values.map((x,i)=>{
-			return {type: 'radio', name: this.name, value: i, label:this.label(x,i)}
+			return {type:'radio', name:this.name, value:i, label:this.label(x,i)}
 		})
 	}
 	change(value) {
@@ -243,11 +233,14 @@ class ChatDraw extends HTMLElement {
 					this.color = i
 					this.grp.color = v
 				},
-				v=>{
+				(v,i)=>{
 					if (v==COLORIZE)
 						return ["📋", "source color\n(for clipboard shape/pattern)"]
-					else
-						return [true, v]
+					else {
+						const label = document.createElement('div')
+						label.style.color = `var(--color-${i})`
+						return [label, v]
+					}
 				}
 			),
 			brush: new Choices(
@@ -321,8 +314,8 @@ class ChatDraw extends HTMLElement {
 		/// draw form ///
 		this.form = draw_form(this.choices, actions, [
 			{title:"Action", cols: 1, items:[
-				{name:'undo', label:["↶","undo"], icon:true},
-				{name:'redo', label:["↷","redo"], icon:true},
+				{name:'undo', label:["↶","undo",true]},
+				{name:'redo', label:["↷","redo",true]},
 				{name:'fill', label:["fill","fill screen"]},
 				{name:'reset', label:["reset","reset"]},
 				{name:'save', label:["save"]},

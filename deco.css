@@ -69,13 +69,13 @@ input[type="radio"] + button {
 	color: #666;
 }
 /* color button */
-button.color > div {
+button > div {
 	border-radius: calc(var(--S)*6px);
 	box-shadow:
 		inset black 0 0 calc(var(--S)*10px/3),
 		inset white 0 0 calc(var(--S)*10px/3);
 }
-:checked + button.color > div {
+:checked + button > div {
 	box-shadow:
 		inset #0008 0 0 calc(var(--S)*10px/3),
 		inset white 0 0 calc(var(--S)*10px/3),

@@ -136,6 +136,9 @@ class Stroke {
 		const adjust = new Point(ps, ps).Divide(scale)
 		this.pos = new Point(clientX, clientY).Subtract(rect).Add(adjust).Divide(scale)
 	}
+	// TODO: we need to "lock" the overlay, because 2 strokes can be drawn at the same time with a touchscreen
+	// or somehow support this properly?
+	// could use like, xor mode perhaps..
 	overlay() {
 		const [grp, overlay] = this.context
 		overlay.copy_settings(grp)
@@ -153,7 +156,7 @@ class Freehand extends Stroke {
 	move(d) {
 		this._old = d.draw_line(this._old, this.pos)
 	}
-	static get label() { return ["✏️", "pen"] }
+	static get label() { return ["✏️", "pen", true] }
 }
 // idea: spray that uses dither somehow? like, fills in based on ordered dithering? perhaps it umm.. like first fill in every pixel that lines up with pixel 0 in the pattern, then do pixel 1, etc..
 class Spray extends Stroke {
@@ -164,13 +167,10 @@ class Spray extends Stroke {
 		for (let i=0;i<50;i++)
 			d.random_in_brush(this.pos)
 	}
-	static get label() { return ["🚿️", "spray"] }
+	static get label() { return ["🚿️", "spray", true] }
 }
 class LineTool extends Stroke {
 	down(d, v) {
-		// TODO: we need to "lock" the overlay, because 2 strokes can be drawn at the same time with a touchscreen
-		// or somehow support this properly?
-		// could use like, xor mode perhaps..
 		this.overlay()
 	}
 	move(d, v) {
@@ -179,7 +179,7 @@ class LineTool extends Stroke {
 	up(d, v) {
 		d.draw_line(this.start, this.pos)
 	}
-	static get label() { return ["📏️", "line"] }
+	static get label() { return ["📏️", "line", true] }
 }
 class PlaceTool extends Stroke {
 	down(d, v) {
@@ -192,7 +192,7 @@ class PlaceTool extends Stroke {
 	up(d, v) {
 		d.draw(this.pos)
 	}
-	static get label() { return ["🥢️", "place"] }  // 🎯?
+	static get label() { return ["🥢️", "place", true] }  // 🎯?
 }
 class Slow extends Stroke {
 	down(d) {
@@ -206,13 +206,13 @@ class Slow extends Stroke {
 	up(d) {
 		this.move(d)
 	}
-	static get label() { return ["🖌️", "slow"] }
+	static get label() { return ["🖌️", "slow", true] }
 }
 class Flood extends Stroke {
 	down(d) {
 		d.flood_fill(this.pos)
 	}
-	static get label() { return ["🌊️", "flood"] }
+	static get label() { return ["🌊️", "flood", true] }
 }
 class Mover extends Stroke {
 	down(d) {
@@ -232,31 +232,28 @@ class Mover extends Stroke {
 	up(d) {
 		this._data = null
 	}
-	static get label() { return ["🤚️", "move"] }
+	static get label() { return ["🤚️", "move", true] }
 }
 class CopyTool extends Stroke {
 	down(d, v) {
-		// TODO: we need to "lock" the overlay, because 2 strokes can be drawn at the same time with a touchscreen
-		// or somehow support this properly?
-		// could use like, xor mode perhaps..
 		this.overlay()
 		v.color = '#006bb7'
 		v.pattern = 'black'
 		this._start = this.start.Floor()
-	}
-	move(d, v) {
-		v.c2d.fillRect(...this._bounds())
 	}
 	_bounds() {
 		// todo: fix when dragging backwards
 		const diff = this.pos.Floor().Subtract(this._start).Ceil()
 		return [this._start.x, this._start.y, diff.x+1, diff.y+1]
 	}
+	move(d, v) {
+		v.c2d.fillRect(...this._bounds())
+	}
 	up(d, v, c) {
 		const data = d.c2d.getImageData(...this._bounds())
 		c.when_copy(data)
 	}
-	static get label() { return ["✂️", "copy"] }
+	static get label() { return ["✂️", "copy", true] }
 }
 // idea: make copying erase copied pixels, select with the composite mode?
 
@@ -272,7 +269,6 @@ class Brush {
 	constructor(origin, rects, size, diag=false, label) {
 		for (const f of rects)
 			this.path.rect(...f)
-		// todo: ok these fields are kinda unsafe to set? what if path2d uses them?
 		this.size = size
 		this.rects = rects
 		this.origin = origin
@@ -352,7 +348,13 @@ class ImageBrush {
 }
 
 class Grp {
+	canvas = null
+	c2d = null
+	brush = null
+	
 	constructor(width, height) {
+		Object.seal(this)
+		
 		const x = this.canvas = document.createElement('canvas')
 		x.width = width
 		x.height = height
@@ -361,8 +363,6 @@ class Grp {
 		c.imageSmoothingEnabled = false
 		c.shadowOffsetX = 1000
 		c.shadowColor = "#000000"
-		
-		this.brush = null
 	}
 	set color(v) {
 		if (v==COLORIZE)
@@ -377,11 +377,12 @@ class Grp {
 	set composite(v) {
 		this.c2d.globalCompositeOperation = v
 	}
-	
+	// used for overlay
 	copy_settings(source) {
 		this.brush = source.brush
 		this.color = source.c2d.shadowColor
 		this.pattern = source.c2d.fillStyle
+		// note: dont copy composite
 	}
 	get_data() {
 		return this.c2d.getImageData(0, 0, this.canvas.width, this.canvas.height)
