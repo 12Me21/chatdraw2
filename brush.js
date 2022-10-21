@@ -95,17 +95,19 @@ class Stroke {
 	static PointerDown(ev, canvas, ...context) {
 		const st = new this(ev, context, canvas)
 		Stroke.pointers.set(ev.pointerId, st)
-		st.down(...st.context)
+		st.down?.(...st.context)
 		return st
 	}
 	static handle(target, down) {
 		target.onpointerdown = down
 		target.onpointermove = target.onpointerup = ev=>{
 			const st = this.pointers.get(ev.pointerId)
-			if (st) {
-				st.update(ev)
-				st[st.type](...st.context)
-			}
+			if (!st) return
+			st.update(ev)
+			/// TODO: are we /sure/ that pointerup will be the last event?
+			ev.type=='pointerup' && st.up?.(...st.context)
+			st.use_overlay && st.context[1].erase()
+			ev.type=='pointermove' && st.move?.(...st.context)
 		}
 		target.onlostpointercapture = ev=>{
 			this.pointers.delete(ev.pointerId)
@@ -120,23 +122,21 @@ class Stroke {
 		this.update(ev)
 		this.start = this.pos
 		this.context = context
-		
+		this.use_overlay = false
 	}
-	update({clientX, clientY, type}) {
+	update({clientX, clientY}) {
 		this.old = this.pos
-		this.type = type.slice(7)
-		
 		let rect = this.canvas.getBoundingClientRect()
 		const scale = Point.FromRect(rect).Divide(Point.FromRect(this.canvas))
-		
 		const ps = 1/window.devicePixelRatio/2
 		const adjust = new Point(ps, ps).Divide(scale)
-		
 		this.pos = new Point(clientX, clientY).Subtract(rect).Add(adjust).Divide(scale)
 	}
-	down(){}
-	move(){}
-	up(){}
+	overlay() {
+		const [grp, overlay] = this.context
+		overlay.copy_settings(grp)
+		this.use_overlay = true
+	}
 }
 Stroke.pointers = new Map()
 
@@ -167,30 +167,25 @@ class LineTool extends Stroke {
 		// TODO: we need to "lock" the overlay, because 2 strokes can be drawn at the same time with a touchscreen
 		// or somehow support this properly?
 		// could use like, xor mode perhaps..
-		v.copy_settings(d)
-		v.erase()
+		this.overlay()
 	}
 	move(d, v) {
-		v.erase()
 		v.draw_line(this.start, this.pos)
 	}
 	up(d, v) {
-		v.erase()
 		d.draw_line(this.start, this.pos)
 	}
 	static get label() { return ["📏️", "line"] }
 }
 class PlaceTool extends Stroke {
 	down(d, v) {
-		v.copy_settings(d)
-		this.move(d, v)
+		this.overlay()
+		v.draw(this.pos)
 	}
 	move(d, v) {
-		v.erase()
 		v.draw(this.pos)
 	}
 	up(d, v) {
-		v.erase()
 		d.draw(this.pos)
 	}
 	static get label() { return ["🥢️", "place"] }  // 🎯?
@@ -240,13 +235,12 @@ class CopyTool extends Stroke {
 		// TODO: we need to "lock" the overlay, because 2 strokes can be drawn at the same time with a touchscreen
 		// or somehow support this properly?
 		// could use like, xor mode perhaps..
+		this.overlay()
 		v.color = '#006BB7'
 		v.pattern = 'black'
-		v.erase()
 		this._start = this.start.Floor()
 	}
 	move(d, v) {
-		v.erase()
 		v.c2d.fillRect(...this._bounds())
 	}
 	_bounds() {
@@ -257,7 +251,6 @@ class CopyTool extends Stroke {
 	up(d, v, c) {
 		const data = d.c2d.getImageData(...this._bounds())
 		c.when_copy(data)
-		v.erase()
 	}
 	static get label() { return ["✂️", "copy"] }
 }
@@ -270,21 +263,21 @@ class CopyTool extends Stroke {
 // - calling .rect() directly on the canvas
 // - fillRect()
 // - .setTransform(), then .fill(brushpath)
-class Brush extends Path2D {
-	constructor(origin, fills, size, diag=false, label) {
-		super()
-		for (const f of fills)
-			super.rect(...f)
+class Brush {
+	path = new Path2D()
+	constructor(origin, rects, size, diag=false, label) {
+		for (const f of rects)
+			this.path.rect(...f)
 		// todo: ok these fields are kinda unsafe to set? what if path2d uses them?
 		this.size = size
+		this.rects = rects
 		this.origin = origin
-		this.fills = fills
 		this.diag = diag
 		this.label = label
 	}
 	add_to(path, pos) {
 		const {x, y} = pos.Subtract(this.origin).Round()
-		path.addPath(this, new DOMMatrixReadOnly([1,0,0,1,x,y]))
+		path.addPath(this.path, new DOMMatrixReadOnly([1,0,0,1,x,y]))
 	}
 	adjust_cursor(pos) {
 		return pos.Subtract(this.origin).Round().Add(this.origin)
@@ -321,19 +314,17 @@ class Brush extends Path2D {
 		return new this(new Point(r, r), [[0, 0, d, d]], d, ...etc)
 	}
 }
-// todo: make this inherit from brush and dont inherit from path2d
+// todo: make this inherit from brush?
 class ImageBrush {
 	constructor(origin, image, diag=false, label) {
-		this.origin = origin
-		this.source = image
 		this.diag = diag
 		this.label = label
 		this.size = 1
+		this.set_image(image, origin)
 	}
-	// why does this take x,y...
-	set_image(image, ox=image.width/2, oy=image.height/2) {
+	set_image(image, origin=new Point(image.width/2, image.height/2)) {
 		this.source = image
-		this.origin = new Point(ox, oy)
+		this.origin = origin
 	}
 	adjust_cursor(pos) {
 		return pos.Subtract(this.origin).Round().Add(this.origin)
@@ -341,8 +332,8 @@ class ImageBrush {
 	point(c2d, pos) {
 		if (!this.source)
 			return
-		pos = pos.Subtract(this.origin).Round()
-		c2d.drawImage(this.source, pos.x, pos.y)
+		const {x, y} = pos.Subtract(this.origin).Round()
+		c2d.drawImage(this.source, x, y)
 	}
 	line(c2d, start, end) {
 		if (!this.source)
