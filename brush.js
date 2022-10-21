@@ -300,6 +300,8 @@ class Brush extends Path2D {
 		$stroke.textContent = `${start} – ${end}`
 		const path = new Path2D()
 		let pos
+		// there's definitely some redundant rounding going on here.
+		// we dont need add_to to round when follow_line already does?
 		for (pos of start.follow_line(start, end, this.diag))
 			this.add_to(path, pos)
 		c2d.fill(path)
@@ -328,6 +330,7 @@ class ImageBrush {
 		this.label = label
 		this.size = 1
 	}
+	// why does this take x,y...
 	set_image(image, ox=image.width/2, oy=image.height/2) {
 		this.source = image
 		this.origin = new Point(ox, oy)
@@ -338,7 +341,7 @@ class ImageBrush {
 	point(c2d, pos) {
 		if (!this.source)
 			return
-		pos = pos.Subtract(this.origin)
+		pos = pos.Subtract(this.origin).Round()
 		c2d.drawImage(this.source, pos.x, pos.y)
 	}
 	line(c2d, start, end) {

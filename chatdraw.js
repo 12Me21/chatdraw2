@@ -154,11 +154,12 @@ class ChatDraw extends HTMLElement {
 	img = new Image(this.width, this.height)
 	picker = null
 	form = null
+	choices = null
 	
 	history = null
 	tool = null
 	color = 0
-	choices = null
+	clipboard = null
 	
 	constructor() {
 		super()
