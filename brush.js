@@ -148,112 +148,114 @@ class Stroke {
 Stroke.pointers = new Map()
 
 //// Tools ////
-class Freehand extends Stroke {
-	down(d) {
-		this._old = this.pos
-		d.draw(this.pos)
-	}
-	move(d) {
-		this._old = d.draw_line(this._old, this.pos)
-	}
-	static get label() { return ["✏️", "pen", true] }
-}
-// idea: spray that uses dither somehow? like, fills in based on ordered dithering? perhaps it umm.. like first fill in every pixel that lines up with pixel 0 in the pattern, then do pixel 1, etc..
-class Spray extends Stroke {
-	down(d) {
-		this.move(d)
-	}
-	move(d) {
-		for (let i=0;i<50;i++)
-			d.random_in_brush(this.pos)
-	}
-	static get label() { return ["🚿️", "spray", true] }
-}
-class LineTool extends Stroke {
-	down(d, v) {
-		this.overlay()
-	}
-	move(d, v) {
-		v.draw_line(this.start, this.pos)
-	}
-	up(d, v) {
-		d.draw_line(this.start, this.pos)
-	}
-	static get label() { return ["📏️", "line", true] }
-}
-class PlaceTool extends Stroke {
-	down(d, v) {
-		this.overlay()
-		v.draw(this.pos)
-	}
-	move(d, v) {
-		v.draw(this.pos)
-	}
-	up(d, v) {
-		d.draw(this.pos)
-	}
-	static get label() { return ["🥢️", "place", true] }  // 🎯?
-}
-class Slow extends Stroke {
-	down(d) {
-		this._avg = this.pos
-	}
-	move(d) {
-		const pos = this._avg.Lerp(this.pos, 0.15)
-		d.draw_line(this._avg, pos)
-		this._avg = pos
-	}
-	up(d) {
-		this.move(d)
-	}
-	static get label() { return ["🖌️", "slow", true] }
-}
-class Flood extends Stroke {
-	down(d) {
-		d.flood_fill(this.pos)
-	}
-	static get label() { return ["🌊️", "flood", true] }
-}
-class Mover extends Stroke {
-	down(d) {
-		this._data = d.get_data()
-	}
-	move(d) {
-		const ofs = this.pos.Subtract(this.start).Round() // todo: round better
-		const {width, height} = d.canvas
-		let {x, y} = ofs
-		x = (x+width*100) % width
-		y = (y+height*100) % height
-		d.put_data(this._data, x, y)
-		d.put_data(this._data, x-width, y)
-		d.put_data(this._data, x, y-height)
-		d.put_data(this._data, x-width, y-height)
-	}
-	up(d) {
-		this._data = null
-	}
-	static get label() { return ["🤚️", "move", true] }
-}
-class CopyTool extends Stroke {
-	down(d, v) {
-		this.overlay()
-		v.color = '#006bb7'
-		v.pattern = 'black'
-		this._start = this.start.Floor()
-	}
-	_bounds() {
-		// todo: fix when dragging backwards
-		const diff = this.pos.Floor().Subtract(this._start).Ceil()
-		return [this._start.x, this._start.y, diff.x+1, diff.y+1]
-	}
-	move(d, v) {
-		v.c2d.fillRect(...this._bounds())
-	}
-	up(d, v, c) {
-		const data = d.c2d.getImageData(...this._bounds())
-		c.when_copy(data)
-	}
-	static get label() { return ["✂️", "copy", true] }
+const tools = {
+	Pen: class extends Stroke {
+		down(d) {
+			this._old = this.pos
+			d.draw(this.pos)
+		}
+		move(d) {
+			this._old = d.draw_line(this._old, this.pos)
+		}
+		static get label() { return ["✏️", "pen", true] }
+	},
+	// idea: spray that uses dither somehow? like, fills in based on ordered dithering? perhaps it umm.. like first fill in every pixel that lines up with pixel 0 in the pattern, then do pixel 1, etc..
+	Spray: class extends Stroke {
+		down(d) {
+			this.move(d)
+		}
+		move(d) {
+			for (let i=0;i<50;i++)
+				d.random_in_brush(this.pos)
+		}
+		static get label() { return ["🚿️", "spray", true] }
+	},
+	Line: class extends Stroke {
+		down(d, v) {
+			this.overlay()
+		}
+		move(d, v) {
+			v.draw_line(this.start, this.pos)
+		}
+		up(d, v) {
+			d.draw_line(this.start, this.pos)
+		}
+		static get label() { return ["📏️", "line", true] }
+	},
+	Place: class extends Stroke {
+		down(d, v) {
+			this.overlay()
+			v.draw(this.pos)
+		}
+		move(d, v) {
+			v.draw(this.pos)
+		}
+		up(d, v) {
+			d.draw(this.pos)
+		}
+		static get label() { return ["🥢️", "place", true] }  // 🎯?
+	},
+	Slow: class extends Stroke {
+		down(d) {
+			this._avg = this.pos
+		}
+		move(d) {
+			const pos = this._avg.Lerp(this.pos, 0.15)
+			d.draw_line(this._avg, pos)
+			this._avg = pos
+		}
+		up(d) {
+			this.move(d)
+		}
+		static get label() { return ["🖌️", "slow", true] }
+	},
+	Flood: class extends Stroke {
+		down(d) {
+			d.flood_fill(this.pos)
+		}
+		static get label() { return ["🌊️", "flood", true] }
+	},
+	Move: class extends Stroke {
+		down(d) {
+			this._data = d.get_data()
+		}
+		move(d) {
+			const ofs = this.pos.Subtract(this.start).Round() // todo: round better
+			const {width, height} = d.canvas
+			let {x, y} = ofs
+			x = (x+width*100) % width
+			y = (y+height*100) % height
+			d.put_data(this._data, x, y)
+			d.put_data(this._data, x-width, y)
+			d.put_data(this._data, x, y-height)
+			d.put_data(this._data, x-width, y-height)
+		}
+		up(d) {
+			this._data = null
+		}
+		static get label() { return ["🤚️", "move", true] }
+	},
+	Copy: class extends Stroke {
+		down(d, v) {
+			this.overlay()
+			v.color = '#006bb7'
+			v.pattern = 'black'
+			this._start = this.start.Floor()
+		}
+		_bounds() {
+			// todo: fix when dragging backwards
+			const diff = this.pos.Floor().Subtract(this._start).Ceil()
+			return [this._start.x, this._start.y, diff.x+1, diff.y+1]
+		}
+		move(d, v) {
+			v.c2d.fillRect(...this._bounds())
+		}
+		up(d, v, c) {
+			const data = d.c2d.getImageData(...this._bounds())
+			c.when_copy(data)
+		}
+		static get label() { return ["✂️", "copy", true] }
+	},
 }
 // idea: make copying erase copied pixels, select with the composite mode?
 

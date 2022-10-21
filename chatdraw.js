@@ -53,7 +53,7 @@ function make_pattern(str, name, context) {
 	return pattern
 }
 
-function draw_button({type, name, value, label:[label, title="", icon=false]}) {
+function draw_button({type='button', name, value="", label:[label, title="", icon=false]}) {
 	// hidden input element
 	const input = document.createElement('input')
 	Object.assign(input, {type, name, value, title})
@@ -86,23 +86,24 @@ function draw_form(choices, actions, sections) {
 		actions[e.name]?.(e.value)
 	}
 	//
-	for (let {title, items, size=2, cols} of sections) {
-		const sect = document.createElement('fieldset')
+	for (let {title, items, cols, small=false} of sections) {
 		// legend
 		const label = document.createElement('div')
 		label.append(title)
+		
+		const sect = document.createElement('fieldset')
 		sect.append(label)
 		// buttons
 		for (const sb of items)
 			sect.append(draw_button(sb))
 		// grid
 		// todo: clean up the rows cols thing
+		if (small)
+			sect.classList.add('small')
 		if (!cols) {
-			cols = Math.ceil(items.length/(8/size))
+			cols = Math.ceil(items.length/(small ? 8 : 4))
 			/*sect.style.gridAutoFlow = 'column'*/
 		}
-		if (size==1)
-			sect.classList.add('small')
 		sect.style.setProperty('--cols', cols)
 		
 		form.append(sect, document.createElement('hr'))
@@ -126,11 +127,8 @@ class Choices {
 			return {type:'radio', name:this.name, value:i, label:this.label(x,i)}
 		})
 	}
-	change(value) {
-		this.onchange(this.values[value], value)
-	}
-	get(key) {
-		return this.values[key]
+	change(i) {
+		this.onchange(this.values[i], i)
 	}
 }
 
@@ -219,10 +217,8 @@ class ChatDraw extends HTMLElement {
 		this.choices = {
 			tool: new Choices(
 				'tool', [
-					Freehand, Slow,
-					LineTool, Spray,
-					Flood, PlaceTool,
-					Mover, CopyTool,
+					tools.Pen, tools.Slow, tools.Line, tools.Spray,
+					tools.Flood, tools.Place, tools.Move, tools.Copy,
 				],
 				v=>this.tool = v,
 				v=>v.label
@@ -274,14 +270,14 @@ class ChatDraw extends HTMLElement {
 		const actions = {
 			color: i=>{
 				if (this.color==i && i<this.palsize) {
-					this.picker.value = this.choices.color.get(i)
+					this.picker.value = this.choices.color.values[i]
 					this.picker.click()
 				}
 			},
 			pick: color=>{
 				const sel = this.sel_color()
 				if (sel < this.palsize) {
-					const old = this.choices.color.get(sel)
+					const old = this.choices.color.values[sel]
 					this.history.add()
 					this.grp.replace_color(old, color)
 					this.set_palette(sel, color)
@@ -299,7 +295,7 @@ class ChatDraw extends HTMLElement {
 				// color here should this.c2d.shadowColor but just in case..
 				const sel = this.sel_color()
 				if (sel<this.palsize) {
-					const color = this.choices.color.get(sel)
+					const color = this.choices.color.values[sel]
 					this.history.add()
 					this.grp.replace_color(color)
 				}
@@ -321,14 +317,13 @@ class ChatDraw extends HTMLElement {
 				{name:'save', label:["save"]},
 			]},
 			{title:"Tool", cols: 2, items:this.choices.tool.buttons},
-			{title:"Shape", size:1, items:this.choices.brush.buttons},
+			{title:"Shape", small:true, items:this.choices.brush.buttons},
 			{title:"Composite", cols: 1, items:this.choices.composite.buttons},
 			{title:"Color", cols:2, items:[
 				...this.choices.color.buttons,
-				/*{name:'pick', type:'color', label:["edit","edit color"]},*/
 				{name:'bg', label:["➙bg","replace color with background"]},
 			]},
-			{title:"Pattern", size:1, items:this.choices.pattern.buttons},
+			{title:"Pattern", small:true, items:this.choices.pattern.buttons},
 		])
 		
 		this.picker = document.createElement('input')
