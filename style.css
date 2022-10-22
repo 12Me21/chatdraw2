@@ -56,7 +56,9 @@ form {
 	-webkit-user-select: none; user-select: none;
 	justify-content: space-evenly;
 	font-size: calc(var(--S)*5px);
-	border: solid gray calc(var(--S)*2px);
+	border: solid gray;
+	border-width: calc(var(--S)*2px) calc(var(--S)*1px);
+	border-top-width: 0;
 }
 fieldset {
 	all: unset;
@@ -68,7 +70,7 @@ fieldset {
 	grid-template-columns: repeat(var(--cols), calc(var(--S)*var(--bw)));
 	grid-template-rows: auto;
 	grid-auto-rows: 1fr;
-	padding-bottom: calc(var(--S)*1px);
+	padding-bottom: calc(var(--S)*2px);
 }
 /* todo: we really ought to just, set the size on the <button> instead. just not sure how to make it work nice with overlapping. but might just need to set size on both it AND the <input> */
 fieldset.small {
@@ -108,7 +110,7 @@ chatdraw-button > input {
 /* button states */
 button {
 	font-size: 1em;
-	font-weight: bold;
+	text-transform: uppercase;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -117,7 +119,8 @@ button {
 	white-space: pre;
 	border: calc(var(--S)*1px) solid #BBB;
 	border-color: #EED #DDB #CCB #DDB;
-	background: #CCB;
+	background: #CCCCB2;
+	padding-top: calc(var(--S)*1px);
 }	
 
 button {
@@ -125,27 +128,35 @@ button {
 	box-shadow:
 		0 calc(var(--S)*1px) #888,
 		0 calc(var(--S)*2px) #666,
-		0 calc(var(--S)*2px) calc(var(--S)*1px) #000;
+		0 calc(var(--S)*2px) calc(var(--S)*1px) #000,
+		inset 0 calc(var(--S)*1px) calc(var(--S)*1px) #0008;
 }
 :active + button {
 	transform: translateY(calc(var(--S)*1px));
 	box-shadow:
-		0 0 calc(var(--S)*1px) #000;
+		inset 0 calc(var(--S)*1px) calc(var(--S)*1px) #0008;
 }
 :checked + button {
 	transform: none;
-	border-color: #EE0 #DD0 #CC0 #DD0;
-	background: #CC0;
+	/*border-color: #EE0 #DD0 #CC0 #DD0;*/
+	background: #BDA;
 	box-shadow:
 		0 calc(var(--S)*1px) #888,
-		inset 0 calc(var(--S)*1px) calc(var(--S)*1px) #000;
+		inset 0 calc(var(--S)*1px) calc(var(--S)*1px) #0008,
+		inset 0 calc(var(--S)*1px) calc(var(--S)*2px) #0FD,
+		0 calc(var(--S)*1px) calc(var(--S)*2px) #0FD;
+	border-color: #0FD #0FB #0FB #0FC;
 }
 :active + button {
 	/*border-color: white;*/
 }
 :disabled + button {
-	background: #888;
-	border-color: gray;
+	transform: none;
+	box-shadow:
+		0 calc(var(--S)*1px) #888,
+		inset 0 calc(var(--S)*1px) calc(var(--S)*1px) #0008;
+	background: #BBBBA2;
+	border-color: #CCA;
 }
 input[type="radio"] + button {
 	border-radius: calc(var(--S)*8px);
@@ -161,7 +172,7 @@ button.icon {
 button > div {
 	display: block;
 	background: currentColor;
-	width: calc(var(--S)*16px);
+	width: calc(var(--S)*14px);
 	height: calc(var(--S)*11px);
 	border-radius: calc(var(--S)*6px);
 }
