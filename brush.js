@@ -412,7 +412,7 @@ class Grp {
 		r = this.brush.adjust_cursor(r).Add(this.brush.origin)
 		// use the brush like a stencil. this also corrects for density at different sizes
 		// todo: this breaks in colorize mode.
-		if (this.c2d.isPointInPath(this.brush, r.x+.5-1000, r.y+.5)) {
+		if (this.c2d.isPointInPath(this.brush.path, r.x+.5-1000, r.y+.5)) {
 			pos = pos.Add(r).Subtract(this.brush.origin)
 			this.c2d.fillRect(pos.x, pos.y, 1, 1)
 		}
