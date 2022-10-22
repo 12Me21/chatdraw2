@@ -41,7 +41,7 @@ canvas {
 	image-rendering: -moz-crisp-edges; image-rendering: pixelated;
 }
 canvas.main {
-	background: repeating-linear-gradient(1.23deg, #F0E0AA, #D8D0A8 0.38291px);
+	background: url(data:image/webp;base64,UklGRngAAABXRUJQVlA4TGwAAAAvEUAEAI9AmG00f8lD6escBAKJP+0GJxBI8kdZ8vmvwyo0wAyAgQMMFLSRpNwzk3+5OBIi+i82SeakQ0RpY50PMeVSWx9zPX/Xd/9+YNcf2PUHFoAewAagBjABOAF0AFYAFYARwAGgBbD8YQY=), #e4d8a9;/*repeating-linear-gradient(1.23deg, #F0E0AA, #D8D0A8 0.38291px);*/
 }
 canvas.overlay {
 	opacity: 0.7;

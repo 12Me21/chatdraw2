@@ -275,7 +275,7 @@ class ChatDraw extends HTMLElement {
 			},
 			color: i=>{
 				//if (this.color==i && i<this.palsize)
-				//	this.form.pick.click()
+				//	this.form.pick.click() // showPicker()?
 			},
 			reset: ()=>{
 				this.history.add()
