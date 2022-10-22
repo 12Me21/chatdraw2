@@ -19,22 +19,22 @@ hr {
 button {
 	text-transform: uppercase;
 	border: solid calc(1px*var(--S));
-	border-color: #FFD #887 #666 #DDB;
+	border-color: #FFD #CCB #BBA #DDB;
 	border-radius: calc(1px*var(--S));
-	box-shadow:
-		black calc(var(--S)*1px/3) calc(var(--S)*1px/3) calc(var(--S)*1px);
+	/*box-shadow:
+		black calc(var(--S)*1px/3) calc(var(--S)*1px/3) calc(var(--S)*1px);*/
 	text-shadow:
 		#BBA calc(var(--S)*1px/3) calc(var(--S)*1px/3),
 		#776 calc(var(--S)*-1px/3) calc(var(--S)*-1px/3);
-	background: #AAAA90;
+	background: #B0B0A0;
 	color: #221;
 }
 /* button hovered */
 @media (any-hover: hover) {
 	:hover + button {
 		background: #CCC;
-		box-shadow:
-			black calc(var(--S)*1px/3) calc(var(--S)*1px/3) calc(var(--S)*1px/3);
+		/*box-shadow:
+			black calc(var(--S)*1px/3) calc(var(--S)*1px/3) calc(var(--S)*1px/3);*/
 	}
 }
 /* button checked/active */
@@ -44,10 +44,10 @@ button {
 }
 :checked + button, :active + button {
 	border-color: #665 #444 #444 #665;
-	box-shadow:
+	/*box-shadow:
 		inset black 0 0 calc(var(--S)*10px/3),
 		inset white 0 0 calc(var(--S)*10px/3),
-		#FF8 0 0 calc(var(--S)*1px/3);
+		#FF8 0 0 calc(var(--S)*1px/3);*/
 	background: #887;
 }
 /* button disabled */

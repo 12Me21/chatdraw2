@@ -75,8 +75,8 @@ fieldset.small {
 	grid-template-rows: auto repeat(8, calc(var(--S)*var(--bh)));
 	grid-auto-flow: column;
 	grid-auto-columns: calc(var(--S)*var(--bw));
-	--bw: 10px;
-	--bh: 8px;
+	--bw: 9px;
+	--bh: 9px;
 	--gap: 1px;
 }
 fieldset > div {
@@ -115,16 +115,33 @@ button {
 	pointer-events: none;
 	line-height: 1;
 	white-space: pre;
-	border: calc(var(--S)*1px) solid gray;
-	background: #CCC;
-}
-:checked + button {
-	background: #EEE;
-	border-color: white;
+	border: calc(var(--S)*1px) solid #BBB;
+	border-color: #EED #DDB #CCB #DDB;
+	background: #CCB;
+}	
+
+button {
+	transform: translateY(calc(var(--S)*-1px));
+	box-shadow:
+		0 calc(var(--S)*1px) #888,
+		0 calc(var(--S)*2px) #666,
+		0 calc(var(--S)*2px) calc(var(--S)*1px) #000;
 }
 :active + button {
-	border-color: white;
-	transform: translateY(var(--S)*1px);
+	transform: translateY(calc(var(--S)*1px));
+	box-shadow:
+		0 0 calc(var(--S)*1px) #000;
+}
+:checked + button {
+	transform: none;
+	border-color: #EE0 #DD0 #CC0 #DD0;
+	background: #CC0;
+	box-shadow:
+		0 calc(var(--S)*1px) #888,
+		inset 0 calc(var(--S)*1px) calc(var(--S)*1px) #000;
+}
+:active + button {
+	/*border-color: white;*/
 }
 :disabled + button {
 	background: #888;
