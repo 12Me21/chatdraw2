@@ -117,7 +117,7 @@ button {
 /* larger text button */
 button.icon {
 	font-weight: normal;
-	font-size: 2em;
+	font-size: 1.8em;
 }
 /* color button */
 button > div {
@@ -131,8 +131,4 @@ button canvas {
 	object-fit: contain;
 	height: calc(var(--S)*var(--ph)*1px);
 	width: calc(var(--S)*var(--pw)*1px);
-}
-.picker {
-	position: absolute;
-	clip: rect(0, 0, 0, 0);
 }

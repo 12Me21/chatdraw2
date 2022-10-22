@@ -77,13 +77,14 @@ function draw_form(choices, actions, sections) {
 	form.onchange = ev=>{
 		const e = ev.target
 		if (ev.isTrusted)
-			actions[e.name]?.(e.value)
+			actions[e.name]?.(e.value, e)
 		if (e.type=='radio')
 			choices[e.name].change(e.value)
 	}
 	form.onclick = ev=>{
 		const e = ev.target
-		actions[e.name]?.(e.value)
+		if (e.type=='button' || e.type=='radio')
+			actions[e.name]?.(e.value)
 	}
 	//
 	for (let {title, items, cols, small=false} of sections) {
@@ -140,7 +141,6 @@ class ChatDraw extends HTMLElement {
 	grp = new Grp(this.width, this.height)
 	overlay = new Grp(this.width, this.height)
 	img = new Image(this.width, this.height)
-	picker = null
 	form = null
 	choices = null
 	
@@ -224,19 +224,16 @@ class ChatDraw extends HTMLElement {
 				v=>v.label
 			),
 			color: new Choices(
-				'color', ['#000000','#ffffff','#ff0000','#2040ee','#00cc00','#ffff00',COLORIZE], //"#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"
+				'color', ['#000000','#ffffff','#ff0000','#2040ee','#00cc00','#ffff00'], //"#000000","#FFFFFF","#ca2424","#7575e8","#25aa25","#ebce30"
 				(v,i)=>{
 					this.color = i
 					this.grp.color = v
+					this.form.pick.value = v
 				},
 				(v,i)=>{
-					if (v==COLORIZE)
-						return ["📋", "source color\n(for clipboard shape/pattern)"]
-					else {
-						const label = document.createElement('div')
-						label.style.color = `var(--color-${i})`
-						return [label, v]
-					}
+					const label = document.createElement('div')
+					label.style.color = `var(--color-${i})`
+					return [label, v]
 				}
 			),
 			brush: new Choices(
@@ -268,12 +265,6 @@ class ChatDraw extends HTMLElement {
 		
 		// this is kinda messy why do we have to define these in 2 places...
 		const actions = {
-			color: i=>{
-				if (this.color==i && i<this.palsize) {
-					this.picker.value = this.choices.color.values[i]
-					this.picker.click()
-				}
-			},
 			pick: color=>{
 				const sel = this.sel_color()
 				if (sel < this.palsize) {
@@ -282,6 +273,10 @@ class ChatDraw extends HTMLElement {
 					this.grp.replace_color(old, color)
 					this.set_palette(sel, color)
 				}
+			},
+			color: i=>{
+				if (this.color==i && i<this.palsize)
+					this.form.pick.click()
 			},
 			reset: ()=>{
 				this.history.add()
@@ -306,31 +301,44 @@ class ChatDraw extends HTMLElement {
 				const url = this.grp.export()
 				download(url, `chatdraw-${url.match(/[/](\w{5})/)[1]}.png`)
 			},
+			load: async (v,e)=>{
+				let file = e.files[0]
+				if (!file)
+					return
+				let url = URL.createObjectURL(file)
+				try {
+					let img = new Image()
+					img.src = url
+					await img.decode()
+					this.history.add()
+					this.import(img)
+				} finally {
+					URL.revokeObjectURL(url)
+				}
+			},
 		}
 		/// draw form ///
 		this.form = draw_form(this.choices, actions, [
 			{title:"Action", cols: 1, items:[
 				{name:'undo', label:["↶","undo",true]},
 				{name:'redo', label:["↷","redo",true]},
-				{name:'fill', label:["fill","fill screen"]},
 				{name:'reset', label:["reset","reset"]},
 				{name:'save', label:["save"]},
+				{name:'load', type:'file', label:["load"]},
 			]},
-			{title:"Tool", cols: 2, items:this.choices.tool.buttons},
+			{title:"Tool", cols: 2, items:[
+				...this.choices.tool.buttons,
+				{name:'fill', label:["fill","fill screen"]},
+			]},
 			{title:"Shape", small:true, items:this.choices.brush.buttons},
 			{title:"Composite", cols: 1, items:this.choices.composite.buttons},
 			{title:"Color", cols:2, items:[
 				...this.choices.color.buttons,
+				{name:'pick', type:'color', label:["edit","edit color"]},
 				{name:'bg', label:["➙bg","replace color with background"]},
 			]},
 			{title:"Pattern", small:true, items:this.choices.pattern.buttons},
 		])
-		
-		this.picker = document.createElement('input')
-		this.picker.type = 'color'
-		this.picker.className = 'picker'
-		this.picker.name = 'pick'
-		this.form.append(this.picker)
 		
 		/// undo buffer ///
 		this.history = new Undo(

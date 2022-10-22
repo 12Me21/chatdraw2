@@ -9,7 +9,7 @@
 
 // constant for the serialization of css color 'transparent'
 // https://html.spec.whatwg.org/multipage/canvas.html#serialisation-of-a-color
-const COLORIZE = "rgba(0, 0, 0, 0)"
+//const COLORIZE = "rgba(0, 0, 0, 0)"
 
 /* todo: prevent assigning duplicate palette colors (incl background) */
 
@@ -365,12 +365,9 @@ class Grp {
 		c.imageSmoothingEnabled = false
 		c.shadowOffsetX = 1000
 		c.shadowColor = "#000000"
+		this.c2d.translate(-1000, 0)
 	}
 	set color(v) {
-		if (v==COLORIZE)
-			this.c2d.resetTransform()
-		else
-			this.c2d.setTransform(1, 0, 0, 1, -1000, 0)
 		this.c2d.shadowColor = v
 	}
 	set pattern(v) {
