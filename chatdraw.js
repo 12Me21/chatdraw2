@@ -262,16 +262,26 @@ class ChatDraw extends HTMLElement {
 				}[v])
 			),
 		}
-		/// define button actions ///
 		
-		// this is kinda messy why do we have to define these in 2 places...
+		const pick_color = (picked)=>{
+			let sel = this.sel_color()
+			const old = this.choices.color.values[sel]
+			this.history.add()
+			this.grp.replace_color(old, picked)
+			this.set_palette(sel, picked)
+		}
+		// safari hack
 		let picked = null
-		let picked_i = null
+		const safari = navigator.vendor=="Apple Computer, Inc."
 		
+		/// define button actions ///
+		// this is kinda messy why do we have to define these in 2 places..
 		const actions = {
 			pick: color=>{
-				picked = color
-				picked_i = this.sel_color()
+				if (safari)
+					picked = color
+				else
+					pick_color(color)
 			},
 			color: i=>{
 				//if (this.color==i && i<this.palsize)
@@ -316,13 +326,19 @@ class ChatDraw extends HTMLElement {
 				}
 			},
 		}
+		
+		// todo: put this.img somewhere?
+		this.img.oncontextmenu = ev=>{
+			this.img.src = this.grp.export()
+		}
+		
 		/// draw form ///
 		this.form = draw_form(this.choices, actions, [
 			{title:"Action", cols: 1, items:[
 				{name:'undo', label:["↶","undo",true]},
 				{name:'redo', label:["↷","redo",true]},
 				{name:'reset', label:["reset","reset"]},
-				{name:'save', label:["save"]},
+				{name:'save', label:["save", "save"]},
 				{name:'load', type:'file', label:["load"]},
 			]},
 			{title:"Tool", cols: 2, items:[
@@ -338,6 +354,13 @@ class ChatDraw extends HTMLElement {
 			]},
 			{title:"Pattern", small:true, items:this.choices.pattern.buttons},
 		])
+		
+		if (safari)
+			this.form.pick.onblur = this.form.pick.onfocus = ev=>{
+				if (picked)
+					pick_color(picked)
+				picked = null
+			}
 		
 		/// undo buffer ///
 		this.history = new Undo(
@@ -359,14 +382,10 @@ class ChatDraw extends HTMLElement {
 		this.set_palette2(this.choices.color.values)
 		this.grp.erase()
 		
-		this.img.oncontextmenu = ev=>{
-			this.img.src = this.grp.export()
-		}
-		
 		let c = document.createElement('div')
 		c.style.setProperty('--width', this.width)
 		c.style.setProperty('--height', this.height)
-		c.append(this.img, this.grp.canvas, this.overlay.canvas)
+		c.append(this.grp.canvas, this.overlay.canvas)
 		c.style.cursor = make_cursor(3)
 		
 		Stroke.handle(c, ev=>{
@@ -380,16 +399,6 @@ class ChatDraw extends HTMLElement {
 			...ChatDraw.styles.map(x=>document.importNode(x, true)),
 			c, this.form
 		)
-		
-		this.form.pick.onblur = this.form.pick.onfocus = ev=>{
-			if (picked) {
-				const old = this.choices.color.values[picked_i]
-				this.history.add()
-				this.grp.replace_color(old, picked)
-				this.set_palette(picked_i, picked)
-			}
-			picked = null
-		}
 		
 		this.choose('tool', 0)
 		this.choose('brush', 1)

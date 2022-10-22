@@ -14,13 +14,13 @@
 	pre {
 		white-space: pre-wrap;
 	}
-	/*body {
+	body {
 		display: flex;
 		flex-flow: column;
 	}
 	chat-draw {
-		align-self: center;
-	}*/
+		align-self: flex-start;
+	}
 </style>
 
 
@@ -57,4 +57,3 @@
 	<button onclick="$log.textContent='...';$log.textContent=String(eval($code.value))">run</button>
 	<pre id=$log></pre>
 </div>
-<button onclick=chatdraw.picker.click()>open</button>

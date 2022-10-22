@@ -9,6 +9,7 @@
 	--S: 2;
 	-webkit-user-select: none; user-select: none;
 	-webkit-text-size-adjust: none;
+	background: #B0B098;
 }
 :host > div {
 	cursor: crosshair;
@@ -17,6 +18,7 @@
 	border: solid gray calc(var(--S)*2px);
 	width: calc(var(--width)*var(--S)*1px);
 	height: calc(var(--height)*var(--S)*1px);
+	border-color: #b844;
 }
 :host > div > * {
 	pointer-events: none;
@@ -47,12 +49,14 @@ canvas.overlay {
 	opacity: 0.7;
 }
 
+/* controls */
 form {
 	grid-area: controls;
 	display: flex;
 	-webkit-user-select: none; user-select: none;
 	justify-content: space-evenly;
 	font-size: calc(var(--S)*5px);
+	border: solid gray calc(var(--S)*2px);
 }
 fieldset {
 	all: unset;
@@ -64,8 +68,7 @@ fieldset {
 	grid-template-columns: repeat(var(--cols), calc(var(--S)*var(--bw)));
 	grid-template-rows: auto;
 	grid-auto-rows: 1fr;
-	margin: 0 calc(1px*var(--S));
-	margin-bottom: calc(var(--gap)*var(--S)*-1);
+	padding-bottom: calc(var(--S)*1px);
 }
 /* todo: we really ought to just, set the size on the <button> instead. just not sure how to make it work nice with overlapping. but might just need to set size on both it AND the <input> */
 fieldset.small {
@@ -86,6 +89,7 @@ hr { /* todo this sucks */
 	all: unset;
 	width: 1px;
 }
+
 /* button container */
 chatdraw-button {
 	margin-bottom: calc(var(--gap)*var(--S));
@@ -100,6 +104,8 @@ chatdraw-button > input {
 	cursor: pointer;
 	touch-action: manipulation;
 }
+
+/* button states */
 button {
 	font-size: 1em;
 	font-weight: bold;
@@ -110,10 +116,25 @@ button {
 	line-height: 1;
 	white-space: pre;
 	border: calc(var(--S)*1px) solid gray;
-}
-:checked + button {
 	background: #CCC;
 }
+:checked + button {
+	background: #EEE;
+	border-color: white;
+}
+:active + button {
+	border-color: white;
+	transform: translateY(var(--S)*1px);
+}
+:disabled + button {
+	background: #888;
+	border-color: gray;
+}
+input[type="radio"] + button {
+	border-radius: calc(var(--S)*8px);
+}
+
+/* button types */
 /* larger text button */
 button.icon {
 	font-weight: normal;
@@ -125,6 +146,7 @@ button > div {
 	background: currentColor;
 	width: calc(var(--S)*16px);
 	height: calc(var(--S)*11px);
+	border-radius: calc(var(--S)*6px);
 }
 /* pattern button */
 button canvas {
