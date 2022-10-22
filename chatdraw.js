@@ -265,19 +265,17 @@ class ChatDraw extends HTMLElement {
 		/// define button actions ///
 		
 		// this is kinda messy why do we have to define these in 2 places...
+		let picked = null
+		let picked_i = null
+		
 		const actions = {
 			pick: color=>{
-				const sel = this.sel_color()
-				if (sel < this.palsize) {
-					const old = this.choices.color.values[sel]
-					this.history.add()
-					this.grp.replace_color(old, color)
-					this.set_palette(sel, color)
-				}
+				picked = color
+				picked_i = this.sel_color()
 			},
 			color: i=>{
-				if (this.color==i && i<this.palsize)
-					this.form.pick.click()
+				//if (this.color==i && i<this.palsize)
+				//	this.form.pick.click()
 			},
 			reset: ()=>{
 				this.history.add()
@@ -382,6 +380,16 @@ class ChatDraw extends HTMLElement {
 			...ChatDraw.styles.map(x=>document.importNode(x, true)),
 			c, this.form
 		)
+		
+		this.form.pick.onblur = this.form.pick.onfocus = ev=>{
+			if (picked) {
+				const old = this.choices.color.values[picked_i]
+				this.history.add()
+				this.grp.replace_color(old, picked)
+				this.set_palette(picked_i, picked)
+			}
+			picked = null
+		}
 		
 		this.choose('tool', 0)
 		this.choose('brush', 1)
