@@ -318,10 +318,11 @@ class Brush {
 }
 // todo: make this inherit from brush?
 class ImageBrush {
-	constructor(origin, image, diag=false, label) {
+	constructor(origin, image, colorize, diag=false, label) {
 		this.diag = diag
 		this.label = label
 		this.size = 1
+		this.colorize = colorize
 		this.set_image(image, origin)
 	}
 	set_image(image, origin=new Point(image.width/2, image.height/2)) {
@@ -335,7 +336,7 @@ class ImageBrush {
 		if (!this.source)
 			return
 		const {x, y} = pos.Subtract(this.origin).Round()
-		c2d.drawImage(this.source, x, y)
+		c2d.drawImage(this.source, this.colorize?x:x+1000, y)
 	}
 	line(c2d, start, end) {
 		if (!this.source)

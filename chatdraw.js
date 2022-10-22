@@ -178,7 +178,8 @@ class ChatDraw extends HTMLElement {
 		// this would not be too hard to implement, either. we just pick the 2 points that straddle the line being drawn
 		// (we could even do like, a dashed line? by allowing only movements of 2px at a time?)
 		brushes.push(new Brush(new Point(0.5,2.5), [[0, 0, 1, 5]], 5, false, ["| 5", "a"]))
-		brushes.push(new ImageBrush(new Point(0,0), null, false, ["📋", "clipboard"]))
+		brushes.push(new ImageBrush(new Point(0,0), null, false, false, ["📋", "clipboard"]))
+		brushes.push(new ImageBrush(new Point(0,0), null, true, false, ["📋", "clipboard (colorized)"]))
 		/// define patterns ///
 		const patterns = []
 		const solid = new String('black')
@@ -411,7 +412,8 @@ class ChatDraw extends HTMLElement {
 		
 		const bv = this.choices.brush.values, bl = bv.length-1
 		bv[bl].set_image(c)
-		this.choose('brush', bl)
+		bv[bl-1].set_image(c)
+		this.choose('brush', bl-1)
 	}
 	
 	set_scale(n) {
