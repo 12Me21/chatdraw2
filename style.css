@@ -10,16 +10,22 @@
 	-webkit-user-select: none; user-select: none;
 	-webkit-text-size-adjust: none;
 }
-:host > div {
-	cursor: crosshair;
-	touch-action: none;
+:host > div, :host > img {
 	grid-area: canvas;
 	border: solid gray calc(var(--S)*2px);
+	touch-action: none;
+}
+:host > div {
+	pointer-events: none;
 	width: calc(var(--width)*var(--S)*1px);
 	height: calc(var(--height)*var(--S)*1px);
 }
-:host > div > * {
-	pointer-events: none;
+:host > img {
+	opacity: 0;
+	width: 100%;
+	height: 100%;
+	box-sizing: border-box;
+	cursor: crosshair;
 }
 /* stacked */
 :host > div, chatdraw-button {
@@ -34,9 +40,6 @@
 	box-sizing: border-box !important;	
 }
 
-:host > div > img {
-	opacity: 0;
-}
 canvas {
 	image-rendering: -moz-crisp-edges; image-rendering: pixelated;
 }
