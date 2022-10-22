@@ -121,30 +121,32 @@ button {
 	border-color: #EED #DDB #CCB #DDB;
 	background: #CCCCB2;
 	padding-top: calc(var(--S)*1px);
+	border-radius: calc(1px*var(--S));
 }	
 
 button {
+	--recess: inset 0 calc(var(--S)*1px) calc(var(--S)*1px) #0008;
 	transform: translateY(calc(var(--S)*-1px));
 	box-shadow:
-		0 calc(var(--S)*1px) #888,
-		0 calc(var(--S)*2px) #666,
-		0 calc(var(--S)*2px) calc(var(--S)*1px) #000,
-		inset 0 calc(var(--S)*1px) calc(var(--S)*1px) #0008;
+		0 calc(var(--S)*1px) #888, /* side */
+		0 calc(var(--S)*2px) #666, /* side */
+		0 calc(var(--S)*2px) calc(var(--S)*1px) #000, /* shadow */
+		var(--recess);
 }
 :active + button {
 	transform: translateY(calc(var(--S)*1px));
 	box-shadow:
-		inset 0 calc(var(--S)*1px) calc(var(--S)*1px) #0008;
+		var(--recess);
 }
 :checked + button {
 	transform: none;
 	/*border-color: #EE0 #DD0 #CC0 #DD0;*/
 	background: #BDA;
 	box-shadow:
-		0 calc(var(--S)*1px) #888,
-		inset 0 calc(var(--S)*1px) calc(var(--S)*1px) #0008,
-		inset 0 calc(var(--S)*1px) calc(var(--S)*2px) #0FD,
-		0 calc(var(--S)*1px) calc(var(--S)*2px) #0FD;
+		0 calc(var(--S)*1px) #5A8, /* side */
+		var(--recess),
+		inset 0 calc(var(--S)*1px) calc(var(--S)*2px) #0FD, /* inner glow */
+		0 calc(var(--S)*1px) calc(var(--S)*2px) #0FD8; /* outer glow */
 	border-color: #0FD #0FB #0FB #0FC;
 }
 :active + button {
@@ -153,8 +155,8 @@ button {
 :disabled + button {
 	transform: none;
 	box-shadow:
-		0 calc(var(--S)*1px) #888,
-		inset 0 calc(var(--S)*1px) calc(var(--S)*1px) #0008;
+		0 calc(var(--S)*1px) #888, /* side */
+		var(--recess);
 	background: #BBBBA2;
 	border-color: #CCA;
 }
