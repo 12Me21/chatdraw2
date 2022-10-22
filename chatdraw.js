@@ -366,10 +366,10 @@ class ChatDraw extends HTMLElement {
 		let c = document.createElement('div')
 		c.style.setProperty('--width', this.width)
 		c.style.setProperty('--height', this.height)
-		c.append(this.grp.canvas, this.overlay.canvas)
+		c.append(this.img, this.grp.canvas, this.overlay.canvas)
+		c.style.cursor = make_cursor(3)
 		
-		this.img.style.cursor = make_cursor(3)
-		Stroke.handle(this.img, ev=>{
+		Stroke.handle(c, ev=>{
 			if (ev.button)
 				return
 			this.history.add()
@@ -378,7 +378,7 @@ class ChatDraw extends HTMLElement {
 		
 		super.attachShadow({mode: 'open'}).append(
 			...ChatDraw.styles.map(x=>document.importNode(x, true)),
-			this.img, c, this.form
+			c, this.form
 		)
 		
 		this.form.pick.onblur = this.form.pick.onfocus = ev=>{
