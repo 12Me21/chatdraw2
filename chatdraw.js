@@ -53,24 +53,24 @@ function make_pattern(str, name, context) {
 	return pattern
 }
 
-function draw_button({type='button', name, value="", label:[label, title="", icon=false]}) {
-	// hidden input element
-	const input = document.createElement('input')
-	Object.assign(input, {type, name, value, title})
-	// the visible button
-	const btn = document.createElement('button')
-	if (icon)
-		btn.classList.add('icon')
-	btn.append(label)
-	const cont = document.createElement('chatdraw-button')
-	cont.append(input, btn)
-	return cont
-}
-
 // todo: merge in that change from the failed branch where we pass actual button elements here instead of descriptors. that way we can draw the 3 types of buttons where needed and not need to deal with like  
 
 // also: i would like to put the "actions" block horizontally, either above or below the tools (and maybe patterns too?) idk. do feel like the FILL button doesnt belong there. technically it should be a brush but thats silly. could probably just remove reset though, idk. nice to have. for like, need a blank canvas temporarily, reset then undo>
 function draw_form(choices, actions, sections) {
+	function draw_button({type='button', name, value="", label:[label, title="", icon=false]}) {
+		// hidden input element
+		const input = document.createElement('input')
+		Object.assign(input, {type, name, value, title})
+		// the visible button
+		const btn = document.createElement('button')
+		if (icon)
+			btn.classList.add('icon')
+		btn.append(label)
+		const cont = document.createElement('chatdraw-button')
+		cont.append(input, btn)
+		return cont
+	}
+	
 	const form = document.createElement('form')
 	form.autocomplete = 'off'
 	form.method = 'dialog'
@@ -357,6 +357,8 @@ class ChatDraw extends HTMLElement {
 		}
 		
 		let c = document.createElement('div')
+		c.style.setProperty('--width', this.width)
+		c.style.setProperty('--height', this.height)
 		c.append(this.img, this.grp.canvas, this.overlay.canvas)
 		c.style.cursor = make_cursor(3)
 		
@@ -382,8 +384,6 @@ class ChatDraw extends HTMLElement {
 	// ugh but that would be slow maybe?
 	
 	connectedCallback() {
-		super.style.setProperty('--width', this.width)
-		super.style.setProperty('--height', this.height)
 	}
 	
 	when_copy(data) {

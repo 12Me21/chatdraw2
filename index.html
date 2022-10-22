@@ -31,7 +31,7 @@
 <script src=brush.js></script>
 <script src=chatdraw.js></script>
 
-<form>
+<form method=dialog>
 	<label>Scale: <input name=scale type=number min=1 max=10 value=2 id=$scale size=3 onchange="chatdraw.set_scale(value/devicePixelRatio)"></label>
 	<label>Load file: <input type=file onchange=load_image(files[0]) accept=image/png></label>
 	<label style=color:goldenrod>Last stroke: <i id=$stroke></i></label>
