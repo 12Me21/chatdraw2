@@ -469,6 +469,6 @@ class ChatDraw extends HTMLElement {
 		this.set_palette2(this.grp.get_palette(this.palsize))
 	}
 }
-ChatDraw.styles = ['style.css'].map(href=>Object.assign(document.createElement('link'), {rel:'stylesheet', href}))
+ChatDraw.styles = ['style.css?%cache%'].map(href=>Object.assign(document.createElement('link'), {rel:'stylesheet', href}))
 
 customElements.define('chat-draw', ChatDraw)
