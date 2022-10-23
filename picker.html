@@ -1,0 +1,120 @@
+<!doctype html><html lang=en-QS><meta charset=utf-8><meta name=viewport content="width=device-width, height=device-height, initial-scale=1" id=$meta_viewport>
+<title>CHATDRAW 2!!!</title>
+<link rel=icon sizes=16x16 href=favicon.gif>
+<style>
+	html, body {
+		position: fixed;
+		overflow: clip; overflow: hidden;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		word-break: break-word;
+		margin: 0;
+	}
+	pre {
+		white-space: pre-wrap;
+	}
+	body {
+		display: flex;
+		flex-flow: column;
+		overflow-y: auto;
+	}
+	chat-draw {
+		align-self: flex-start;
+	}
+	#\$color {
+		display: inline-grid;
+		grid-template-columns: repeat(3, max-content);
+		align-items: center;
+	}
+	input[type='range'] {
+		appearance: none;
+		background: no-repeat center / calc(100% - 14px);
+		background-image: linear-gradient(
+			to right,
+			rgb( var(--r,  0), var(--g,  0), var(--b,  0) ),
+			rgb( var(--r,255), var(--g,255), var(--b,255) )
+		);
+		width: calc(128px + 14px);
+		height: 20px;
+	}
+	input[name='r_s'] { --r: initial; }
+	input[name='g_s'] { --g: initial; }
+	input[name='b_s'] { --b: initial; }
+	input[name='r_n'] { background: #F008; font-weight: bold; }
+	input[name='g_n'] { background: #0F08; font-weight: bold; }
+	input[name='b_n'] { background: #00F8; font-weight: bold; }
+	input {
+		font-family: monospace;
+	}
+	input[name='color'] {
+		appearance: none;
+		padding: 0;
+		height: 100%;
+		width: 100%;
+	}
+</style>
+
+
+<form id=$color>
+	<input type=range min=0 max=255 name=r_s><span>R:</span><input type=number min=0 max=255 name=r_n size=4>
+	<input type=range min=0 max=255 name=g_s><span>G:</span><input type=number min=0 max=255 name=g_n size=4>
+	<input type=range min=0 max=255 name=b_s><span>B:</span><input type=number min=0 max=255 name=b_n size=4>
+	<input type=color name=color><span></span><input type=text name=hex size=7>
+</form>
+<hr>
+<script>
+	let IOS_SAFARI = CSS.supports('-webkit-touch-callout', 'none')
+	// disable the automatic zoom when focusing text inputs in safari
+	if (IOS_SAFARI)
+		$meta_viewport.content += ", user-scalable=no"
+	
+	function redraw(red, green, blue, exclude) {
+		function setv(elem, value) {
+			if (exclude != elem)
+				elem.value = value
+		}
+		setv($color.r_s, red)
+		setv($color.r_n, red)
+		setv($color.g_s, green)
+		setv($color.g_n, green)
+		setv($color.b_s, blue)
+		setv($color.b_n, blue)
+		let hex = "#"+(red<<16|green<<8|blue).toString(16).padStart(6,"0")
+		setv($color.hex, hex)
+		setv($color.color, hex)
+		$color.style.setProperty('--r', red)
+		$color.style.setProperty('--g', green)
+		$color.style.setProperty('--b', blue)
+	}
+	$color.oninput = ev=>{
+		let e = ev.target
+		let red = +$color.r_n.value
+		let green = +$color.g_n.value
+		let blue = +$color.b_n.value
+		if (e.name=='hex') {
+			let m = e.value.match(/^#?([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})$/)
+			if (m) {
+				red = parseInt(m[1], 16)
+				green = parseInt(m[2], 16)
+				blue = parseInt(m[3], 16)
+			}
+		} else if (e.name=='r_s') {
+			red = e.value
+		} else if (e.name=='g_s') {
+			green = e.value
+		} else if (e.name=='b_s') {
+			blue = e.value
+		}
+		redraw(red, green, blue, e)
+	}
+</script>
+
+<div>
+	testing:
+	<textarea id=$code></textarea>
+	<button onclick="$log.textContent='...';$log.textContent=String(eval($code.value))">run</button>
+	<pre id=$log></pre>
+</div>
+
